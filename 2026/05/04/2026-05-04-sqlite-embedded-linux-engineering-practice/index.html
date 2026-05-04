@@ -1,0 +1,412 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>SQLite 在嵌入式 Linux 中的工程实践——轻量级本地数据持久化 | KuangYue's Blog</title><meta name="author" content="kuangyue111"><meta name="copyright" content="kuangyue111"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="SQLite 在嵌入式 Linux 中的工程实践——轻量级本地数据持久化123▎ 作者：嵌入式系统开发工程师▎ 日期：2026-05-4▎ 代码基础：储能管理系统（BESS）嵌入式控制器一、引言：为什么是 SQLite，而不是文件或 Redis？在嵌入式 Linux 平台上做持久化存储，工程师面临的第一个抉择往往是：用什么？ 纯文件（CSV、JSON、二进制 dump）？太脆弱，掉电一致性无法保证">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SQLite 在嵌入式 Linux 中的工程实践——轻量级本地数据持久化">
+<meta property="og:url" content="https://kuangyue111.github.io/2026/05/04/2026-05-04-sqlite-embedded-linux-engineering-practice/index.html">
+<meta property="og:site_name" content="KuangYue&#39;s Blog">
+<meta property="og:description" content="SQLite 在嵌入式 Linux 中的工程实践——轻量级本地数据持久化123▎ 作者：嵌入式系统开发工程师▎ 日期：2026-05-4▎ 代码基础：储能管理系统（BESS）嵌入式控制器一、引言：为什么是 SQLite，而不是文件或 Redis？在嵌入式 Linux 平台上做持久化存储，工程师面临的第一个抉择往往是：用什么？ 纯文件（CSV、JSON、二进制 dump）？太脆弱，掉电一致性无法保证">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://kuangyue111.github.io/img/butterfly-icon.png">
+<meta property="article:published_time" content="2026-05-04T04:32:00.000Z">
+<meta property="article:modified_time" content="2026-05-04T04:40:48.724Z">
+<meta property="article:author" content="kuangyue111">
+<meta property="article:tag" content="嵌入式">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="SQLite">
+<meta property="article:tag" content="数据库">
+<meta property="article:tag" content="工程实践">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://kuangyue111.github.io/img/butterfly-icon.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "SQLite 在嵌入式 Linux 中的工程实践——轻量级本地数据持久化",
+  "url": "https://kuangyue111.github.io/2026/05/04/2026-05-04-sqlite-embedded-linux-engineering-practice/",
+  "image": "https://kuangyue111.github.io/img/butterfly-icon.png",
+  "datePublished": "2026-05-04T04:32:00.000Z",
+  "dateModified": "2026-05-04T04:40:48.724Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "kuangyue111",
+      "url": "https://kuangyue111.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://kuangyue111.github.io/2026/05/04/2026-05-04-sqlite-embedded-linux-engineering-practice/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.5.4"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.13.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'SQLite 在嵌入式 Linux 中的工程实践——轻量级本地数据持久化',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/butterfly-icon.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">2</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">10</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">4</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">KuangYue's Blog</span></a><a class="nav-page-title" href="/"><span class="site-name">SQLite 在嵌入式 Linux 中的工程实践——轻量级本地数据持久化</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">SQLite 在嵌入式 Linux 中的工程实践——轻量级本地数据持久化</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-05-04T04:32:00.000Z" title="发表于 2026-05-04 12:32:00">2026-05-04</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-05-04T04:40:48.724Z" title="更新于 2026-05-04 12:40:48">2026-05-04</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/">技术分享</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/%E5%B5%8C%E5%85%A5%E5%BC%8F%E5%BC%80%E5%8F%91/">嵌入式开发</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h2 id="SQLite-在嵌入式-Linux-中的工程实践——轻量级本地数据持久化"><a href="#SQLite-在嵌入式-Linux-中的工程实践——轻量级本地数据持久化" class="headerlink" title="SQLite 在嵌入式 Linux 中的工程实践——轻量级本地数据持久化"></a>SQLite 在嵌入式 Linux 中的工程实践——轻量级本地数据持久化<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">▎ 作者：嵌入式系统开发工程师</span><br><span class="line">▎ 日期：2026-05-4</span><br><span class="line">▎ 代码基础：储能管理系统（BESS）嵌入式控制器</span><br></pre></td></tr></table></figure></h2><h1 id="一、引言：为什么是-SQLite，而不是文件或-Redis？"><a href="#一、引言：为什么是-SQLite，而不是文件或-Redis？" class="headerlink" title="一、引言：为什么是 SQLite，而不是文件或 Redis？"></a>一、引言：为什么是 SQLite，而不是文件或 Redis？</h1><p>在嵌入式 Linux 平台上做持久化存储，工程师面临的第一个抉择往往是：用什么？</p>
+<p>纯文件（CSV、JSON、二进制 dump）？太脆弱，掉电一致性无法保证，查询效率低下。<br>Redis？内存占用过高，且需要额外部署，在 AM335x、RK3566 这类只有 256MB～512MB RAM 的板子上几乎不可能。<br>完整关系型数据库（MySQL、PostgreSQL）？更不用想，光是进程本身就够呛。</p>
+<p>我们最终选择了 SQLite——不是因为它”轻量”这个标签，而是因为它在嵌入式场景下具备了其他方案难以同时满足的三个属性：原子性事务、自包含单文件存储、零运维。</p>
+<p>本文将结合我们储能管理系统（BESS）的真实代码，深入拆解 SQLite 在嵌入式 Linux 工程实践中的核心问题——WAL 模式选择、多线程安全策略、掉电安全写入、历史数据老化，以及如何将 SQLite 打造成本地 AI 知识库。      </p>
+<hr>
+<h1 id="二、架构背景：SQLite-在系统中扮演什么角色"><a href="#二、架构背景：SQLite-在系统中扮演什么角色" class="headerlink" title="二、架构背景：SQLite 在系统中扮演什么角色"></a>二、架构背景：SQLite 在系统中扮演什么角色</h1><p>先从整体看。我们的系统由三层构成：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">┌─────────────────────────────────────────────────────┐</span><br><span class="line">│  Sampler 层                                         │</span><br><span class="line">│  (st_batt_sampler, pcs_sampler, meter_sampler...)   │</span><br><span class="line">│  → 采集硬件数据，通过 DPR.Set() 写入内存数据总线       │</span><br><span class="line">├─────────────────────────────────────────────────────┤</span><br><span class="line">│  DPR 层（Data Processor）                            │</span><br><span class="line">│  → 200ms 周期循环，计算派生量、刷新告警、持久化历史数据  │</span><br><span class="line">│  → 通过 Open_Lock_SqliteDB() 统一管理数据库连接        │</span><br><span class="line">├─────────────────────────────────────────────────────┤</span><br><span class="line">│  Reporter 层                                         │</span><br><span class="line">│  (MQTT Reporter, Web Reporter, MBE Reporter...)      │</span><br><span class="line">│  → 通过 DPR.Get() 读取内存数据                       │</span><br><span class="line">│  → 断网时将上报数据缓存到 SQLite                       │</span><br><span class="line">└─────────────────────────────────────────────────────┘</span><br><span class="line">        ↕ 所有持久化均通过同一个 .data 文件</span><br><span class="line">        nccu.data（SQLite 数据库）</span><br></pre></td></tr></table></figure>
+<p>SQLite 在这个架构中承担了四类职责：</p>
+<ol>
+<li>配置持久化：用户修改的参数设置（Data_SavedSettings）</li>
+<li>历史数据归档：BMS 健康数据、实时运行数据、电量统计（Data_BMSHealthData、Data_ESStats_Daily等）</li>
+<li>告警事件记录：告警起止时间、状态变更（Data_Alarms、Data_Events）</li>
+<li>MQTT 离线缓存：断网时临时存储待上报消息</li>
+</ol>
+<hr>
+<h1 id="三、单连接-互斥锁：我们的多线程安全策略"><a href="#三、单连接-互斥锁：我们的多线程安全策略" class="headerlink" title="三、单连接 + 互斥锁：我们的多线程安全策略"></a>三、单连接 + 互斥锁：我们的多线程安全策略</h1><h2 id="3-1-为什么不用连接池？"><a href="#3-1-为什么不用连接池？" class="headerlink" title="3.1 为什么不用连接池？"></a>3.1 为什么不用连接池？</h2><p>在 PC 端或服务器端，面对高并发数据库访问，工程师通常会选择连接池（Connection Pool）——维护一组数据库连接，按需分配给各线程，以减少连接创建销毁的开销。</p>
+<p>但在嵌入式平台上，这个方案有致命问题：</p>
+<ul>
+<li>内存开销：每个 SQLite 连接都会分配 page_cache（默认 2MB）、schema 解析缓存等，连接池维护 N 个连接意味着 N 倍的内存占用</li>
+<li>并发控制复杂性：SQLite 在 WAL 模式下虽然支持并发读，但写操作仍然互斥，连接池带来的多写竞争需要额外的上层协调逻辑</li>
+<li>flash 寿命：多连接意味着更多 page 刷写，加速 eMMC&#x2F;NAND flash 磨损</li>
+</ul>
+<p>我们的选择是单一全局连接 + 互斥锁：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 所有数据库操作的入口</span></span><br><span class="line">sqlite3* <span class="title function_">Open_Lock_SqliteDB</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"><span class="type">void</span>     <span class="title function_">Close_UnLock_SqliteDB</span><span class="params">(<span class="type">void</span>)</span>;</span><br></pre></td></tr></table></figure>
+<p>整个系统中，无论哪个线程（DPR 线程、Sampler 控制线程、MQTT Reporter 线程），访问 SQLite 的唯一合法路径就是这对函数。以 st_batt_testmode.c 中的 ClearTestHisData() 为例：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">ClearTestHisData</span><span class="params">(STBATT_SAMPLER_ROUGH* pSTBatt)</span></span><br><span class="line">&#123;</span><br><span class="line">    sqlite3* data_db = Open_Lock_SqliteDB();  <span class="comment">// 加锁 + 返回连接指针</span></span><br><span class="line"></span><br><span class="line">    sqlite3_exec(data_db, <span class="string">&quot;DELETE FROM Data_BMSHealthData&quot;</span>,        <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</span><br><span class="line">    sqlite3_exec(data_db, <span class="string">&quot;DELETE FROM Data_RealTimeBmsData&quot;</span>,      <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</span><br><span class="line">    sqlite3_exec(data_db, <span class="string">&quot;DELETE FROM Data_ESStats_Daily&quot;</span>,        <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</span><br><span class="line">    sqlite3_exec(data_db, <span class="string">&quot;DELETE FROM Data_Alarms&quot;</span>,               <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</span><br><span class="line">    sqlite3_exec(data_db, <span class="string">&quot;DELETE FROM Data_AccumulatedData&quot;</span>,      <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</span><br><span class="line">    sqlite3_exec(data_db, <span class="string">&quot;DELETE FROM Data_AppLog&quot;</span>,               <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</span><br><span class="line">    sqlite3_exec(data_db, <span class="string">&quot;DELETE FROM Data_ChargeMeterValues&quot;</span>,    <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</span><br><span class="line">    sqlite3_exec(data_db, <span class="string">&quot;DELETE FROM Data_ChargeRecords&quot;</span>,        <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</span><br><span class="line">    sqlite3_exec(data_db, <span class="string">&quot;DELETE FROM Data_CurrentSPFW_kwh&quot;</span>,      <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</span><br><span class="line">    sqlite3_exec(data_db, <span class="string">&quot;DELETE FROM Data_DumpLog&quot;</span>,              <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</span><br><span class="line">    sqlite3_exec(data_db, <span class="string">&quot;DELETE FROM Data_Events&quot;</span>,               <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</span><br><span class="line">    sqlite3_exec(data_db, <span class="string">&quot;DELETE FROM Data_HisStatusData&quot;</span>,        <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</span><br><span class="line">    sqlite3_exec(data_db, <span class="string">&quot;DELETE FROM Data_HistoricalData&quot;</span>,       <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</span><br><span class="line">    sqlite3_exec(data_db, <span class="string">&quot;DELETE FROM Data_MBELog&quot;</span>,               <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</span><br><span class="line">    sqlite3_exec(data_db, <span class="string">&quot;DELETE FROM Data_RealTimeChargeData&quot;</span>,   <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">    Close_UnLock_SqliteDB();  <span class="comment">// 释放锁</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个函数在测试模式启动时调用，目的是清除上次测试留下的残留数据。注意它连续执行了 15 条 DELETE，全程持有锁。这是有意为之的——原子性。如果在删到第 7<br>张表时被中断，数据库会处于部分清除的不一致状态，下次测试的结果将无法置信。</p>
+<h2 id="3-2-单连接模型的锁持有时间控制"><a href="#3-2-单连接模型的锁持有时间控制" class="headerlink" title="3.2 单连接模型的锁持有时间控制"></a>3.2 单连接模型的锁持有时间控制</h2><p>单连接模型最大的陷阱是锁持有时间。如果某个线程在 Open_Lock_SqliteDB() 之后执行了耗时操作（如大量计算或网络等待），其他所有需要数据库的线程都会被阻塞。</p>
+<p>在 dpr_loader.c 的 Save_SettingParam() 中，可以看到”即写即关”的模式：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> BOOL <span class="title function_">Save_SettingParam</span><span class="params">(<span class="type">int</span> nDevId, <span class="type">int</span> nParamId, BYTE* pbyVal, <span class="type">int</span> nValSize, sqlite3* data_db)</span></span><br><span class="line">&#123;</span><br><span class="line">    sqlite3_stmt * stat;</span><br><span class="line">    <span class="comment">// 准备语句</span></span><br><span class="line">    sqlite3_prepare_v2(data_db,</span><br><span class="line">        <span class="string">&quot;replace into Data_SavedSettings (Device_Id, Param_Id, Save_Time, Current_Value) values (?,?,?,?)&quot;</span>,</span><br><span class="line">        <span class="number">-1</span>, &amp;stat, <span class="literal">NULL</span>);</span><br><span class="line">    sqlite3_bind_int(stat, <span class="number">1</span>, nDevId);</span><br><span class="line">    sqlite3_bind_int(stat, <span class="number">2</span>, nParamId);</span><br><span class="line">    sqlite3_bind_int(stat, <span class="number">3</span>, _NOW_);</span><br><span class="line">    sqlite3_bind_blob(stat, <span class="number">4</span>, pbyVal, nValSize, <span class="literal">NULL</span>);</span><br><span class="line">    nSqlRet = sqlite3_step(stat);</span><br><span class="line">    sqlite3_finalize(stat);</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    <span class="keyword">return</span> TRUE;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>注意这个函数接收 data_db 作为参数——调用者已经持锁，这个函数只负责”做完就走”，不做任何额外等待。</p>
+<h2 id="3-3-连接池方案的对比思考"><a href="#3-3-连接池方案的对比思考" class="headerlink" title="3.3 连接池方案的对比思考"></a>3.3 连接池方案的对比思考</h2><p>如果这个系统要演化到更高并发（假设未来需要同时支持 Web API、OTA 更新、MQTT 上报并发写入），单连接模型的瓶颈会暴露。此时可以考虑 WAL 模式下的读写分离连接池：</p>
+<p>写连接（单一）：       所有 INSERT&#x2F;UPDATE&#x2F;DELETE 经此连接串行执行<br>读连接（N 个）：       SELECT 查询可并发，WAL 模式下不阻塞写连接</p>
+<p>但在我们当前的 AM335x 平台上，这是不必要的复杂性。工程实践的核心原则：不过度设计。 单连接模型简单、可靠、可预测，适合当前规模。</p>
+<hr>
+<h1 id="四、WAL-模式-vs-Journal-模式：嵌入式的选择逻辑"><a href="#四、WAL-模式-vs-Journal-模式：嵌入式的选择逻辑" class="headerlink" title="四、WAL 模式 vs Journal 模式：嵌入式的选择逻辑"></a>四、WAL 模式 vs Journal 模式：嵌入式的选择逻辑</h1><h2 id="4-1-默认-Journal-模式的工作原理"><a href="#4-1-默认-Journal-模式的工作原理" class="headerlink" title="4.1 默认 Journal 模式的工作原理"></a>4.1 默认 Journal 模式的工作原理</h2><p>SQLite 默认使用 DELETE journal 模式（也称 rollback journal 模式）：</p>
+<p>写入流程：</p>
+<ol>
+<li>将原始页数据复制到 journal 文件（*.db-journal）</li>
+<li>修改数据库主文件中的页</li>
+<li>提交时删除 journal 文件</li>
+</ol>
+<p>崩溃恢复：</p>
+<ul>
+<li>如果 journal 文件存在，回滚主文件中的修改</li>
+</ul>
+<p>这个模式有一个严重问题：写操作会阻塞所有读操作。在我们的系统中，DPR 线程每 200ms 写一次历史数据，同时 Reporter 线程每秒读一次状态数据，在高频写入场景下，读取延迟会显著增加。</p>
+<h2 id="4-2-WAL-模式的优势与风险"><a href="#4-2-WAL-模式的优势与风险" class="headerlink" title="4.2 WAL 模式的优势与风险"></a>4.2 WAL 模式的优势与风险</h2><p>WAL（Write-Ahead Logging）模式的核心思想是：</p>
+<p>写入流程：</p>
+<ol>
+<li>将新的页内容追加写入 WAL 文件（*.db-wal）</li>
+<li>主文件保持不变</li>
+<li>定期 checkpoint：将 WAL 文件内容合并回主文件</li>
+</ol>
+<p>并发优势：</p>
+<ul>
+<li>读操作读主文件（快照读，不被写阻塞）</li>
+<li>写操作只追加 WAL，不修改主文件</li>
+<li>读写真正并发</li>
+</ul>
+<p>对于我们的系统，WAL 模式的优势明显：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">┌──────────────┬───────────────────┬─────────────────────────┐</span><br><span class="line">│     特性     │  DELETE Journal   │           WAL           │</span><br><span class="line">├──────────────┼───────────────────┼─────────────────────────┤</span><br><span class="line">│ 读写并发     │ ❌ 写阻塞读       │ ✅ 真并发               │</span><br><span class="line">├──────────────┼───────────────────┼─────────────────────────┤</span><br><span class="line">│ 顺序写性能   │ 较慢（随机 I/O）  │ 快（顺序追加）          │</span><br><span class="line">├──────────────┼───────────────────┼─────────────────────────┤</span><br><span class="line">│ flash 写放大 │ 低                │ 较高（需要 checkpoint） │</span><br><span class="line">├──────────────┼───────────────────┼─────────────────────────┤</span><br><span class="line">│ 崩溃恢复速度 │ 快                │ 快（WAL 重放）          │</span><br><span class="line">├──────────────┼───────────────────┼─────────────────────────┤</span><br><span class="line">│ 文件数量     │ 2（db + journal） │ 3（db + wal + shm）     │</span><br><span class="line">└──────────────┴───────────────────┴─────────────────────────┘</span><br></pre></td></tr></table></figure>
+<p>嵌入式平台的 WAL 风险点：WAL 文件如果长期不做 checkpoint，会无限增长，在存储空间有限的嵌入式设备上是定时炸弹。建议配置：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 推荐在 DB 初始化时设置</span></span><br><span class="line">sqlite3_exec(db, <span class="string">&quot;PRAGMA journal_mode=WAL;&quot;</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</span><br><span class="line">sqlite3_exec(db, <span class="string">&quot;PRAGMA wal_autocheckpoint=1000;&quot;</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>); <span class="comment">// 每1000页自动checkpoint</span></span><br></pre></td></tr></table></figure>
+<p>在我们的代码 Init_CreadDataDB() 中，目前没有显式设置 journal_mode，这意味着使用的是默认的 DELETE 模式。结合单连接互斥锁的架构，这是一个合理的保守选择——互斥锁已经从应用层保证了串行访问，WAL<br>的并发优势在单连接模型下无从发挥。</p>
+<p>结论：WAL 模式适合”多连接读写分离”架构；单连接互斥锁架构下，DELETE Journal 模式更简单可靠。</p>
+<hr>
+<h1 id="五、掉电安全写入：PRAGMA-synchronous-的取舍"><a href="#五、掉电安全写入：PRAGMA-synchronous-的取舍" class="headerlink" title="五、掉电安全写入：PRAGMA synchronous 的取舍"></a>五、掉电安全写入：PRAGMA synchronous 的取舍</h1><h2 id="5-1-嵌入式平台的掉电威胁"><a href="#5-1-嵌入式平台的掉电威胁" class="headerlink" title="5.1 嵌入式平台的掉电威胁"></a>5.1 嵌入式平台的掉电威胁</h2><p>储能系统的控制器有一个特殊场景：电池馈电异常导致控制器突然断电。这个场景在部署阶段的测试中会被反复模拟。如果数据库文件在写入中途断电，就会产生部分写（partial write），导致数据库损坏。</p>
+<p>SQLite 的 PRAGMA synchronous 控制了数据落盘的严格程度：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">┌────────┬─────┬───────────────────────────────────────────┬──────────────┐</span><br><span class="line">│  级别  │ 值  │                   含义                    │ 嵌入式适用性 │</span><br><span class="line">├────────┼─────┼───────────────────────────────────────────┼──────────────┤</span><br><span class="line">│ OFF    │ 0   │ 完全交给 OS buffer，最快但断电必丢数据    │ ❌ 不可用    │</span><br><span class="line">├────────┼─────┼───────────────────────────────────────────┼──────────────┤</span><br><span class="line">│ NORMAL │ 1   │ SQLite 关键节点调用 fsync，大部分情况安全 │ ⚠️ 条件可用  │</span><br><span class="line">├────────┼─────┼───────────────────────────────────────────┼──────────────┤</span><br><span class="line">│ FULL   │ 2   │ 每次写操作都 fsync，最安全                │ ✅ 推荐      │</span><br><span class="line">├────────┼─────┼───────────────────────────────────────────┼──────────────┤</span><br><span class="line">│ EXTRA  │ 3   │ 比 FULL 更多 fsync，用于 NFS 场景         │ 不必要       │</span><br><span class="line">└────────┴─────┴───────────────────────────────────────────┴──────────────┘</span><br></pre></td></tr></table></figure>
+<p>在我们的系统中，对于配置数据（Data_SavedSettings），必须使用 FULL 级别——用户修改了充电电压上限后如果断电，下次重启仍然应该是用户设置的值，而不是出厂默认值。</p>
+<p>对于历史数据（Data_HisStatusData、Data_BMSHealthData），NORMAL 级别通常足够——丢失最近几秒的历史曲线数据，不会造成安全事故，但会影响测试报告的完整性。</p>
+<h2 id="5-2-事务批量写入：性能与安全的平衡"><a href="#5-2-事务批量写入：性能与安全的平衡" class="headerlink" title="5.2 事务批量写入：性能与安全的平衡"></a>5.2 事务批量写入：性能与安全的平衡</h2><p>在 data_processing.c 的 Refresh_HisParam() 中，我看到了这个系统最关键的性能优化模式：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 批量写入历史数据</span></span><br><span class="line">sqlite3 *data_db = Open_Lock_SqliteDB();</span><br><span class="line">sqlite3_exec(data_db, <span class="string">&quot;BEGIN TRANSACTION;&quot;</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> n;</span><br><span class="line"><span class="keyword">for</span>(n = <span class="number">0</span>; n &lt; pParam-&gt;nHisValsTotal; n++)</span><br><span class="line">&#123;</span><br><span class="line">    sqlite3_stmt * stat;</span><br><span class="line">    sqlite3_prepare_v2(data_db,</span><br><span class="line">        <span class="string">&quot;replace into Data_HisStatusData values (?,?,?,?,?);&quot;</span>,</span><br><span class="line">        <span class="number">-1</span>, &amp;stat, <span class="literal">NULL</span>);</span><br><span class="line">    sqlite3_bind_int(stat, <span class="number">1</span>, (<span class="type">int</span>)s_nCurrHisDataIdx);</span><br><span class="line">    sqlite3_bind_double(stat, <span class="number">2</span>, pParam-&gt;hisValus[n].tmSampled);</span><br><span class="line">    sqlite3_bind_int(stat, <span class="number">3</span>, pParam-&gt;nDevId);</span><br><span class="line">    sqlite3_bind_int(stat, <span class="number">4</span>, pParam-&gt;nParamId);</span><br><span class="line">    sqlite3_bind_double(stat, <span class="number">5</span>, (<span class="type">double</span>)pParam-&gt;hisValus[n].fValue);</span><br><span class="line">    sqlite3_step(stat);</span><br><span class="line">    sqlite3_finalize(stat);</span><br><span class="line">    s_nCurrHisDataIdx++;</span><br><span class="line">    <span class="keyword">if</span>(s_nCurrHisDataIdx &gt; MAX_HISDATA_RECORDS)</span><br><span class="line">        s_nCurrHisDataIdx = <span class="number">1</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">sqlite3_exec(data_db, <span class="string">&quot;COMMIT;&quot;</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</span><br><span class="line">Close_UnLock_SqliteDB();</span><br></pre></td></tr></table></figure>
+<p>不用事务的 SQLite 写入，每条 INSERT 都是一个隐式事务，意味着每次都要调用 fsync。在 eMMC 上，一次 fsync 大约耗时 5～50ms，100 条记录就是 0.5～5 秒。</p>
+<p>用显式事务批量提交后，所有 INSERT 只需要一次 fsync，性能提升可达 100 倍以上。这是嵌入式 SQLite 工程实践中最重要的单项优化。</p>
+<hr>
+<h1 id="六、历史数据老化：循环索引-vs-时间窗口-DELETE"><a href="#六、历史数据老化：循环索引-vs-时间窗口-DELETE" class="headerlink" title="六、历史数据老化：循环索引 vs 时间窗口 DELETE"></a>六、历史数据老化：循环索引 vs 时间窗口 DELETE</h1><h2 id="6-1-为什么不能无限累积？"><a href="#6-1-为什么不能无限累积？" class="headerlink" title="6.1 为什么不能无限累积？"></a>6.1 为什么不能无限累积？</h2><p>一个运行中的储能系统，每 200ms 采集一次 100+ 个参数，一天的原始数据量是：</p>
+<p>100参数 × 5次&#x2F;秒 × 86400秒 &#x3D; 43,200,000 条记录</p>
+<p>即便做了变化量触发（只在值变化超过阈值时才记录），一天仍然会产生数十万条历史记录。在嵌入式设备 4GB～8GB 的存储空间里，不加控制的数据库会在数周内耗尽存储。</p>
+<h2 id="6-2-本系统的策略：循环索引（Circular-Index）"><a href="#6-2-本系统的策略：循环索引（Circular-Index）" class="headerlink" title="6.2 本系统的策略：循环索引（Circular Index）"></a>6.2 本系统的策略：循环索引（Circular Index）</h2><p>在 data_processing.c 中，历史数据使用固定大小的循环覆盖：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> UINT s_nCurrHisDataIdx = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// ...</span></span><br><span class="line">s_nCurrHisDataIdx++;</span><br><span class="line"><span class="keyword">if</span>(s_nCurrHisDataIdx &gt; MAX_HISDATA_RECORDS)</span><br><span class="line">    s_nCurrHisDataIdx = <span class="number">1</span>;  <span class="comment">// 回到起点，覆盖最老的数据</span></span><br></pre></td></tr></table></figure>
+<p>结合 replace into 语句：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">replace into Data_HisStatusData <span class="title function_">values</span> <span class="params">(?,?,?,?,?)</span>;</span><br></pre></td></tr></table></figure>
+<p>replace into 等价于：如果主键（Idx）已存在则替换，不存在则插入。当 s_nCurrHisDataIdx 绕回到 1 时，新数据会覆盖最老的数据。这是一个零成本的 O(1) 老化策略——不需要 DELETE，不需要全表扫描，不产生碎片。      </p>
+<p>这个策略的参数是 MAX_HISDATA_RECORDS，合理设置这个值需要估算：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">// 假设 MAX_HISDATA_RECORDS = 86400</span><br><span class="line">// 每个参数每分钟记录约 2 条（变化触发）</span><br><span class="line">// 100个参数 → 每分钟 200 条</span><br><span class="line">// 86400 条能覆盖约 7.2 小时的历史</span><br></pre></td></tr></table></figure>
+<p>实际工程中需要根据存储空间、参数数量、记录频率调整这个值。</p>
+<h2 id="6-3-告警数据的类似处理"><a href="#6-3-告警数据的类似处理" class="headerlink" title="6.3 告警数据的类似处理"></a>6.3 告警数据的类似处理</h2><p>在 event_manager.c 中，告警记录也采用同样的循环索引策略。在系统启动时的 RestoreHisEvent() 函数中，会查询当前最大 Idx 以确定循环索引的起始位置，避免重启后覆盖还未上报的告警。</p>
+<h2 id="6-4-时间窗口-DELETE-策略的对比"><a href="#6-4-时间窗口-DELETE-策略的对比" class="headerlink" title="6.4 时间窗口 DELETE 策略的对比"></a>6.4 时间窗口 DELETE 策略的对比</h2><p>另一种常见的老化策略是定期执行时间窗口清理：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">-- 每天凌晨 <span class="number">2</span> 点清理 <span class="number">30</span> 天前的数据</span><br><span class="line">DELETE FROM Data_HisStatusData</span><br><span class="line">WHERE Record_Time &lt; strftime(<span class="string">&#x27;%s&#x27;</span>, <span class="string">&#x27;now&#x27;</span>, <span class="string">&#x27;-30 days&#x27;</span>);</span><br></pre></td></tr></table></figure>
+<p>这个策略的优点是”保留最近 N 天”的语义更直观，但在嵌入式平台上有几个问题：</p>
+<ol>
+<li>DELETE 性能：大批量 DELETE 会产生大量页碎片，需要后续 VACUUM 才能释放磁盘空间，但 VACUUM 在 eMMC 上可能需要数分钟</li>
+<li>时机敏感：凌晨的定时任务需要确保系统处于低负载状态，在储能系统中，凌晨可能正是充放电高峰</li>
+<li>时间精度依赖：如果系统时钟异常（如 RTC 丢失），时间窗口判断会完全失效</li>
+</ol>
+<p>综合对比，循环索引策略更适合嵌入式场景：确定性、低开销、不依赖时钟准确性。</p>
+<hr>
+<h1 id="七、CSV-与-SQLite-的互补：Save-CellInfo-的设计哲学"><a href="#七、CSV-与-SQLite-的互补：Save-CellInfo-的设计哲学" class="headerlink" title="七、CSV 与 SQLite 的互补：Save_CellInfo 的设计哲学"></a>七、CSV 与 SQLite 的互补：Save_CellInfo 的设计哲学</h1><p>在 st_batt_testmode.c 中有一个有趣的设计：Save_CellInfo() 函数把电芯数据写到 CSV 文件而不是 SQLite：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> F_PATH_BALANCE     <span class="string">&quot;/data/cell_balance.csv&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> F_PATH_VOLTAGE     <span class="string">&quot;/data/cell_voltage.csv&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> F_PATH_TEMPERATURE <span class="string">&quot;/data/cell_temperature.csv&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> F_PATH_RESISTANCE  <span class="string">&quot;/data/cell_resistance.csv&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> F_PATH_POWER       <span class="string">&quot;/data/cell_power.csv&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">Save_CellInfo</span><span class="params">(STBATT_SAMPLER_ROUGH *pSTBatt, <span class="type">int</span> nBattIdx, <span class="type">time_t</span> tmNow)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">static</span> FileConfig files[] = &#123;</span><br><span class="line">        &#123;F_PATH_BALANCE,     <span class="string">&quot;Storage time,&quot;</span>, <span class="literal">NULL</span>, <span class="string">&quot;-cell_balance&quot;</span>&#125;,</span><br><span class="line">        &#123;F_PATH_VOLTAGE,     <span class="string">&quot;Storage time,&quot;</span>, <span class="literal">NULL</span>, <span class="string">&quot;-cell_voltage&quot;</span>&#125;,</span><br><span class="line">        &#123;F_PATH_TEMPERATURE, <span class="string">&quot;Storage time,&quot;</span>, <span class="literal">NULL</span>, <span class="string">&quot;-cell_temperature&quot;</span>&#125;,</span><br><span class="line">        &#123;F_PATH_RESISTANCE,  <span class="string">&quot;Storage time,&quot;</span>, <span class="literal">NULL</span>, <span class="string">&quot;-cell_resistance&quot;</span>&#125;,</span><br><span class="line">        &#123;F_PATH_POWER,       <span class="string">&quot;Storage time,&quot;</span>, <span class="literal">NULL</span>, <span class="string">&quot;-cell_power&quot;</span>&#125;</span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    <span class="type">static</span> <span class="type">int</span> need_header = <span class="number">1</span>;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; NUM_FILES; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        files[i].fp = fopen(files[i].path, <span class="string">&quot;a&quot;</span>);  <span class="comment">// 追加模式</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// ... 写入时间戳和每个电芯的值</span></span><br><span class="line">    fflush(files[i].fp);</span><br><span class="line">    fclose(files[i].fp);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>为什么这里不用 SQLite？这是一个刻意的工程决策：</p>
+<p>CSV 的优势场景：</p>
+<ul>
+<li>电芯数据是纯时序数据，列结构固定（时间戳 + N 个电芯值）</li>
+<li>测试工程师需要直接用 Excel 分析，CSV 是通用格式</li>
+<li>每 10 秒一条，数据量不大，不需要复杂查询</li>
+<li>测试结束后数据直接通过 SCP&#x2F;SFTP 拷贝走，不需要在设备上长期存储</li>
+</ul>
+<p>SQLite 的优势场景：</p>
+<ul>
+<li>需要复杂查询（按时间范围、按状态过滤）</li>
+<li>数据需要与其他表关联</li>
+<li>需要事务保证（如告警数据必须与时间精确关联）</li>
+</ul>
+<p>这个设计体现了”用合适的工具做合适的事”——CSV 和 SQLite 在同一个系统中共存，各司其职。</p>
+<hr>
+<h1 id="八、SQLite-FTS-在日志查询中的应用"><a href="#八、SQLite-FTS-在日志查询中的应用" class="headerlink" title="八、SQLite FTS 在日志查询中的应用"></a>八、SQLite FTS 在日志查询中的应用</h1><h2 id="8-1-日志查询的痛点"><a href="#8-1-日志查询的痛点" class="headerlink" title="8.1 日志查询的痛点"></a>8.1 日志查询的痛点</h2><p>系统运行过程中会产生大量文本日志（Data_AppLog、Data_DumpLog、Data_MBELog）。当现场工程师需要排查问题时，常见的需求是：</p>
+<ul>
+<li>“查找最近 24 小时内所有包含’FAULT’的日志”</li>
+<li>“找出 BMS_002 在昨天的所有告警记录”</li>
+<li>“搜索包含’COMM_FAIL’的最近 100 条记录”</li>
+</ul>
+<p>如果日志存储为普通 TEXT 列，上述查询需要全表扫描 + LIKE 匹配：</p>
+<p>SELECT * FROM Data_AppLog<br>WHERE Log_Content LIKE ‘%FAULT%’<br>AND Log_Time &gt; 1700000000;</p>
+<p>在数十万条记录的表上，这个查询可能需要数秒，对嵌入式平台来说不可接受。</p>
+<h2 id="8-2-FTS5-虚拟表方案"><a href="#8-2-FTS5-虚拟表方案" class="headerlink" title="8.2 FTS5 虚拟表方案"></a>8.2 FTS5 虚拟表方案</h2><p>SQLite 的 FTS5（Full-Text Search 5）模块可以为文本内容建立倒排索引：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 在 Init_CreadDataDB() 中创建 FTS 虚拟表</span></span><br><span class="line">sqlite3_exec(db,</span><br><span class="line">    <span class="string">&quot;CREATE VIRTUAL TABLE IF NOT EXISTS Data_AppLog_FTS &quot;</span></span><br><span class="line">    <span class="string">&quot;USING fts5(&quot;</span></span><br><span class="line">    <span class="string">&quot;    Log_Content, &quot;</span>          <span class="comment">// 全文检索列</span></span><br><span class="line">    <span class="string">&quot;    Log_Time UNINDEXED, &quot;</span>   <span class="comment">// 不参与全文检索的辅助列</span></span><br><span class="line">    <span class="string">&quot;    Log_Level UNINDEXED, &quot;</span></span><br><span class="line">    <span class="string">&quot;    content=&#x27;Data_AppLog&#x27;, &quot;</span>  <span class="comment">// 关联到主表</span></span><br><span class="line">    <span class="string">&quot;    content_rowid=&#x27;Idx&#x27;&quot;</span>      <span class="comment">// 主键对应</span></span><br><span class="line">    <span class="string">&quot;);&quot;</span>,</span><br><span class="line">    <span class="literal">NULL</span>, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</span><br></pre></td></tr></table></figure>
+<p>查询变为：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">-- FTS 查询，毫秒级响应</span><br><span class="line">SELECT Log_Time, Log_Level, snippet(Data_AppLog_FTS, <span class="number">0</span>, <span class="string">&#x27;&lt;b&gt;&#x27;</span>, <span class="string">&#x27;&lt;/b&gt;&#x27;</span>, <span class="string">&#x27;...&#x27;</span>, <span class="number">20</span>)</span><br><span class="line">FROM Data_AppLog_FTS</span><br><span class="line">WHERE Data_AppLog_FTS MATCH <span class="string">&#x27;FAULT OR COMM_FAIL&#x27;</span></span><br><span class="line">AND Log_Time &gt; <span class="number">1700000000</span></span><br><span class="line">ORDER BY Log_Time DESC</span><br><span class="line">LIMIT <span class="number">100</span>;</span><br></pre></td></tr></table></figure>
+<p>snippet() 函数还能自动提取匹配词的上下文，非常适合日志展示。</p>
+<h2 id="8-3-FTS-在嵌入式的注意事项"><a href="#8-3-FTS-在嵌入式的注意事项" class="headerlink" title="8.3 FTS 在嵌入式的注意事项"></a>8.3 FTS 在嵌入式的注意事项</h2><p>FTS 索引需要额外的存储空间（通常是原始数据的 2～3 倍）。在嵌入式平台上，需要权衡：</p>
+<ul>
+<li>对于高价值、需要频繁查询的日志（如告警日志、操作日志），值得建立 FTS 索引</li>
+<li>对于高频低价值的诊断日志，建议用循环文件（logrotate）而不是 SQLite</li>
+</ul>
+<hr>
+<h1 id="九、MQTT-离线缓存：SQLite-作为消息队列的工程实践"><a href="#九、MQTT-离线缓存：SQLite-作为消息队列的工程实践" class="headerlink" title="九、MQTT 离线缓存：SQLite 作为消息队列的工程实践"></a>九、MQTT 离线缓存：SQLite 作为消息队列的工程实践</h1><h2 id="9-1-断网场景"><a href="#9-1-断网场景" class="headerlink" title="9.1 断网场景"></a>9.1 断网场景</h2><p>储能系统部署在户外或工业园区，网络连接并不总是稳定的。MQTT 报文发送失败后，系统需要将消息暂存，待网络恢复后重发。</p>
+<p>SQLite 在这里充当了一个持久化消息队列：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">-- MQTT 离线消息缓存表（典型设计）</span><br><span class="line">CREATE TABLE IF NOT EXISTS <span class="title function_">Data_MQTTOfflineCache</span> <span class="params">(</span></span><br><span class="line"><span class="params">    Idx          INTEGER PRIMARY KEY AUTOINCREMENT,</span></span><br><span class="line"><span class="params">    Topic        TEXT    NOT <span class="literal">NULL</span>,</span></span><br><span class="line"><span class="params">    Payload      BLOB    NOT <span class="literal">NULL</span>,</span></span><br><span class="line"><span class="params">    QoS          INTEGER DEFAULT <span class="number">1</span>,</span></span><br><span class="line"><span class="params">    Created_Time DATETIME NOT <span class="literal">NULL</span>,</span></span><br><span class="line"><span class="params">    Retry_Count  INTEGER DEFAULT <span class="number">0</span>,</span></span><br><span class="line"><span class="params">    Status       INTEGER DEFAULT <span class="number">0</span>  -- <span class="number">0</span>:待发送, <span class="number">1</span>:发送中, <span class="number">2</span>:已发送</span></span><br><span class="line"><span class="params">)</span>;</span><br></pre></td></tr></table></figure>
+<p>Reporter 线程每次发送 MQTT 消息前先查询是否有缓存消息待发送：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 重发逻辑伪代码</span></span><br><span class="line"><span class="keyword">if</span>(MqttIsConnected())</span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">// 先发送缓存队列中最老的消息</span></span><br><span class="line">    sqlite3_exec(db,</span><br><span class="line">        <span class="string">&quot;SELECT Idx, Topic, Payload FROM Data_MQTTOfflineCache &quot;</span></span><br><span class="line">        <span class="string">&quot;WHERE Status = 0 ORDER BY Idx ASC LIMIT 10&quot;</span>,</span><br><span class="line">        SendCachedMsg_Callback, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">// 缓存当前消息</span></span><br><span class="line">    sqlite3_exec(db,</span><br><span class="line">        <span class="string">&quot;INSERT INTO Data_MQTTOfflineCache (Topic, Payload, Created_Time) &quot;</span></span><br><span class="line">        <span class="string">&quot;VALUES (?, ?, ?)&quot;</span>, ...);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="9-2-缓存容量控制"><a href="#9-2-缓存容量控制" class="headerlink" title="9.2 缓存容量控制"></a>9.2 缓存容量控制</h2><p>离线消息缓存同样需要容量上限，防止长期断网导致数据库无限增长：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">-- 超过 <span class="number">10000</span> 条时删除最老的记录</span><br><span class="line">DELETE FROM Data_MQTTOfflineCache</span><br><span class="line">WHERE Idx <span class="title function_">IN</span> <span class="params">(</span></span><br><span class="line"><span class="params">    SELECT Idx FROM Data_MQTTOfflineCache</span></span><br><span class="line"><span class="params">    ORDER BY Idx DESC</span></span><br><span class="line"><span class="params">    LIMIT <span class="number">-1</span> OFFSET <span class="number">10000</span></span></span><br><span class="line"><span class="params">)</span>;</span><br></pre></td></tr></table></figure>
+<p>这等价于”只保留最新的 10000 条”，比时间窗口 DELETE 更健壮，不依赖时钟准确性。</p>
+<hr>
+<h1 id="十、AI-集成：SQLite-作为本地推理知识库"><a href="#十、AI-集成：SQLite-作为本地推理知识库" class="headerlink" title="十、AI 集成：SQLite 作为本地推理知识库"></a>十、AI 集成：SQLite 作为本地推理知识库</h1><p>这是整篇文章最前沿的部分。我们正在探索的方向：将边缘 AI 推理结果存储到 SQLite，构建本地知识库。</p>
+<h2 id="10-1-场景：电池健康状态预测"><a href="#10-1-场景：电池健康状态预测" class="headerlink" title="10.1 场景：电池健康状态预测"></a>10.1 场景：电池健康状态预测</h2><p>我们的系统已经采集了大量 BMS 数据（电芯电压、温度、内阻）。如果在边缘侧部署一个轻量 ML 模型（如 ONNX Runtime Lite），可以实时推断电池的 SoH（State of Health，健康状态）趋势。</p>
+<p>推理结果存储到 SQLite：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">-- AI 推理结果表</span><br><span class="line">CREATE TABLE IF NOT EXISTS <span class="title function_">Data_AI_Inference</span> <span class="params">(</span></span><br><span class="line"><span class="params">    Idx             INTEGER PRIMARY KEY,</span></span><br><span class="line"><span class="params">    Inference_Time  DATETIME NOT <span class="literal">NULL</span>,</span></span><br><span class="line"><span class="params">    BattIdx         INTEGER  NOT <span class="literal">NULL</span>,</span></span><br><span class="line"><span class="params">    Model_Name      TEXT     NOT <span class="literal">NULL</span>,  -- <span class="string">&#x27;soh_predictor_v2&#x27;</span></span></span><br><span class="line"><span class="params">    Input_Summary   BLOB,               -- 输入特征的压缩摘要</span></span><br><span class="line"><span class="params">    SoH_Predicted   REAL,               -- 预测的 SoH 值（<span class="number">0.0</span>～<span class="number">1.0</span>）</span></span><br><span class="line"><span class="params">    Confidence      REAL,               -- 置信度</span></span><br><span class="line"><span class="params">    Anomaly_Score   REAL,               -- 异常分数</span></span><br><span class="line"><span class="params">    Recommended_Action INTEGER          -- <span class="number">0</span>:正常, <span class="number">1</span>:预警, <span class="number">2</span>:需检修</span></span><br><span class="line"><span class="params">)</span>;</span><br></pre></td></tr></table></figure>
+<h2 id="10-2-知识库的检索与利用"><a href="#10-2-知识库的检索与利用" class="headerlink" title="10.2 知识库的检索与利用"></a>10.2 知识库的检索与利用</h2><p>当新的 BMS 数据到来时，系统不仅运行实时推理，还会查询历史推理结果作为上下文：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 查询该电池过去 7 天的健康趋势</span></span><br><span class="line">sqlite3_exec(db,</span><br><span class="line">    <span class="string">&quot;SELECT Inference_Time, SoH_Predicted, Anomaly_Score &quot;</span></span><br><span class="line">    <span class="string">&quot;FROM Data_AI_Inference &quot;</span></span><br><span class="line">    <span class="string">&quot;WHERE BattIdx = ? &quot;</span></span><br><span class="line">    <span class="string">&quot;AND Inference_Time &gt; (strftime(&#x27;%s&#x27;,&#x27;now&#x27;) - 7*86400) &quot;</span></span><br><span class="line">    <span class="string">&quot;ORDER BY Inference_Time DESC&quot;</span>,</span><br><span class="line">    BuildHealthTrend_Callback, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</span><br></pre></td></tr></table></figure>
+<p>这个历史趋势数据可以作为特征输入给下一层的”趋势分析模型”，实现多时间尺度的预测——从当前快照推断即时状态，从历史趋势预测未来 30 天的退化曲线。</p>
+<h2 id="10-3-模型版本管理"><a href="#10-3-模型版本管理" class="headerlink" title="10.3 模型版本管理"></a>10.3 模型版本管理</h2><p>AI 模型会随着训练数据积累而迭代更新。SQLite 可以同时管理多个模型版本的推理结果，便于对比分析：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">-- 对比不同版本模型的预测差异</span><br><span class="line">SELECT</span><br><span class="line">    a.Inference_Time,</span><br><span class="line">    a.SoH_Predicted AS SoH_v1,</span><br><span class="line">    b.SoH_Predicted AS SoH_v2,</span><br><span class="line">    (b.SoH_Predicted - a.SoH_Predicted) AS Drift</span><br><span class="line">FROM Data_AI_Inference a</span><br><span class="line">JOIN Data_AI_Inference b</span><br><span class="line">    ON a.BattIdx = b.BattIdx</span><br><span class="line">    AND ABS(a.Inference_Time - b.Inference_Time) &lt; <span class="number">60</span></span><br><span class="line">WHERE a.Model_Name = <span class="string">&#x27;soh_predictor_v1&#x27;</span></span><br><span class="line">AND   b.Model_Name = <span class="string">&#x27;soh_predictor_v2&#x27;</span></span><br><span class="line">ORDER BY a.Inference_Time DESC</span><br><span class="line">LIMIT <span class="number">100</span>;</span><br></pre></td></tr></table></figure>
+<p>这个查询帮助我们验证新模型是否在边缘端产生了系统性偏差，是模型上线前的重要验证步骤。</p>
+<hr>
+<h1 id="十一、工程实践总结：嵌入式-SQLite-的七条原则"><a href="#十一、工程实践总结：嵌入式-SQLite-的七条原则" class="headerlink" title="十一、工程实践总结：嵌入式 SQLite 的七条原则"></a>十一、工程实践总结：嵌入式 SQLite 的七条原则</h1><p>经过这个项目的实战，我提炼出以下七条原则：</p>
+<h2 id="原则一：始终使用显式事务批量提交"><a href="#原则一：始终使用显式事务批量提交" class="headerlink" title="原则一：始终使用显式事务批量提交"></a>原则一：始终使用显式事务批量提交</h2><p>单条 INSERT 就是隐式事务，每次 fsync 开销极高。批量数据必须用 BEGIN TRANSACTION &#x2F; COMMIT 包裹。</p>
+<h2 id="原则二：单连接-互斥锁适合单机低并发场景"><a href="#原则二：单连接-互斥锁适合单机低并发场景" class="headerlink" title="原则二：单连接 + 互斥锁适合单机低并发场景"></a>原则二：单连接 + 互斥锁适合单机低并发场景</h2><p>连接池的并发优势在嵌入式单核&#x2F;双核场景下难以体现，而其带来的复杂度和内存开销是真实的。</p>
+<h2 id="原则三：循环索引优于定期-DELETE"><a href="#原则三：循环索引优于定期-DELETE" class="headerlink" title="原则三：循环索引优于定期 DELETE"></a>原则三：循环索引优于定期 DELETE</h2><p>REPLACE INTO + 循环递增主键，O(1) 老化，无碎片，不依赖时钟。适合固定容量的历史数据存储。</p>
+<h2 id="原则四：PRAGMA-synchronous-FULL-用于配置数据"><a href="#原则四：PRAGMA-synchronous-FULL-用于配置数据" class="headerlink" title="原则四：PRAGMA synchronous &#x3D; FULL 用于配置数据"></a>原则四：PRAGMA synchronous &#x3D; FULL 用于配置数据</h2><p>用户设置、校准参数等关键配置，必须用 FULL 级别保证掉电安全。历史数据可以用 NORMAL 级别换取性能。</p>
+<h2 id="原则五：WAL-模式配合多连接才有意义"><a href="#原则五：WAL-模式配合多连接才有意义" class="headerlink" title="原则五：WAL 模式配合多连接才有意义"></a>原则五：WAL 模式配合多连接才有意义</h2><p>单连接模型下，WAL 的并发优势无从发挥，但 WAL 文件增长风险依然存在。非必要不切 WAL。</p>
+<h2 id="原则六：CSV-和-SQLite-各司其职"><a href="#原则六：CSV-和-SQLite-各司其职" class="headerlink" title="原则六：CSV 和 SQLite 各司其职"></a>原则六：CSV 和 SQLite 各司其职</h2><p>纯时序、固定列、需要外部工具直接分析的数据用 CSV；需要查询、关联、事务保证的数据用 SQLite。</p>
+<h2 id="原则七：控制锁持有时间，避免长事务"><a href="#原则七：控制锁持有时间，避免长事务" class="headerlink" title="原则七：控制锁持有时间，避免长事务"></a>原则七：控制锁持有时间，避免长事务</h2><p>Open_Lock_SqliteDB() 到 Close_UnLock_SqliteDB() 之间不做任何耗时操作（如网络 I&#x2F;O、大量计算）。锁持有时间 &gt; 10ms 就应该警觉，&gt; 100ms 就是 Bug。</p>
+<hr>
+<h1 id="十二、结语"><a href="#十二、结语" class="headerlink" title="十二、结语"></a>十二、结语</h1><p>回顾这个系统中 SQLite 的使用，我最深的感受是：SQLite 的强大不在于功能，而在于它在各种约束下依然可靠。在 AM335x 这类 CPU 算力有限、存储空间紧张、电源不稳定的嵌入式环境里，SQLite<br>通过正确的配置和使用模式，扮演了配置存储、历史档案、事件记录、消息缓存四种角色，几乎满足了所有持久化需求。</p>
+<p>而随着边缘 AI 的发展，SQLite 还将承担新的角色——本地推理知识库。它的轻量、自包含、零运维特性，让它成为边缘智能的天然存储基础设施。</p>
+<p>工程实践的智慧不在于追求最新的技术，而在于在约束中找到最合适的平衡。SQLite 在嵌入式 Linux 中的工程实践，就是这种智慧的最好注解。</p>
+<hr>
+<p>本文代码引用自储能管理系统（BESS）嵌入式控制器项目，核心文件：st_batt_testmode.c、dpr_loader.c、data_processing.c。</p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://kuangyue111.github.io">kuangyue111</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://kuangyue111.github.io/2026/05/04/2026-05-04-sqlite-embedded-linux-engineering-practice/">https://kuangyue111.github.io/2026/05/04/2026-05-04-sqlite-embedded-linux-engineering-practice/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://kuangyue111.github.io" target="_blank">KuangYue's Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E5%B5%8C%E5%85%A5%E5%BC%8F/">嵌入式</a><a class="post-meta__tags" href="/tags/Linux/">Linux</a><a class="post-meta__tags" href="/tags/SQLite/">SQLite</a><a class="post-meta__tags" href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a><a class="post-meta__tags" href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/">工程实践</a></div><div class="post-share"><div class="social-share" data-image="/img/butterfly-icon.png" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/2026/05/04/%E5%82%A8%E8%83%BD%E7%B3%BB%E7%BB%9F%E5%B5%8C%E5%85%A5%E5%BC%8F%E5%BC%80%E5%8F%91%E7%9F%A5%E8%AF%86%E4%BD%93%E7%B3%BB%E5%8D%9A%E5%AE%A2%E6%8F%90%E7%BA%B2/" title="储能系统嵌入式开发知识体系博客提纲"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">储能系统嵌入式开发知识体系博客提纲</div></div><div class="info-2"><div class="info-item-1"> 基于实际工商业储能项目源码分析适用于未来一年博客内容规划    目录 嵌入式系统基础 工业通信协议 储能系统核心技术 数据库与数据处理 系统可靠性设计 工业互联网与云端对接 硬件驱动与外设 项目架构与工程实践   一、嵌入式系统基础1.1 ARM AM335x 处理器开发 平台: IMMU2 &#x2F; IMMU3 (基于 AM335x Cortex-A8) 博客主题: 《AM335x嵌入式开发环境搭建完全指南》 《从零开始移植Linux到AM335x》 《AM335x引脚复用与外设配置》    1.2 Linux 嵌入式系统编程 主题: 《嵌入式Linux系统裁剪与优化》 《Linux设备树详解与实践》 《嵌入式Bootloader开发与调试》    1.3 多线程编程与调度 代码亮点: iThread.c - 动态线程管理器、心跳监控 博客主题: 《Linux Pthreads编程深入理解》 《嵌入式系统线程池设计与实现》 《线程心跳机制与故障检测》(可配源码解析) 《pthread_cancel的陷阱与正确用法》    1.4 内存管理与内存池 代码亮点: iNew.c...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/05/04/%E5%82%A8%E8%83%BD%E7%B3%BB%E7%BB%9F%E5%B5%8C%E5%85%A5%E5%BC%8F%E5%BC%80%E5%8F%91%E7%9F%A5%E8%AF%86%E4%BD%93%E7%B3%BB%E5%8D%9A%E5%AE%A2%E6%8F%90%E7%BA%B2/" title="储能系统嵌入式开发知识体系博客提纲"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-04</div><div class="info-item-2">储能系统嵌入式开发知识体系博客提纲</div></div><div class="info-2"><div class="info-item-1"> 基于实际工商业储能项目源码分析适用于未来一年博客内容规划    目录 嵌入式系统基础 工业通信协议 储能系统核心技术 数据库与数据处理 系统可靠性设计 工业互联网与云端对接 硬件驱动与外设 项目架构与工程实践   一、嵌入式系统基础1.1 ARM AM335x 处理器开发 平台: IMMU2 &#x2F; IMMU3 (基于 AM335x Cortex-A8) 博客主题: 《AM335x嵌入式开发环境搭建完全指南》 《从零开始移植Linux到AM335x》 《AM335x引脚复用与外设配置》    1.2 Linux 嵌入式系统编程 主题: 《嵌入式Linux系统裁剪与优化》 《Linux设备树详解与实践》 《嵌入式Bootloader开发与调试》    1.3 多线程编程与调度 代码亮点: iThread.c - 动态线程管理器、心跳监控 博客主题: 《Linux Pthreads编程深入理解》 《嵌入式系统线程池设计与实现》 《线程心跳机制与故障检测》(可配源码解析) 《pthread_cancel的陷阱与正确用法》    1.4 内存管理与内存池 代码亮点: iNew.c...</div></div></div></a></div></div><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="giscus-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/img/butterfly-icon.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">kuangyue111</div><div class="author-info-description">嵌入式开发 | 储能系统 | 工业通信协议</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">2</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">10</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">4</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/kuangyue111"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/kuangyue111" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">专注于嵌入式与储能系统技术分享</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#SQLite-%E5%9C%A8%E5%B5%8C%E5%85%A5%E5%BC%8F-Linux-%E4%B8%AD%E7%9A%84%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5%E2%80%94%E2%80%94%E8%BD%BB%E9%87%8F%E7%BA%A7%E6%9C%AC%E5%9C%B0%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96"><span class="toc-number">1.</span> <span class="toc-text">SQLite 在嵌入式 Linux 中的工程实践——轻量级本地数据持久化123▎ 作者：嵌入式系统开发工程师▎ 日期：2026-05-4▎ 代码基础：储能管理系统（BESS）嵌入式控制器</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E5%BC%95%E8%A8%80%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E6%98%AF-SQLite%EF%BC%8C%E8%80%8C%E4%B8%8D%E6%98%AF%E6%96%87%E4%BB%B6%E6%88%96-Redis%EF%BC%9F"><span class="toc-number"></span> <span class="toc-text">一、引言：为什么是 SQLite，而不是文件或 Redis？</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E6%9E%B6%E6%9E%84%E8%83%8C%E6%99%AF%EF%BC%9ASQLite-%E5%9C%A8%E7%B3%BB%E7%BB%9F%E4%B8%AD%E6%89%AE%E6%BC%94%E4%BB%80%E4%B9%88%E8%A7%92%E8%89%B2"><span class="toc-number"></span> <span class="toc-text">二、架构背景：SQLite 在系统中扮演什么角色</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E5%8D%95%E8%BF%9E%E6%8E%A5-%E4%BA%92%E6%96%A5%E9%94%81%EF%BC%9A%E6%88%91%E4%BB%AC%E7%9A%84%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%AD%96%E7%95%A5"><span class="toc-number"></span> <span class="toc-text">三、单连接 + 互斥锁：我们的多线程安全策略</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#3-1-%E4%B8%BA%E4%BB%80%E4%B9%88%E4%B8%8D%E7%94%A8%E8%BF%9E%E6%8E%A5%E6%B1%A0%EF%BC%9F"><span class="toc-number">1.</span> <span class="toc-text">3.1 为什么不用连接池？</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-2-%E5%8D%95%E8%BF%9E%E6%8E%A5%E6%A8%A1%E5%9E%8B%E7%9A%84%E9%94%81%E6%8C%81%E6%9C%89%E6%97%B6%E9%97%B4%E6%8E%A7%E5%88%B6"><span class="toc-number">2.</span> <span class="toc-text">3.2 单连接模型的锁持有时间控制</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-3-%E8%BF%9E%E6%8E%A5%E6%B1%A0%E6%96%B9%E6%A1%88%E7%9A%84%E5%AF%B9%E6%AF%94%E6%80%9D%E8%80%83"><span class="toc-number">3.</span> <span class="toc-text">3.3 连接池方案的对比思考</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%9B%9B%E3%80%81WAL-%E6%A8%A1%E5%BC%8F-vs-Journal-%E6%A8%A1%E5%BC%8F%EF%BC%9A%E5%B5%8C%E5%85%A5%E5%BC%8F%E7%9A%84%E9%80%89%E6%8B%A9%E9%80%BB%E8%BE%91"><span class="toc-number"></span> <span class="toc-text">四、WAL 模式 vs Journal 模式：嵌入式的选择逻辑</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#4-1-%E9%BB%98%E8%AE%A4-Journal-%E6%A8%A1%E5%BC%8F%E7%9A%84%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86"><span class="toc-number">1.</span> <span class="toc-text">4.1 默认 Journal 模式的工作原理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4-2-WAL-%E6%A8%A1%E5%BC%8F%E7%9A%84%E4%BC%98%E5%8A%BF%E4%B8%8E%E9%A3%8E%E9%99%A9"><span class="toc-number">2.</span> <span class="toc-text">4.2 WAL 模式的优势与风险</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E6%8E%89%E7%94%B5%E5%AE%89%E5%85%A8%E5%86%99%E5%85%A5%EF%BC%9APRAGMA-synchronous-%E7%9A%84%E5%8F%96%E8%88%8D"><span class="toc-number"></span> <span class="toc-text">五、掉电安全写入：PRAGMA synchronous 的取舍</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#5-1-%E5%B5%8C%E5%85%A5%E5%BC%8F%E5%B9%B3%E5%8F%B0%E7%9A%84%E6%8E%89%E7%94%B5%E5%A8%81%E8%83%81"><span class="toc-number">1.</span> <span class="toc-text">5.1 嵌入式平台的掉电威胁</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5-2-%E4%BA%8B%E5%8A%A1%E6%89%B9%E9%87%8F%E5%86%99%E5%85%A5%EF%BC%9A%E6%80%A7%E8%83%BD%E4%B8%8E%E5%AE%89%E5%85%A8%E7%9A%84%E5%B9%B3%E8%A1%A1"><span class="toc-number">2.</span> <span class="toc-text">5.2 事务批量写入：性能与安全的平衡</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E5%8E%86%E5%8F%B2%E6%95%B0%E6%8D%AE%E8%80%81%E5%8C%96%EF%BC%9A%E5%BE%AA%E7%8E%AF%E7%B4%A2%E5%BC%95-vs-%E6%97%B6%E9%97%B4%E7%AA%97%E5%8F%A3-DELETE"><span class="toc-number"></span> <span class="toc-text">六、历史数据老化：循环索引 vs 时间窗口 DELETE</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#6-1-%E4%B8%BA%E4%BB%80%E4%B9%88%E4%B8%8D%E8%83%BD%E6%97%A0%E9%99%90%E7%B4%AF%E7%A7%AF%EF%BC%9F"><span class="toc-number">1.</span> <span class="toc-text">6.1 为什么不能无限累积？</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#6-2-%E6%9C%AC%E7%B3%BB%E7%BB%9F%E7%9A%84%E7%AD%96%E7%95%A5%EF%BC%9A%E5%BE%AA%E7%8E%AF%E7%B4%A2%E5%BC%95%EF%BC%88Circular-Index%EF%BC%89"><span class="toc-number">2.</span> <span class="toc-text">6.2 本系统的策略：循环索引（Circular Index）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#6-3-%E5%91%8A%E8%AD%A6%E6%95%B0%E6%8D%AE%E7%9A%84%E7%B1%BB%E4%BC%BC%E5%A4%84%E7%90%86"><span class="toc-number">3.</span> <span class="toc-text">6.3 告警数据的类似处理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#6-4-%E6%97%B6%E9%97%B4%E7%AA%97%E5%8F%A3-DELETE-%E7%AD%96%E7%95%A5%E7%9A%84%E5%AF%B9%E6%AF%94"><span class="toc-number">4.</span> <span class="toc-text">6.4 时间窗口 DELETE 策略的对比</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%83%E3%80%81CSV-%E4%B8%8E-SQLite-%E7%9A%84%E4%BA%92%E8%A1%A5%EF%BC%9ASave-CellInfo-%E7%9A%84%E8%AE%BE%E8%AE%A1%E5%93%B2%E5%AD%A6"><span class="toc-number"></span> <span class="toc-text">七、CSV 与 SQLite 的互补：Save_CellInfo 的设计哲学</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%85%AB%E3%80%81SQLite-FTS-%E5%9C%A8%E6%97%A5%E5%BF%97%E6%9F%A5%E8%AF%A2%E4%B8%AD%E7%9A%84%E5%BA%94%E7%94%A8"><span class="toc-number"></span> <span class="toc-text">八、SQLite FTS 在日志查询中的应用</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#8-1-%E6%97%A5%E5%BF%97%E6%9F%A5%E8%AF%A2%E7%9A%84%E7%97%9B%E7%82%B9"><span class="toc-number">1.</span> <span class="toc-text">8.1 日志查询的痛点</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#8-2-FTS5-%E8%99%9A%E6%8B%9F%E8%A1%A8%E6%96%B9%E6%A1%88"><span class="toc-number">2.</span> <span class="toc-text">8.2 FTS5 虚拟表方案</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#8-3-FTS-%E5%9C%A8%E5%B5%8C%E5%85%A5%E5%BC%8F%E7%9A%84%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9"><span class="toc-number">3.</span> <span class="toc-text">8.3 FTS 在嵌入式的注意事项</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B9%9D%E3%80%81MQTT-%E7%A6%BB%E7%BA%BF%E7%BC%93%E5%AD%98%EF%BC%9ASQLite-%E4%BD%9C%E4%B8%BA%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E7%9A%84%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5"><span class="toc-number"></span> <span class="toc-text">九、MQTT 离线缓存：SQLite 作为消息队列的工程实践</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#9-1-%E6%96%AD%E7%BD%91%E5%9C%BA%E6%99%AF"><span class="toc-number">1.</span> <span class="toc-text">9.1 断网场景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#9-2-%E7%BC%93%E5%AD%98%E5%AE%B9%E9%87%8F%E6%8E%A7%E5%88%B6"><span class="toc-number">2.</span> <span class="toc-text">9.2 缓存容量控制</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8D%81%E3%80%81AI-%E9%9B%86%E6%88%90%EF%BC%9ASQLite-%E4%BD%9C%E4%B8%BA%E6%9C%AC%E5%9C%B0%E6%8E%A8%E7%90%86%E7%9F%A5%E8%AF%86%E5%BA%93"><span class="toc-number"></span> <span class="toc-text">十、AI 集成：SQLite 作为本地推理知识库</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#10-1-%E5%9C%BA%E6%99%AF%EF%BC%9A%E7%94%B5%E6%B1%A0%E5%81%A5%E5%BA%B7%E7%8A%B6%E6%80%81%E9%A2%84%E6%B5%8B"><span class="toc-number">1.</span> <span class="toc-text">10.1 场景：电池健康状态预测</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#10-2-%E7%9F%A5%E8%AF%86%E5%BA%93%E7%9A%84%E6%A3%80%E7%B4%A2%E4%B8%8E%E5%88%A9%E7%94%A8"><span class="toc-number">2.</span> <span class="toc-text">10.2 知识库的检索与利用</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#10-3-%E6%A8%A1%E5%9E%8B%E7%89%88%E6%9C%AC%E7%AE%A1%E7%90%86"><span class="toc-number">3.</span> <span class="toc-text">10.3 模型版本管理</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8D%81%E4%B8%80%E3%80%81%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5%E6%80%BB%E7%BB%93%EF%BC%9A%E5%B5%8C%E5%85%A5%E5%BC%8F-SQLite-%E7%9A%84%E4%B8%83%E6%9D%A1%E5%8E%9F%E5%88%99"><span class="toc-number"></span> <span class="toc-text">十一、工程实践总结：嵌入式 SQLite 的七条原则</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8E%9F%E5%88%99%E4%B8%80%EF%BC%9A%E5%A7%8B%E7%BB%88%E4%BD%BF%E7%94%A8%E6%98%BE%E5%BC%8F%E4%BA%8B%E5%8A%A1%E6%89%B9%E9%87%8F%E6%8F%90%E4%BA%A4"><span class="toc-number">1.</span> <span class="toc-text">原则一：始终使用显式事务批量提交</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8E%9F%E5%88%99%E4%BA%8C%EF%BC%9A%E5%8D%95%E8%BF%9E%E6%8E%A5-%E4%BA%92%E6%96%A5%E9%94%81%E9%80%82%E5%90%88%E5%8D%95%E6%9C%BA%E4%BD%8E%E5%B9%B6%E5%8F%91%E5%9C%BA%E6%99%AF"><span class="toc-number">2.</span> <span class="toc-text">原则二：单连接 + 互斥锁适合单机低并发场景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8E%9F%E5%88%99%E4%B8%89%EF%BC%9A%E5%BE%AA%E7%8E%AF%E7%B4%A2%E5%BC%95%E4%BC%98%E4%BA%8E%E5%AE%9A%E6%9C%9F-DELETE"><span class="toc-number">3.</span> <span class="toc-text">原则三：循环索引优于定期 DELETE</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8E%9F%E5%88%99%E5%9B%9B%EF%BC%9APRAGMA-synchronous-FULL-%E7%94%A8%E4%BA%8E%E9%85%8D%E7%BD%AE%E6%95%B0%E6%8D%AE"><span class="toc-number">4.</span> <span class="toc-text">原则四：PRAGMA synchronous &#x3D; FULL 用于配置数据</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8E%9F%E5%88%99%E4%BA%94%EF%BC%9AWAL-%E6%A8%A1%E5%BC%8F%E9%85%8D%E5%90%88%E5%A4%9A%E8%BF%9E%E6%8E%A5%E6%89%8D%E6%9C%89%E6%84%8F%E4%B9%89"><span class="toc-number">5.</span> <span class="toc-text">原则五：WAL 模式配合多连接才有意义</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8E%9F%E5%88%99%E5%85%AD%EF%BC%9ACSV-%E5%92%8C-SQLite-%E5%90%84%E5%8F%B8%E5%85%B6%E8%81%8C"><span class="toc-number">6.</span> <span class="toc-text">原则六：CSV 和 SQLite 各司其职</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8E%9F%E5%88%99%E4%B8%83%EF%BC%9A%E6%8E%A7%E5%88%B6%E9%94%81%E6%8C%81%E6%9C%89%E6%97%B6%E9%97%B4%EF%BC%8C%E9%81%BF%E5%85%8D%E9%95%BF%E4%BA%8B%E5%8A%A1"><span class="toc-number">7.</span> <span class="toc-text">原则七：控制锁持有时间，避免长事务</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8D%81%E4%BA%8C%E3%80%81%E7%BB%93%E8%AF%AD"><span class="toc-number"></span> <span class="toc-text">十二、结语</span></a></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/05/04/2026-05-04-sqlite-embedded-linux-engineering-practice/" title="SQLite 在嵌入式 Linux 中的工程实践——轻量级本地数据持久化">SQLite 在嵌入式 Linux 中的工程实践——轻量级本地数据持久化</a><time datetime="2026-05-04T04:32:00.000Z" title="发表于 2026-05-04 12:32:00">2026-05-04</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/05/04/%E5%82%A8%E8%83%BD%E7%B3%BB%E7%BB%9F%E5%B5%8C%E5%85%A5%E5%BC%8F%E5%BC%80%E5%8F%91%E7%9F%A5%E8%AF%86%E4%BD%93%E7%B3%BB%E5%8D%9A%E5%AE%A2%E6%8F%90%E7%BA%B2/" title="储能系统嵌入式开发知识体系博客提纲">储能系统嵌入式开发知识体系博客提纲</a><time datetime="2026-05-03T17:00:00.000Z" title="发表于 2026-05-04 01:00:00">2026-05-04</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By kuangyue111</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.4</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="前往评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.4"></script><script src="/js/main.js?v=5.5.4"></script><div class="js-pjax"><script>(() => {
+  const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
+  const option = {"mapping":"url","lang":"zh-CN"}
+
+  const getGiscusTheme = theme => theme === 'dark' ? 'dark' : 'light'
+
+  const createScriptElement = config => {
+    const ele = document.createElement('script')
+    Object.entries(config).forEach(([key, value]) => {
+      ele.setAttribute(key, value)
+    })
+    return ele
+  }
+
+  const loadGiscus = (el = document, key) => {
+    const mappingConfig = isShuoshuo
+      ? { 'data-mapping': 'specific', 'data-term': key }
+      : { 'data-mapping': (option && option['data-mapping']) || 'pathname' }
+
+    const giscusConfig = {
+      src: 'https://giscus.app/client.js',
+      'data-repo': 'kuangyue111/kuangyue111.github.io',
+      'data-repo-id': 'R_kgDOSQde2Q',
+      'data-category-id': 'DIC_kwDOSQde2c4C8CgH',
+      'data-theme': getGiscusTheme(document.documentElement.getAttribute('data-theme')),
+      'data-reactions-enabled': '1',
+      crossorigin: 'anonymous',
+      async: true,
+      ...option,
+      ...mappingConfig
+    }
+
+    const scriptElement = createScriptElement(giscusConfig)
+
+    el.querySelector('#giscus-wrap').appendChild(scriptElement)
+
+    if (isShuoshuo) {
+      window.shuoshuoComment.destroyGiscus = () => {
+        if (el.children.length) {
+          el.innerHTML = ''
+          el.classList.add('no-comment')
+        }
+      }
+    }
+  }
+
+  const changeGiscusTheme = theme => {
+    const iframe = document.querySelector('#giscus-wrap iframe')
+    if (iframe) {
+      const message = {
+        giscus: {
+          setConfig: {
+            theme: getGiscusTheme(theme)
+          }
+        }
+      }
+      iframe.contentWindow.postMessage(message, 'https://giscus.app')
+    }
+  }
+
+  btf.addGlobalFn('themeChange', changeGiscusTheme, 'giscus')
+
+  if (isShuoshuo) {
+    'Giscus' === 'Giscus'
+      ? window.shuoshuoComment = { loadComment: loadGiscus }
+      : window.loadOtherComment = loadGiscus
+    return
+  }
+
+  if ('Giscus' === 'Giscus' || !false) {
+    if (false) btf.loadComment(document.getElementById('giscus-wrap'), loadGiscus)
+    else loadGiscus()
+  } else {
+    window.loadOtherComment = loadGiscus
+  }
+})()</script></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

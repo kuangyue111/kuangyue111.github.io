@@ -1,0 +1,311 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>工商储能峰谷套利的经济模型与工程实现——从 EMS 代码看储能收益 | KuangYue's Blog</title><meta name="author" content="kuangyue111"><meta name="copyright" content="kuangyue111"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="工商储能峰谷套利的经济模型与工程实现——从 EMS 代码看储能收益写工商储能控制代码的时候，最常被问到的一个问题不是”算法对不对”，而是”这台柜子今天到底能赚多少钱”。这两个问题其实是同一个问题——调度算法决定了储能资产的现金流模型，而 EMS 里那几个不起眼的工作模式切换、SOC 阈值判断、功率限值计算，背后对应的是一套相当严谨的经济学决策链。 下面结合手头这套主控代码（ems_manageme">
+<meta property="og:type" content="article">
+<meta property="og:title" content="工商储能峰谷套利的经济模型与工程实现——从 EMS 代码看储能收益">
+<meta property="og:url" content="https://kuangyue111.github.io/2026/05/19/2026-05-19-commercial-ess-peak-valley-arbitrage/index.html">
+<meta property="og:site_name" content="KuangYue&#39;s Blog">
+<meta property="og:description" content="工商储能峰谷套利的经济模型与工程实现——从 EMS 代码看储能收益写工商储能控制代码的时候，最常被问到的一个问题不是”算法对不对”，而是”这台柜子今天到底能赚多少钱”。这两个问题其实是同一个问题——调度算法决定了储能资产的现金流模型，而 EMS 里那几个不起眼的工作模式切换、SOC 阈值判断、功率限值计算，背后对应的是一套相当严谨的经济学决策链。 下面结合手头这套主控代码（ems_manageme">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://kuangyue111.github.io/img/butterfly-icon.png">
+<meta property="article:published_time" content="2026-05-19T12:30:00.000Z">
+<meta property="article:modified_time" content="2026-05-21T01:57:23.010Z">
+<meta property="article:author" content="kuangyue111">
+<meta property="article:tag" content="BMS">
+<meta property="article:tag" content="储能">
+<meta property="article:tag" content="峰谷套利">
+<meta property="article:tag" content="EMS">
+<meta property="article:tag" content="工商业储能">
+<meta property="article:tag" content="需量管理">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://kuangyue111.github.io/img/butterfly-icon.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "工商储能峰谷套利的经济模型与工程实现——从 EMS 代码看储能收益",
+  "url": "https://kuangyue111.github.io/2026/05/19/2026-05-19-commercial-ess-peak-valley-arbitrage/",
+  "image": "https://kuangyue111.github.io/img/butterfly-icon.png",
+  "datePublished": "2026-05-19T12:30:00.000Z",
+  "dateModified": "2026-05-21T01:57:23.010Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "kuangyue111",
+      "url": "https://kuangyue111.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://kuangyue111.github.io/2026/05/19/2026-05-19-commercial-ess-peak-valley-arbitrage/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.5.4"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.13.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '工商储能峰谷套利的经济模型与工程实现——从 EMS 代码看储能收益',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/butterfly-icon.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">7</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">30</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">5</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">KuangYue's Blog</span></a><a class="nav-page-title" href="/"><span class="site-name">工商储能峰谷套利的经济模型与工程实现——从 EMS 代码看储能收益</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">工商储能峰谷套利的经济模型与工程实现——从 EMS 代码看储能收益</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-05-19T12:30:00.000Z" title="发表于 2026-05-19 20:30:00">2026-05-19</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-05-21T01:57:23.010Z" title="更新于 2026-05-21 09:57:23">2026-05-21</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/">技术分享</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/%E5%B5%8C%E5%85%A5%E5%BC%8F%E5%BC%80%E5%8F%91/">嵌入式开发</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="工商储能峰谷套利的经济模型与工程实现——从-EMS-代码看储能收益"><a href="#工商储能峰谷套利的经济模型与工程实现——从-EMS-代码看储能收益" class="headerlink" title="工商储能峰谷套利的经济模型与工程实现——从 EMS 代码看储能收益"></a>工商储能峰谷套利的经济模型与工程实现——从 EMS 代码看储能收益</h1><p>写工商储能控制代码的时候，最常被问到的一个问题不是”算法对不对”，而是”这台柜子今天到底能赚多少钱”。这两个问题其实是同一个问题——调度算法决定了储能资产的现金流模型，而 EMS 里那几个不起眼的工作模式切换、SOC 阈值判断、功率限值计算，背后对应的是一套相当严谨的经济学决策链。</p>
+<p>下面结合手头这套主控代码（<code>ems_management.c</code>），把峰谷套利这件事掰开讲一讲。</p>
+<h1 id="一、调度的最小单元：管理计划时段"><a href="#一、调度的最小单元：管理计划时段" class="headerlink" title="一、调度的最小单元：管理计划时段"></a>一、调度的最小单元：管理计划时段</h1><p>打开 <code>GetCurrentTimeSector</code> 这个函数，看里面的 <code>EMS_LIMIT_SECTOR</code> 结构体：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">pPlanSectorNow-&gt;tmStart =        pEMS-&gt;tmStart0sec;</span><br><span class="line">pPlanSectorNow-&gt;nInterval =      <span class="number">86400</span>;</span><br><span class="line">pPlanSectorNow-&gt;emBatt_WorkMode = BATT_WORKMODE_IDLE;</span><br><span class="line">pPlanSectorNow-&gt;nStopSOC =       <span class="number">0</span>;</span><br><span class="line">pPlanSectorNow-&gt;nActvPwrLmt =    <span class="number">0</span>;</span><br><span class="line">pPlanSectorNow-&gt;nReActvPwrLmt =  <span class="number">0</span>;</span><br><span class="line">pPlanSectorNow-&gt;nBattGrpPwrLmt = <span class="number">0</span>;</span><br></pre></td></tr></table></figure>
+
+<p>这就是峰谷套利在代码里最核心的抽象——一段管理计划由<strong>起始时间</strong>、<strong>持续秒数</strong>、<strong>工作模式</strong>、<strong>停止SOC</strong>、<strong>有功无功功率限制</strong>、<strong>单柜功率限制</strong>构成。一天 24 小时被切成若干段，每段绑定一个工作模式：<code>BATT_WORKMODE_FIRST_CHRGING</code>（优先充电）、<code>BATT_WORKMODE_FIRST_DISCHRG</code>（优先放电）或 <code>BATT_WORKMODE_IDLE</code>（空闲）。</p>
+<p>为什么这么设计？因为国内大部分工商业电价是分时定价：大工业用电典型分四段——尖、峰、平、谷，部分省份还有深谷。江浙沪一带峰谷价差能拉到 0.7~1.0 元&#x2F;kWh，理论套利空间一度电就是这么多。系统要做的事情，本质上是把电从谷段（低价）”搬”到峰段（高价）卖出去，扣掉效率损耗、电池衰减成本、容量电费分摊之后剩下的，就是项目的毛利。</p>
+<p>时段配置在数学上就是把一个连续的优化问题离散化。如果记电价为 $p(t)$，电池充放电功率为 $P(t)$，充放电效率为 $\eta_c, \eta_d$，那么一天内的套利收益是：</p>
+<p>$$<br>R &#x3D; \int_{0}^{T} \left[ -p(t) \cdot P_{chg}(t) + p(t) \cdot \eta_d \cdot P_{dis}(t) \right] dt<br>$$</p>
+<p>约束条件包括 SOC 上下限、功率限制、电池容量、循环次数等。代码里的 <code>nActvPwrLmt</code>、<code>nStopSOC</code>、<code>nBattGrpPwrLmt</code> 就是这些约束的硬编码版本。把积分换成求和，每个 <code>EMS_LIMIT_SECTOR</code> 对应一个时间区间的离散决策——这就是日前优化（day-ahead optimization）的工程落地。</p>
+<h1 id="二、SOC-终止逻辑：什么时候该停下来"><a href="#二、SOC-终止逻辑：什么时候该停下来" class="headerlink" title="二、SOC 终止逻辑：什么时候该停下来"></a>二、SOC 终止逻辑：什么时候该停下来</h1><p>光靠”现在是峰段就放电”这条规则远远不够。真实情况是电池放到一定程度就必须停，否则下一段谷电充满都不一定够。代码里这两个判断函数把这层语义写得很清楚：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> BOOL <span class="title function_">IsBatt_Plan2_StartChrg</span><span class="params">(ROUGH_CCU_DATA* pCCU, UINT nBattSOC)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span>((pPlanSectorNow-&gt;emBatt_WorkMode == BATT_WORKMODE_FIRST_CHRGING) &amp;&amp;</span><br><span class="line">        (nBattSOC &lt; pPlanSectorNow-&gt;nStopSOC))</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">return</span> TRUE;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> FALSE;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>充电时，<code>nStopSOC</code> 是上限——SOC 没到这个值才继续充。放电时反过来：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span>(pCCU-&gt;emDisChgByStopSOC == TRUE)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span>(nBattSOC &lt;= pPlanSectorNow-&gt;nStopSOC) &#123;</span><br><span class="line">        <span class="keyword">return</span> TRUE;  <span class="comment">// 停止放电</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里有个容易被忽略的经济学细节：<code>nStopSOC</code> 不是简单的”放空”或”充满”，而是一个<strong>资产保值与套利收益的折中点</strong>。锂电池循环寿命与放电深度（DOD）强相关，宁德时代磷酸铁锂电芯标称 6000 次循环是建立在 80% DOD 基础上的；如果每天做 95% DOD，循环寿命可能掉到 3500 次以下。</p>
+<p>折算下来很直接：电池柜成本假设 0.6 元&#x2F;Wh，循环 6000 次每 kWh 折旧约 0.1 元；循环 3500 次就变成 0.17 元。多放 15% 的容量，每天多赚的钱可能还覆盖不了多损耗的循环成本。所以 <code>nStopSOC</code> 在工程上一般取 10%~95% 这个区间，不是任意填的。</p>
+<h1 id="三、工作模式切换的二维条件"><a href="#三、工作模式切换的二维条件" class="headerlink" title="三、工作模式切换的二维条件"></a>三、工作模式切换的二维条件</h1><p><code>GetCurrentTimeSector</code> 末尾这段逻辑值得单独看：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (pPlanSectorNow-&gt;nActvPwrLmt &lt; <span class="number">1</span> || pPlanSectorNow-&gt;nBattGrpPwrLmt &lt; <span class="number">1</span> ||</span><br><span class="line">    pClientSum-&gt;emCCUStateSum!=CCU_STATE_IDLE ||</span><br><span class="line">    pClientSum-&gt;emPMCtrlModeSum!=AUTO_CTRL_PM_MODE ||</span><br><span class="line">    (pPlanSectorNow-&gt;emBatt_WorkMode==BATT_WORKMODE_FIRST_CHRGING &amp;&amp; bStopChrgBySoc_Plan) ||</span><br><span class="line">    (pPlanSectorNow-&gt;emBatt_WorkMode==BATT_WORKMODE_FIRST_DISCHRG &amp;&amp; bStopDiscBySoc_Plan)</span><br><span class="line">)</span><br><span class="line">&#123;</span><br><span class="line">    pPlanSectorNow-&gt;emBatt_WorkMode = BATT_WORKMODE_IDLE;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>工作模式不是直接读管理计划那一段就完事了，要叠加一层<strong>运行时判断</strong>——只要功率限值无效、CCU 状态不空闲、控制权不在自动模式、或者 SOC 已经触达边界，统统降级到 IDLE。这是套利策略落到工程上必须做的兜底：计划是计划，执行是执行。</p>
+<p>把这套逻辑抽象出来，工作模式切换的判定其实是一个<strong>二维决策</strong>：时间维度（哪个时段）× 状态维度（SOC、功率能力、设备状态）。代码里通过 <code>planSectorNow</code> 拿到时间维度的目标，再用 <code>IsBatt_Plan2_*</code> 系列和上面这段 if 检查状态维度是否允许执行。</p>
+<h1 id="四、需量电费控制：被低估的高价值场景"><a href="#四、需量电费控制：被低估的高价值场景" class="headerlink" title="四、需量电费控制：被低估的高价值场景"></a>四、需量电费控制：被低估的高价值场景</h1><p>在中国，工商业用电除了电度电费还有一项基本电费（容量电费或需量电费）。需量电费是按月最大需量计费的，江苏一档目录电价约 48 元&#x2F;kW·月。如果你这个月最大需量峰值飙到 1500 kW，下个月即便只用 800 kW 的负载，也要按 1500 kW 缴基本电费——这一项一年就是几十万。</p>
+<p>代码里 <code>Need_AntiOverloadHV</code> 和 <code>Calc_ESS_ChgLmtPower</code> 共同处理了这件事：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (Need_AntiOverloadHV(pCCU))</span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">float</span> fPdemandHV = MAX(pEMS-&gt;f_PmaxGridDemand, pCCU-&gt;blobBackendCfg.fSysACInput_PwrLmtHV);</span><br><span class="line">    pEMS-&gt;fRemainDemand4Chrg = fPdemandHV - pEMS-&gt;f_PgridMeter + pEMS-&gt;f_PcabMeter;</span><br><span class="line">    pEMS-&gt;fGridRemainACPwr2Chrg = MIN(pEMS-&gt;fRemainDemand4Chrg, pEMS-&gt;fRemainPwr4Chrg);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>f_PmaxGridDemand</code> 是高压表当月已经记录的最大需量，<code>fSysACInput_PwrLmtHV</code> 是用户设置的需量初始值。剩余可充电功率被压到”距离当前最大需量还差多少”——这条约束的经济意义就是：储能在充电时绝不能把电网侧负荷拉超历史峰值，否则当月需量基数就被刷新，赚的套利费抵不上多缴的基本电费。</p>
+<p>更精彩的是过载触发后的分级处理：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (fRemain &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">    pEMS-&gt;fTotal_PessChgAvaliable *= <span class="number">0.8f</span>;</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (fRemain &lt; fHalfProt) &#123;</span><br><span class="line">    pEMS-&gt;fTotal_PessChgAvaliable -= fProt;</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    fRemain = MAX((fProt-fRemain), <span class="number">0</span>);</span><br><span class="line">    pEMS-&gt;fTotal_PessChgAvaliable -= fRemain;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>距离限值越近，降功率越激进。这种”软刹车”的好处是避免功率震荡——如果直接一刀切到零，下一秒发现负荷又下来了再开起来，PCS 频繁启停反而损坏设备。</p>
+<p>对于装了高压关口表的项目，<strong>需量管理本身就能产生独立的经济价值</strong>，这部分有时被叫做”需量管理服务”，按月节省的容量电费分账给项目方。代码里 <code>emPmaxDemandMode == 1</code> 这个开关就是给这种商业模式留的入口。</p>
+<h1 id="五、实时调整：自动充放与防逆流"><a href="#五、实时调整：自动充放与防逆流" class="headerlink" title="五、实时调整：自动充放与防逆流"></a>五、实时调整：自动充放与防逆流</h1><p>日前优化解出来的计划是基于负荷预测的。真实运行中负荷会偏离预测，光伏出力会突变，所以必须有<strong>实时层</strong>。代码里 <code>AutoCharging_IfReflux</code> 和 <code>AutoDischarging_IfOverload</code> 这两个函数就是干这个的。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">float</span> fCalPessTrgt = pEMS-&gt;fTargetPwr_4Chrg_SEMS - pEMS-&gt;fPacload4Dischg;</span><br><span class="line">...</span><br><span class="line"><span class="keyword">if</span> (ElapseS(s_tmLastRflx_Exit) &gt; MAX_PERIOD_ENTER_WORKING) &#123;</span><br><span class="line">    pEMS-&gt;bEnter_AutoChrg_SEMS = TRUE;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>逻辑是：当负荷负数（光伏发电倒灌到电网）持续一段时间，系统自动从 IDLE 切到充电，把光伏多余的电吸进电池。这条路径的经济收益不是峰谷价差，而是<strong>避免余电上网</strong>——绝大多数工商业自发自用项目，光伏余电上网的脱硫煤标杆电价远低于自用节省的电费，所以宁可让储能消化掉也不上网卖。</p>
+<p>放电侧的 <code>AutoDischarging_IfOverload</code> 则是当电网取电超过预设阈值时自动启动放电，把超出部分的电力供给负载——这其实就是需量响应（Demand Response）的本地化实现。如果项目签了电网公司的需求侧响应合同，每次响应还能拿到额外补贴（华东地区典型 3~5 元&#x2F;kWh，按响应电量结算）。</p>
+<p>PID 控制环 <code>Power_Control_Loop</code> 进一步对充放电功率做精细化补偿：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">error = target_power - meter_power;</span><br><span class="line">...</span><br><span class="line"><span class="type">float</span> p_term_delta = pPidParams-&gt;Kp * (error - pPID_Ctx-&gt;fPrevError);</span><br><span class="line"><span class="type">float</span> i_term_delta = pPidParams-&gt;Ki * error;</span><br><span class="line">pPID_Ctx-&gt;fCompensation += output_delta;</span><br></pre></td></tr></table></figure>
+
+<p>这是位置-增量混合 PID，目标值稳定计数 <code>nTargetStableCount</code> 用来判定是否进入稳态——只有稳态才启用 PID 调节。这个细节解决了一个工程上的经典问题：在管理计划切换瞬间，目标功率会跳变，如果立刻让 PID 介入，积分项会被瞬态误差污染，导致下一段稳定后还要花很长时间才把补偿值收敛回来。代码用计数阈值绕开这个坑，相当于给 PID 加了一个 schmitt 触发器。</p>
+<h1 id="六、收益分解：为什么模型不能只看价差"><a href="#六、收益分解：为什么模型不能只看价差" class="headerlink" title="六、收益分解：为什么模型不能只看价差"></a>六、收益分解：为什么模型不能只看价差</h1><p>把峰谷套利的年化收益模型写出来：</p>
+<p>$$<br>R_{\text{年}} &#x3D; \sum_{d&#x3D;1}^{365} \left[ E_d \cdot (\bar{p}<em>{\text{峰}} - \bar{p}</em>{\text{谷}}) \cdot \eta_{\text{RT}} \right] - C_{\text{deg}} \cdot N_{\text{cycle}} - C_{\text{O&amp;M}}<br>$$</p>
+<p>其中 $E_d$ 是当日实际放电电量，$\eta_{RT}$ 是往返效率（典型 85%~88%），$C_{deg}$ 是每次循环的电池衰减成本，$C_{O&amp;M}$ 是运维分摊。</p>
+<p><strong>举个具体数字</strong>：1 MWh 系统，CAPEX 按 1.2 元&#x2F;Wh 算就是 120 万；江苏峰谷价差 0.7 元，每天两充两放（典型双高峰省份），按 90% DOD 实际放电 0.9 MWh×2&#x3D;1.8 MWh，套利毛收入约 1.8×0.7×0.87≈1100 元&#x2F;天。一年按 330 天可用计，毛收入 36 万。</p>
+<p>但电池循环成本不能忽略：循环寿命 6000 次，每天 2 次循环，单次成本 120 万&#x2F;6000&#x3D;200 元。一天放电 1.8 MWh，折合 0.11 元&#x2F;kWh 衰减成本，年化约 13 万。再扣掉 5% 的运维费用约 1.8 万，净收益 21 万左右，简单测算回本周期 5~6 年。</p>
+<p>代码里的几个关键参数都直接影响这套模型：</p>
+<ul>
+<li><code>PowerRate_Chrg</code>、<code>fOutput2AC_PwrRate</code> 是充放电效率折算系数，直接对应 $\eta_{RT}$</li>
+<li><code>nStopSOC</code> 决定 DOD，影响循环寿命</li>
+<li><code>fPreProt_Chrg</code>、<code>fPreProt4RefluxAndOverLoad</code> 是保护裕度，太大会影响实际可用功率</li>
+</ul>
+<p>实际项目里这几个参数怎么调，本质上是经济模型在调——保守的参数损失收益，激进的参数加速衰减。</p>
+<h1 id="七、容量市场和电量市场：储能参与电力交易"><a href="#七、容量市场和电量市场：储能参与电力交易" class="headerlink" title="七、容量市场和电量市场：储能参与电力交易"></a>七、容量市场和电量市场：储能参与电力交易</h1><p>近两年广东、山东、山西的电力现货市场都开了储能参与通道。容量市场和电量市场是两个独立的收益来源：电量市场就是按时段电价做套利，逻辑和峰谷套利一致只是价格信号变成了实时市场出清价；容量市场则是按你能”承诺响应”的功率给容量补偿，相当于电网为系统的备用能力付费。</p>
+<p>代码里 <code>enableREMSCtrl</code> 和 <code>EMSCtrlMode_REMS</code> 这一套远程控制接口就是给市场参与留的：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (pClientSum-&gt;emEMSCtrlMode_REMS == EMSCtrlMode_Remote)</span><br><span class="line">&#123;</span><br><span class="line">    pEMS-&gt;bCtrlByREMS = TRUE;</span><br><span class="line">    ...</span><br><span class="line">    SetPlanSector(&amp;planSectorNow, emBatt_WorkModeReq, (BYTE)nStopSoc,</span><br><span class="line">        (UINT)(ABS(pClientSum-&gt;fActvPwrReq_REMS)), <span class="number">0</span>, MAX_PWR_LMT);</span><br><span class="line">    ModifyBlobEmsCfgPlan(pCCU, FALSE, &amp;planSectorNow, <span class="literal">NULL</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>当上层 EMS 切到远程模式，本地管理计划被临时覆盖，按上层下发的 <code>fActvPwrReq_REMS</code> 直接执行——这其实就是把储能的调度权租给了聚合商或现货平台。本地仍然保留防过载和防逆流的兜底（<code>enableAntiOvld_REMS</code>、<code>enableAntiRflx_REMS</code>），避免聚合商指令把用户自己的电费搞糟。</p>
+<p>这种”本地经济性优先 + 远程市场可调”的双层架构，是目前国内储能并网参与电力市场的主流做法。</p>
+<h1 id="八、AI-介入的合理切入点"><a href="#八、AI-介入的合理切入点" class="headerlink" title="八、AI 介入的合理切入点"></a>八、AI 介入的合理切入点</h1><p>那么 AI 在这套体系里能做什么？看代码就明白：管理计划 <code>EMS_LIMIT_SECTOR</code> 是静态配置，每天的时段划分和功率限值靠人工预设。这套配置足以应对稳态电价场景，但有两个明显的痛点：</p>
+<p><strong>第一，电价非平稳。</strong> 山东现货市场实时价格波动剧烈，按固定时段策略走会错过日内的尖峰套利窗口。这里的 AI 应用是电价预测——用 LSTM 或 Transformer 做日前&#x2F;日内电价预测，输出每 15 分钟一个的预测价格序列，喂给优化器生成第二天的 <code>emsLmtSectors[]</code>。</p>
+<p><strong>第二，负荷不平稳。</strong> <code>fPacload4Dischg</code> 这个值在代码里直接来自电表实测，没有前瞻性。如果工厂明天有大订单要开机，今晚谷段就该多充点电，否则明天峰段功率不够。这里 AI 的角色是负荷预测——结合历史负荷曲线、生产排程、天气预报输出负荷预测，再用动态规划求解最优 SOC 轨迹。</p>
+<p>动态规划的形式相对简洁：</p>
+<p>$$<br>V_t(SOC_t) &#x3D; \max_{P_t} \left[ p_t \cdot P_t \cdot \Delta t + V_{t+1}(SOC_{t+1}) \right]<br>$$</p>
+<p>约束条件是 SOC 上下限、功率限制和最终 SOC 目标。求解出每个时段的最优功率 $P_t^*$ 之后，反向填充到 <code>EMS_LIMIT_SECTOR</code> 的 <code>nActvPwrLmt</code> 和 <code>emBatt_WorkMode</code> 字段，就是 AI 调度落到现有代码框架的方式。</p>
+<p>代码里 <code>ModifyBlobEmsCfgPlan</code> 这个函数其实给 AI 留好了接口——只要把 AI 算出来的优化结果用 <code>PlanSector</code> 结构封装传进去，下面所有的 SOC 判断、功率分配、防过载逻辑都不用动。这种工程架构上的解耦让算法迭代成本很低。</p>
+<h1 id="写在最后"><a href="#写在最后" class="headerlink" title="写在最后"></a>写在最后</h1><p>工商储能这个赛道，硬件和电芯的同质化已经很严重，下一阶段差异化会主要体现在<strong>调度算法</strong>上。看一份 EMS 代码能看出多少经济学含量，基本能判断这套系统的运营潜力——管理计划是否支持灵活的时段配置、SOC 阈值是否可独立设定、需量管理是否独立成模块、是否预留远程控制接口、PID 控制是否考虑了瞬态污染……这些细节比 PPT 上的”AI 智能调度”实在得多。</p>
+<p>核心函数十几个，把日前优化、实时调整、需量控制、防逆流防过载、远程调度都覆盖到了。AI 介入的空间不在重写它，而在于让它的几个关键参数从”人工配置”升级到”模型驱动”。这条路走通了，工商储能的 ROI 还有相当可观的提升空间。</p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://kuangyue111.github.io">kuangyue111</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://kuangyue111.github.io/2026/05/19/2026-05-19-commercial-ess-peak-valley-arbitrage/">https://kuangyue111.github.io/2026/05/19/2026-05-19-commercial-ess-peak-valley-arbitrage/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://kuangyue111.github.io" target="_blank">KuangYue's Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/BMS/">BMS</a><a class="post-meta__tags" href="/tags/%E5%82%A8%E8%83%BD/">储能</a><a class="post-meta__tags" href="/tags/%E5%B3%B0%E8%B0%B7%E5%A5%97%E5%88%A9/">峰谷套利</a><a class="post-meta__tags" href="/tags/EMS/">EMS</a><a class="post-meta__tags" href="/tags/%E5%B7%A5%E5%95%86%E4%B8%9A%E5%82%A8%E8%83%BD/">工商业储能</a><a class="post-meta__tags" href="/tags/%E9%9C%80%E9%87%8F%E7%AE%A1%E7%90%86/">需量管理</a></div><div class="post-share"><div class="social-share" data-image="/img/butterfly-icon.png" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/2026/05/10/2026-05-10-bms-soh-calculation-capacity-and-cycle-methods/" title="锂电池 SOH 计算：容量实测法与循环计数法的双重验证"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">锂电池 SOH 计算：容量实测法与循环计数法的双重验证</div></div><div class="info-2"><div class="info-item-1">锂电池SOH计算：容量实测法与循环计数法的双重验证引言如果说SOC（荷电状态）是电池的”油表”，那么SOH（健康状态）就是电池的”体检报告”。在动力电池和储能系统中，准确评估SOH不仅关系到续航里程的预测，更直接影响安全性判断、维护决策和资产管理。 一块标称100Ah的电池，使用两年后实际容量可能只剩80Ah。这20%的衰减如何量化？何时该更换电池？这些问题的答案都藏在SOH算法中。 然而，SOH估算远比SOC复杂。电池容量会随温度、倍率、循环次数、存储时间等多种因素变化，单一方法难以准确评估。本文将基于一个真实的车规级BMS项目，深入剖析两种主流SOH计算方法——容量实测法和循环计数法，以及它们的融合策略。 一、SOH的定义与工程意义1.1 SOH的数学定义SOH（State of Health）的标准定义是： $$SOH &#x3D; \frac{当前最大可用容量}{出厂额定容量} \times 100%$$ 这里的”最大可用容量”是指在标准条件下（25℃，0.5C倍率），电池从满电到截止电压能够释放的电量。 在代码中，这个定义被直接实现： 12345678910111213...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/05/08/2026-05-08-ampere-hour-integration-in-automotive-bms/" title="安时积分法在车规级 BMS 中的完整工程实现——基于 NXP 芯片的 SOC 估算实践"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-08</div><div class="info-item-2">安时积分法在车规级 BMS 中的完整工程实现——基于 NXP 芯片的 SOC 估算实践</div></div><div class="info-2"><div class="info-item-1">引言在动力电池管理系统（BMS）中，SOC（State of Charge，荷电状态）估算是最核心的功能之一。它直接关系到电池的使用安全、续航里程预测以及充放电策略的制定。在众多SOC估算算法中，安时积分法（也称库仑计法）因其原理简单、实时性好而成为工程应用中的基础算法。 然而，看似简单的”电流乘以时间”背后，隐藏着大量工程实现细节：如何在没有浮点运算单元的MCU上高效计算？如何设计单位换算避免精度损失？如何处理累积误差？本文将基于一个真实的车规级BMS项目（基于NXP芯片），深入剖析安时积分法的完整工程实现。 一、安时积分法的理论基础1.1 基本原理安时积分法的核心思想源于电荷守恒定律。电池的SOC本质上是当前剩余电量与总容量的比值： $$SOC(t) &#x3D; SOC(t0) + \frac{1}{C_{rated}} \times \int_{t0}^{t} \eta(I) \times I(\tau) d\tau$$ 其中：  **SOC(t0)**：初始荷电状态 C_rated：电池额定容量 **I(τ)**：τ时刻的电流（充电为负，放电为正） **η(I)**：充...</div></div></div></a><a class="pagination-related" href="/2026/05/04/%E5%82%A8%E8%83%BD%E7%B3%BB%E7%BB%9F%E5%B5%8C%E5%85%A5%E5%BC%8F%E5%BC%80%E5%8F%91%E7%9F%A5%E8%AF%86%E4%BD%93%E7%B3%BB%E5%8D%9A%E5%AE%A2%E6%8F%90%E7%BA%B2/" title="储能系统嵌入式开发知识体系博客提纲"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-04</div><div class="info-item-2">储能系统嵌入式开发知识体系博客提纲</div></div><div class="info-2"><div class="info-item-1"> 基于实际工商业储能项目源码分析适用于未来一年博客内容规划    目录 嵌入式系统基础 工业通信协议 储能系统核心技术 数据库与数据处理 系统可靠性设计 工业互联网与云端对接 硬件驱动与外设 项目架构与工程实践   一、嵌入式系统基础1.1 ARM AM335x 处理器开发 平台: IMMU2 &#x2F; IMMU3 (基于 AM335x Cortex-A8) 博客主题: 《AM335x嵌入式开发环境搭建完全指南》 《从零开始移植Linux到AM335x》 《AM335x引脚复用与外设配置》    1.2 Linux 嵌入式系统编程 主题: 《嵌入式Linux系统裁剪与优化》 《Linux设备树详解与实践》 《嵌入式Bootloader开发与调试》    1.3 多线程编程与调度 代码亮点: iThread.c - 动态线程管理器、心跳监控 博客主题: 《Linux Pthreads编程深入理解》 《嵌入式系统线程池设计与实现》 《线程心跳机制与故障检测》(可配源码解析) 《pthread_cancel的陷阱与正确用法》    1.4 内存管理与内存池 代码亮点: iNew.c...</div></div></div></a><a class="pagination-related" href="/2026/05/10/2026-05-10-bms-soh-calculation-capacity-and-cycle-methods/" title="锂电池 SOH 计算：容量实测法与循环计数法的双重验证"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-10</div><div class="info-item-2">锂电池 SOH 计算：容量实测法与循环计数法的双重验证</div></div><div class="info-2"><div class="info-item-1">锂电池SOH计算：容量实测法与循环计数法的双重验证引言如果说SOC（荷电状态）是电池的”油表”，那么SOH（健康状态）就是电池的”体检报告”。在动力电池和储能系统中，准确评估SOH不仅关系到续航里程的预测，更直接影响安全性判断、维护决策和资产管理。 一块标称100Ah的电池，使用两年后实际容量可能只剩80Ah。这20%的衰减如何量化？何时该更换电池？这些问题的答案都藏在SOH算法中。 然而，SOH估算远比SOC复杂。电池容量会随温度、倍率、循环次数、存储时间等多种因素变化，单一方法难以准确评估。本文将基于一个真实的车规级BMS项目，深入剖析两种主流SOH计算方法——容量实测法和循环计数法，以及它们的融合策略。 一、SOH的定义与工程意义1.1 SOH的数学定义SOH（State of Health）的标准定义是： $$SOH &#x3D; \frac{当前最大可用容量}{出厂额定容量} \times 100%$$ 这里的”最大可用容量”是指在标准条件下（25℃，0.5C倍率），电池从满电到截止电压能够释放的电量。 在代码中，这个定义被直接实现： 12345678910111213...</div></div></div></a><a class="pagination-related" href="/2026/05/08/2026-05-08-bms-soc-ampere-hour-integration/" title="安时积分法在车规级 BMS 中的工程实现"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-08</div><div class="info-item-2">安时积分法在车规级 BMS 中的工程实现</div></div><div class="info-2"><div class="info-item-1">安时积分法在车规级 BMS 中的工程实现 123▎ 作者：嵌入式系统开发工程师▎ 日期：2026-05-08▎ 代码基础：车规级 BMS 项目（基于 NXP 芯片）  引言在动力电池管理系统（BMS）中，SOC（State of Charge，荷电状态）估算是最核心的功能之一。它直接关系到电池的使用安全、续航里程预测以及充放电策略的制定。在众多SOC估算算法中，安时积分法（也称库仑计法）因其原理简单、实时性好而成为工程应用中的基础算法。 然而，看似简单的”电流乘以时间”背后，隐藏着大量工程实现细节：如何在没有浮点运算单元的MCU上高效计算？如何设计单位换算避免精度损失？如何处理累积误差？本文将基于一个真实的车规级BMS项目（基于NXP芯片），深入剖析安时积分法的完整工程实现。 一、安时积分法的理论基础1.1 基本原理安时积分法的核心思想源于电荷守恒定律。电池的SOC本质上是当前剩余电量与总容量的比值： 1SOC(t) = SOC(t0) + (1/Crated) × ∫[t0→t] η(I) × I(τ) dτ  其中：  SOC(t0)：初始荷电状态 Crated：电池额定容量...</div></div></div></a></div></div><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="giscus-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/img/butterfly-icon.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">kuangyue111</div><div class="author-info-description">嵌入式开发 | 储能系统 | 工业通信协议</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">7</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">30</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">5</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/kuangyue111"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/kuangyue111" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">专注于嵌入式与储能系统技术分享</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%B7%A5%E5%95%86%E5%82%A8%E8%83%BD%E5%B3%B0%E8%B0%B7%E5%A5%97%E5%88%A9%E7%9A%84%E7%BB%8F%E6%B5%8E%E6%A8%A1%E5%9E%8B%E4%B8%8E%E5%B7%A5%E7%A8%8B%E5%AE%9E%E7%8E%B0%E2%80%94%E2%80%94%E4%BB%8E-EMS-%E4%BB%A3%E7%A0%81%E7%9C%8B%E5%82%A8%E8%83%BD%E6%94%B6%E7%9B%8A"><span class="toc-number">1.</span> <span class="toc-text">工商储能峰谷套利的经济模型与工程实现——从 EMS 代码看储能收益</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E8%B0%83%E5%BA%A6%E7%9A%84%E6%9C%80%E5%B0%8F%E5%8D%95%E5%85%83%EF%BC%9A%E7%AE%A1%E7%90%86%E8%AE%A1%E5%88%92%E6%97%B6%E6%AE%B5"><span class="toc-number">2.</span> <span class="toc-text">一、调度的最小单元：管理计划时段</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BA%8C%E3%80%81SOC-%E7%BB%88%E6%AD%A2%E9%80%BB%E8%BE%91%EF%BC%9A%E4%BB%80%E4%B9%88%E6%97%B6%E5%80%99%E8%AF%A5%E5%81%9C%E4%B8%8B%E6%9D%A5"><span class="toc-number">3.</span> <span class="toc-text">二、SOC 终止逻辑：什么时候该停下来</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E5%B7%A5%E4%BD%9C%E6%A8%A1%E5%BC%8F%E5%88%87%E6%8D%A2%E7%9A%84%E4%BA%8C%E7%BB%B4%E6%9D%A1%E4%BB%B6"><span class="toc-number">4.</span> <span class="toc-text">三、工作模式切换的二维条件</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E9%9C%80%E9%87%8F%E7%94%B5%E8%B4%B9%E6%8E%A7%E5%88%B6%EF%BC%9A%E8%A2%AB%E4%BD%8E%E4%BC%B0%E7%9A%84%E9%AB%98%E4%BB%B7%E5%80%BC%E5%9C%BA%E6%99%AF"><span class="toc-number">5.</span> <span class="toc-text">四、需量电费控制：被低估的高价值场景</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E5%AE%9E%E6%97%B6%E8%B0%83%E6%95%B4%EF%BC%9A%E8%87%AA%E5%8A%A8%E5%85%85%E6%94%BE%E4%B8%8E%E9%98%B2%E9%80%86%E6%B5%81"><span class="toc-number">6.</span> <span class="toc-text">五、实时调整：自动充放与防逆流</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E6%94%B6%E7%9B%8A%E5%88%86%E8%A7%A3%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E6%A8%A1%E5%9E%8B%E4%B8%8D%E8%83%BD%E5%8F%AA%E7%9C%8B%E4%BB%B7%E5%B7%AE"><span class="toc-number">7.</span> <span class="toc-text">六、收益分解：为什么模型不能只看价差</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E5%AE%B9%E9%87%8F%E5%B8%82%E5%9C%BA%E5%92%8C%E7%94%B5%E9%87%8F%E5%B8%82%E5%9C%BA%EF%BC%9A%E5%82%A8%E8%83%BD%E5%8F%82%E4%B8%8E%E7%94%B5%E5%8A%9B%E4%BA%A4%E6%98%93"><span class="toc-number">8.</span> <span class="toc-text">七、容量市场和电量市场：储能参与电力交易</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%85%AB%E3%80%81AI-%E4%BB%8B%E5%85%A5%E7%9A%84%E5%90%88%E7%90%86%E5%88%87%E5%85%A5%E7%82%B9"><span class="toc-number">9.</span> <span class="toc-text">八、AI 介入的合理切入点</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%86%99%E5%9C%A8%E6%9C%80%E5%90%8E"><span class="toc-number">10.</span> <span class="toc-text">写在最后</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/05/19/2026-05-19-commercial-ess-peak-valley-arbitrage/" title="工商储能峰谷套利的经济模型与工程实现——从 EMS 代码看储能收益">工商储能峰谷套利的经济模型与工程实现——从 EMS 代码看储能收益</a><time datetime="2026-05-19T12:30:00.000Z" title="发表于 2026-05-19 20:30:00">2026-05-19</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/05/10/2026-05-10-bms-soh-calculation-capacity-and-cycle-methods/" title="锂电池 SOH 计算：容量实测法与循环计数法的双重验证">锂电池 SOH 计算：容量实测法与循环计数法的双重验证</a><time datetime="2026-05-10T12:00:00.000Z" title="发表于 2026-05-10 20:00:00">2026-05-10</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/05/08/2026-05-08-bms-soc-ampere-hour-integration/" title="安时积分法在车规级 BMS 中的工程实现">安时积分法在车规级 BMS 中的工程实现</a><time datetime="2026-05-08T12:00:00.000Z" title="发表于 2026-05-08 20:00:00">2026-05-08</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/05/08/2026-05-08-ampere-hour-integration-in-automotive-bms/" title="安时积分法在车规级 BMS 中的完整工程实现——基于 NXP 芯片的 SOC 估算实践">安时积分法在车规级 BMS 中的完整工程实现——基于 NXP 芯片的 SOC 估算实践</a><time datetime="2026-05-08T10:30:00.000Z" title="发表于 2026-05-08 18:30:00">2026-05-08</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/05/05/2026-05-05-hermes-agent-practical-guide/" title="Hermes 智能体完全实战指南">Hermes 智能体完全实战指南</a><time datetime="2026-05-05T06:30:00.000Z" title="发表于 2026-05-05 14:30:00">2026-05-05</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By kuangyue111</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.4</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="前往评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.4"></script><script src="/js/main.js?v=5.5.4"></script><div class="js-pjax"><script>(() => {
+  const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
+  const option = {"mapping":"url","lang":"zh-CN"}
+
+  const getGiscusTheme = theme => theme === 'dark' ? 'dark' : 'light'
+
+  const createScriptElement = config => {
+    const ele = document.createElement('script')
+    Object.entries(config).forEach(([key, value]) => {
+      ele.setAttribute(key, value)
+    })
+    return ele
+  }
+
+  const loadGiscus = (el = document, key) => {
+    const mappingConfig = isShuoshuo
+      ? { 'data-mapping': 'specific', 'data-term': key }
+      : { 'data-mapping': (option && option['data-mapping']) || 'pathname' }
+
+    const giscusConfig = {
+      src: 'https://giscus.app/client.js',
+      'data-repo': 'kuangyue111/kuangyue111.github.io',
+      'data-repo-id': 'R_kgDOSQde2Q',
+      'data-category-id': 'DIC_kwDOSQde2c4C8CgH',
+      'data-theme': getGiscusTheme(document.documentElement.getAttribute('data-theme')),
+      'data-reactions-enabled': '1',
+      crossorigin: 'anonymous',
+      async: true,
+      ...option,
+      ...mappingConfig
+    }
+
+    const scriptElement = createScriptElement(giscusConfig)
+
+    el.querySelector('#giscus-wrap').appendChild(scriptElement)
+
+    if (isShuoshuo) {
+      window.shuoshuoComment.destroyGiscus = () => {
+        if (el.children.length) {
+          el.innerHTML = ''
+          el.classList.add('no-comment')
+        }
+      }
+    }
+  }
+
+  const changeGiscusTheme = theme => {
+    const iframe = document.querySelector('#giscus-wrap iframe')
+    if (iframe) {
+      const message = {
+        giscus: {
+          setConfig: {
+            theme: getGiscusTheme(theme)
+          }
+        }
+      }
+      iframe.contentWindow.postMessage(message, 'https://giscus.app')
+    }
+  }
+
+  btf.addGlobalFn('themeChange', changeGiscusTheme, 'giscus')
+
+  if (isShuoshuo) {
+    'Giscus' === 'Giscus'
+      ? window.shuoshuoComment = { loadComment: loadGiscus }
+      : window.loadOtherComment = loadGiscus
+    return
+  }
+
+  if ('Giscus' === 'Giscus' || !false) {
+    if (false) btf.loadComment(document.getElementById('giscus-wrap'), loadGiscus)
+    else loadGiscus()
+  } else {
+    window.loadOtherComment = loadGiscus
+  }
+})()</script></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

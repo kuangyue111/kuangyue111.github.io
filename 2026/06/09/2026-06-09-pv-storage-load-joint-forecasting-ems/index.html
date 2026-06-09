@@ -1,0 +1,394 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>光伏-储能-负荷联合预测：给 EMS 装上&quot;预知能力&quot; | KuangYue's Blog</title><meta name="author" content="kuangyue111"><meta name="copyright" content="kuangyue111"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="光伏-储能-负荷联合预测：给 EMS 装上”预知能力” 本文结合我正在维护的一套工业储能管理系统的真实工程实践，聊聊如何把预测能力嵌入 EMS 决策链路。代码片段均来自项目实际文件，不是伪代码。   一、为什么 EMS 需要预测？我在调试这套系统的 MQTT 指令链路时，发现一个有意思的现象：EMS 的充放电决策完全依赖当前时刻的 SOC 和预设的时段计划表。翻开 ems_management.c">
+<meta property="og:type" content="article">
+<meta property="og:title" content="光伏-储能-负荷联合预测：给 EMS 装上&quot;预知能力&quot;">
+<meta property="og:url" content="https://kuangyue111.github.io/2026/06/09/2026-06-09-pv-storage-load-joint-forecasting-ems/index.html">
+<meta property="og:site_name" content="KuangYue&#39;s Blog">
+<meta property="og:description" content="光伏-储能-负荷联合预测：给 EMS 装上”预知能力” 本文结合我正在维护的一套工业储能管理系统的真实工程实践，聊聊如何把预测能力嵌入 EMS 决策链路。代码片段均来自项目实际文件，不是伪代码。   一、为什么 EMS 需要预测？我在调试这套系统的 MQTT 指令链路时，发现一个有意思的现象：EMS 的充放电决策完全依赖当前时刻的 SOC 和预设的时段计划表。翻开 ems_management.c">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://kuangyue111.github.io/img/butterfly-icon.png">
+<meta property="article:published_time" content="2026-06-09T08:00:00.000Z">
+<meta property="article:modified_time" content="2026-06-09T01:25:27.660Z">
+<meta property="article:author" content="kuangyue111">
+<meta property="article:tag" content="储能">
+<meta property="article:tag" content="EMS">
+<meta property="article:tag" content="机器学习">
+<meta property="article:tag" content="新能源">
+<meta property="article:tag" content="光伏">
+<meta property="article:tag" content="负荷预测">
+<meta property="article:tag" content="MPC">
+<meta property="article:tag" content="模型预测控制">
+<meta property="article:tag" content="时间序列">
+<meta property="article:tag" content="N-BEATS">
+<meta property="article:tag" content="PatchTST">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://kuangyue111.github.io/img/butterfly-icon.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "光伏-储能-负荷联合预测：给 EMS 装上\"预知能力\"",
+  "url": "https://kuangyue111.github.io/2026/06/09/2026-06-09-pv-storage-load-joint-forecasting-ems/",
+  "image": "https://kuangyue111.github.io/img/butterfly-icon.png",
+  "datePublished": "2026-06-09T08:00:00.000Z",
+  "dateModified": "2026-06-09T01:25:27.660Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "kuangyue111",
+      "url": "https://kuangyue111.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://kuangyue111.github.io/2026/06/09/2026-06-09-pv-storage-load-joint-forecasting-ems/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.5.4"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.13.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '光伏-储能-负荷联合预测：给 EMS 装上"预知能力"',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/butterfly-icon.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">16</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">90</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">11</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">KuangYue's Blog</span></a><a class="nav-page-title" href="/"><span class="site-name">光伏-储能-负荷联合预测：给 EMS 装上&quot;预知能力&quot;</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">光伏-储能-负荷联合预测：给 EMS 装上&quot;预知能力&quot;</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-06-09T08:00:00.000Z" title="发表于 2026-06-09 16:00:00">2026-06-09</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-06-09T01:25:27.660Z" title="更新于 2026-06-09 09:25:27">2026-06-09</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/">技术分享</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/%E5%B5%8C%E5%85%A5%E5%BC%8F%E5%BC%80%E5%8F%91/">嵌入式开发</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="光伏-储能-负荷联合预测：给-EMS-装上”预知能力”"><a href="#光伏-储能-负荷联合预测：给-EMS-装上”预知能力”" class="headerlink" title="光伏-储能-负荷联合预测：给 EMS 装上”预知能力”"></a>光伏-储能-负荷联合预测：给 EMS 装上”预知能力”</h1><blockquote>
+<p>本文结合我正在维护的一套工业储能管理系统的真实工程实践，聊聊如何把预测能力嵌入 EMS 决策链路。代码片段均来自项目实际文件，不是伪代码。</p>
+</blockquote>
+<hr>
+<h2 id="一、为什么-EMS-需要预测？"><a href="#一、为什么-EMS-需要预测？" class="headerlink" title="一、为什么 EMS 需要预测？"></a>一、为什么 EMS 需要预测？</h2><p>我在调试这套系统的 MQTT 指令链路时，发现一个有意思的现象：EMS 的充放电决策完全依赖当前时刻的 SOC 和预设的时段计划表。翻开 <code>ems_management.c</code>，核心逻辑大概是这样的：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">BOOL <span class="title function_">IsBatt_Plan2_StartChrg</span><span class="params">(...)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (pEMS-&gt;nTMSector &lt; <span class="number">0</span>) <span class="keyword">return</span> FALSE;</span><br><span class="line">    <span class="keyword">if</span> (pPlanSectorNow-&gt;emBatt_WorkMode != BATT_WORKMODE_FIRST_CHRGING) <span class="keyword">return</span> FALSE;</span><br><span class="line">    <span class="keyword">if</span> (nBattSOC &gt;= pPlanSectorNow-&gt;nStopSOC) <span class="keyword">return</span> FALSE;</span><br><span class="line">    <span class="keyword">return</span> TRUE;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>逻辑很清晰：查当前时段（<code>nTMSector</code>），对比工作模式（<code>emBatt_WorkMode</code>）和停止 SOC 阈值（<code>nStopSOC</code>），决定充还是不充。</p>
+<p>这套逻辑在电价稳定、负荷规律的场景下跑得很好。但现实是：光伏出力受云层影响可以在几分钟内从满功率跌到零；工厂负荷在节假日和工作日差异巨大；电网侧的峰谷价差窗口也在动态变化。</p>
+<p><strong>纯规则驱动的 EMS 本质上是在用昨天的地图走今天的路。</strong></p>
+<p>预测的价值在于：把”当前状态 → 决策”的单步反应，升级为”未来状态预估 → 提前布局”的前瞻控制。这就是 MPC（模型预测控制）的核心思想，后面会详细展开。</p>
+<hr>
+<h2 id="二、数据基础：我们手里有什么原料？"><a href="#二、数据基础：我们手里有什么原料？" class="headerlink" title="二、数据基础：我们手里有什么原料？"></a>二、数据基础：我们手里有什么原料？</h2><p>预测模型不是凭空建的，得先搞清楚系统里有哪些可用的数据。</p>
+<h3 id="2-1-光伏逆变器采样数据"><a href="#2-1-光伏逆变器采样数据" class="headerlink" title="2.1 光伏逆变器采样数据"></a>2.1 光伏逆变器采样数据</h3><p>项目里的 PV 采样模块（<code>_inverter_sampler/</code>）支持 Growatt、华为、固德威、阳光电源等主流逆变器品牌，通过 RS485 轮询采集。核心数据结构 <code>PV_INVERTER_DATA</code>（定义在 <code>blob_model.h:4539</code>）包含：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">    <span class="type">float</span> fOutputActivePower;      <span class="comment">// AC 侧输出有功功率 (W)</span></span><br><span class="line">    <span class="type">float</span> fPVInputTotalPower;      <span class="comment">// DC 侧总输入功率 (W)</span></span><br><span class="line">    <span class="type">float</span> fPVGroupVolt[MAX_PV_NUM]; <span class="comment">// 各组串电压 (V)</span></span><br><span class="line">    <span class="type">float</span> fPVGroupCurr[MAX_PV_NUM * <span class="number">2</span>]; <span class="comment">// 各组串电流 (A)</span></span><br><span class="line">    <span class="type">float</span> fDailyPowerGeneration;   <span class="comment">// 当日发电量 (kWh)</span></span><br><span class="line">    <span class="type">float</span> fTotalPowerGeneration;   <span class="comment">// 累计发电量 (kWh)</span></span><br><span class="line">    <span class="type">int</span>   iActivePowerRate;        <span class="comment">// 有功功率限制百分比</span></span><br><span class="line">    <span class="type">int</span>   iWorkMode;               <span class="comment">// 0=未安装 1=等待 2=运行 3=故障</span></span><br><span class="line">&#125; PV_INVERTER_DATA;</span><br></pre></td></tr></table></figure>
+
+<p>汇总层面还有 <code>A_BLOB_PV_INVERTER_DATA_TOTAL</code>，字段 <code>fTotalPVOutputActPower</code> 给出全站光伏总出力（kW），这是预测模型的直接训练标签。</p>
+<p><strong>对预测有用的特征</strong>：<code>fPVGroupVolt</code>（组串电压反映辐照度变化）、<code>iWorkMode</code>（故障状态需要剔除异常样本）、<code>fDailyPowerGeneration</code>（日累计量用于校准预测偏差）。</p>
+<h3 id="2-2-DLT645-负荷计量数据"><a href="#2-2-DLT645-负荷计量数据" class="headerlink" title="2.2 DLT645 负荷计量数据"></a>2.2 DLT645 负荷计量数据</h3><p>负荷侧通过 DLT645 协议采集电表数据（<code>dlt645_kWmeter.c</code>）。协议帧结构是标准的 <code>0x68 + 地址域 + 0x68 + 控制码 + 数据域 + CS + 0x16</code>，采集的量包括：</p>
+<ul>
+<li>三相电压、电流、有功功率、无功功率</li>
+<li>正向&#x2F;反向累计电量（<code>WH_FRAME_TYPE_GET_TOTALWH</code> &#x2F; <code>WH_FRAME_TYPE_GET_RVSTATALWH</code>）</li>
+<li>最大需量（<code>WH_FRAME_TYPE_GET_PMAXDEMAND</code>）——这个字段对需量控制预测特别有价值</li>
+</ul>
+<p>数值解码用 BCD 转换：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">float</span> <span class="title function_">ConvertBCD_2WhVal</span><span class="params">(BYTE *pData, <span class="type">int</span> nLen, <span class="type">int</span> nDecimalPos)</span> &#123;</span><br><span class="line">    <span class="comment">// BCD 编码 → 浮点，nDecimalPos 控制小数点位置</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>实际运行中，<code>fGridMeter_Power[1]</code>（实时电网功率，kW）和 <code>fCabMeter_Power[1]</code>（柜内功率）是负荷预测的核心输入，采样周期通常是 1 分钟。</p>
+<h3 id="2-3-储能电池状态"><a href="#2-3-储能电池状态" class="headerlink" title="2.3 储能电池状态"></a>2.3 储能电池状态</h3><p>电池 SOC 存在 <code>nSOC</code>（千分位，0-1000 对应 0-100%），充放电能量分别记录在 <code>fCalc_ChargedEnergy</code> 和 <code>fCalc_DisChargedEnergy</code>。这些数据在预测框架里扮演”状态变量”角色——预测模型的输出要结合当前 SOC 才能转化为可执行的充放电指令。</p>
+<hr>
+<h2 id="三、光伏发电功率预测"><a href="#三、光伏发电功率预测" class="headerlink" title="三、光伏发电功率预测"></a>三、光伏发电功率预测</h2><h3 id="3-1-NWP-历史数据融合"><a href="#3-1-NWP-历史数据融合" class="headerlink" title="3.1 NWP + 历史数据融合"></a>3.1 NWP + 历史数据融合</h3><p>光伏功率预测的难点在于它强依赖气象条件，而气象本质上是混沌系统。工程上通行的做法是两路信号融合：</p>
+<p><strong>NWP（数值天气预报）路</strong>：从气象局或商业 API 获取未来 24-72 小时的辐照度（GHI&#x2F;DNI&#x2F;DHI）、云量、温度预报。辐照度是光伏出力的物理驱动量，理论上 $P_{pv} &#x3D; \eta \cdot A \cdot G$（$\eta$ 为效率，$A$ 为面积，$G$ 为辐照度），但实际逆变器效率随温度、老化程度变化，所以 NWP 只能给出粗粒度的趋势。</p>
+<p><strong>历史数据路</strong>：用过去 30-90 天的 <code>fTotalPVOutputActPower</code> 时序数据，学习”同类天气下的实际出力曲线”。关键是天气类型分类——晴天、多云、阴天、雨天的出力曲线形态差异极大，需要先做天气聚类再分类建模。</p>
+<p>融合方式：NWP 预报作为外生变量（exogenous variable）输入模型，历史序列提供自回归特征。</p>
+<h3 id="3-2-模型选型：为什么不用-LSTM？"><a href="#3-2-模型选型：为什么不用-LSTM？" class="headerlink" title="3.2 模型选型：为什么不用 LSTM？"></a>3.2 模型选型：为什么不用 LSTM？</h3><p>很多人第一反应是 LSTM，但在工业场景里我更倾向于 <strong>N-BEATS</strong> 或 <strong>PatchTST</strong>，原因如下：</p>
+<p><strong>N-BEATS</strong>（Neural Basis Expansion Analysis for Time Series）的核心思想是把时序分解为趋势项和季节项的叠加，每个 block 学习残差。对光伏这种有强日周期性的序列，这种归纳偏置（inductive bias）非常合适。而且 N-BEATS 是纯 MLP 结构，没有循环依赖，训练速度快，部署到嵌入式 Linux 上的推理开销也小。</p>
+<p><strong>PatchTST</strong> 把时序切成 patch（类似 ViT 对图像的处理），用 Transformer 的自注意力捕捉长程依赖。对于需要融合 NWP 多变量输入的场景，Transformer 的多头注意力天然适合处理异构特征。</p>
+<p><strong>Informer</strong> 用稀疏注意力（ProbSparse Attention）把复杂度从 $O(L^2)$ 降到 $O(L \log L)$，适合预测窗口很长（比如 72 小时）的场景。</p>
+<p>对于本项目这种 15 分钟粒度、预测 24 小时的需求，我会优先试 PatchTST，patch size 设为 16（对应 4 小时历史窗口），预测长度 96 个点。</p>
+<h3 id="3-3-不确定性量化：分位数回归"><a href="#3-3-不确定性量化：分位数回归" class="headerlink" title="3.3 不确定性量化：分位数回归"></a>3.3 不确定性量化：分位数回归</h3><p>点预测给出的是期望值，但 EMS 决策需要知道”最坏情况下光伏出力是多少”。这就是概率预测的价值。</p>
+<p>分位数回归（Quantile Regression）的损失函数：</p>
+<p>$$\mathcal{L}_q(\hat{y}, y) &#x3D; q \cdot \max(y - \hat{y}, 0) + (1-q) \cdot \max(\hat{y} - y, 0)$$</p>
+<p>同时预测 $q &#x3D; [0.1, 0.5, 0.9]$ 三个分位数，就得到了预测区间。EMS 在做保守决策时用 P10（下界），做激进决策时参考 P90（上界）。</p>
+<p>实现上，只需要把模型最后一层的输出维度从 1 改为 3，损失函数换成三个分位数损失的加权和，其余架构不变。</p>
+<hr>
+<h2 id="四、负荷预测：挖掘工业负荷的周期性规律"><a href="#四、负荷预测：挖掘工业负荷的周期性规律" class="headerlink" title="四、负荷预测：挖掘工业负荷的周期性规律"></a>四、负荷预测：挖掘工业负荷的周期性规律</h2><h3 id="4-1-工业负荷的三层周期结构"><a href="#4-1-工业负荷的三层周期结构" class="headerlink" title="4.1 工业负荷的三层周期结构"></a>4.1 工业负荷的三层周期结构</h3><p>工业负荷不像居民负荷那样平滑，它有很强的生产节律：</p>
+<ul>
+<li><strong>日内周期</strong>：班次切换（早班&#x2F;中班&#x2F;夜班）导致功率阶跃，<code>fGridMeter_Power</code> 的时序上会看到明显的台阶状跳变</li>
+<li><strong>周周期</strong>：工作日 vs 周末，某些工厂周末停产，负荷降到基础维持水平（空调、照明、待机）</li>
+<li><strong>节假日模式</strong>：春节、国庆等长假期间负荷曲线完全异于平日，需要单独建模</li>
+</ul>
+<p>从 DLT645 采集的历史数据里，可以用 STL 分解（Seasonal-Trend decomposition using LOESS）把这三层周期显式分离出来，再分别建模。</p>
+<h3 id="4-2-特征工程"><a href="#4-2-特征工程" class="headerlink" title="4.2 特征工程"></a>4.2 特征工程</h3><p>除了历史负荷序列本身，以下特征对工业负荷预测有显著提升：</p>
+<table>
+<thead>
+<tr>
+<th>特征</th>
+<th>来源</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>星期几（one-hot）</td>
+<td>系统时钟</td>
+<td>捕捉周周期</td>
+</tr>
+<tr>
+<td>是否节假日</td>
+<td>日历 API</td>
+<td>节假日模式切换</td>
+</tr>
+<tr>
+<td>时段索引（0-47）</td>
+<td><code>nTMSector</code></td>
+<td>对应 EMS 的 30 分钟时段划分</td>
+</tr>
+<tr>
+<td>最大需量</td>
+<td><code>WH_FRAME_TYPE_GET_PMAXDEMAND</code></td>
+<td>反映生产强度</td>
+</tr>
+<tr>
+<td>滞后特征（lag-24h, lag-168h）</td>
+<td>历史数据</td>
+<td>昨天同时刻、上周同时刻</td>
+</tr>
+<tr>
+<td>滚动均值（rolling mean 1h&#x2F;4h）</td>
+<td>历史数据</td>
+<td>平滑短期波动</td>
+</tr>
+</tbody></table>
+<p><code>nTMSector</code> 这个字段在 EMS 代码里本来是用来查时段计划表的，但它同时也是一个天然的时间特征——把它直接 embedding 进模型，比用原始时间戳效果好。</p>
+<h3 id="4-3-多变量时序预测"><a href="#4-3-多变量时序预测" class="headerlink" title="4.3 多变量时序预测"></a>4.3 多变量时序预测</h3><p>负荷预测不是孤立的，光伏出力、电池 SOC、历史电价都会影响实际负荷（比如高电价时段工厂会主动降负荷）。把这些变量一起输入 Informer 或 PatchTST，做多变量 → 单变量（或多变量 → 多变量）预测，通常比纯单变量模型提升 10-20% 的 MAE。</p>
+<hr>
+<h2 id="五、预测结果注入-EMS：MPC-框架"><a href="#五、预测结果注入-EMS：MPC-框架" class="headerlink" title="五、预测结果注入 EMS：MPC 框架"></a>五、预测结果注入 EMS：MPC 框架</h2><p>这是整个方案最关键的一环，也是最容易被忽视的一环。很多项目做完预测就停了，预测结果没有真正改变决策逻辑。</p>
+<h3 id="5-1-现有-EMS-决策的局限"><a href="#5-1-现有-EMS-决策的局限" class="headerlink" title="5.1 现有 EMS 决策的局限"></a>5.1 现有 EMS 决策的局限</h3><p>回到 <code>ems_management.c</code> 里的逻辑：<code>IsBatt_Plan2_StartChrg()</code> 和 <code>IsBatt_Plan2_StopDischarge()</code> 都是单步决策，只看当前时刻的 SOC 和时段配置。这意味着：</p>
+<ul>
+<li>如果预测到下午 2 点光伏会大发，现在（上午 10 点）就应该少充一点，留出空间吸纳光伏；但现有逻辑不知道这件事，会按计划表继续充到 <code>nStopSOC</code>。</li>
+<li>如果预测到晚上 8 点有一个负荷高峰，现在就应该开始储能，但现有逻辑要等到那个时段才触发。</li>
+</ul>
+<h3 id="5-2-MPC-的基本框架"><a href="#5-2-MPC-的基本框架" class="headerlink" title="5.2 MPC 的基本框架"></a>5.2 MPC 的基本框架</h3><p>MPC（Model Predictive Control，模型预测控制）的思路是：在每个控制周期，用预测模型生成未来 $N$ 步的状态预估，然后求解一个优化问题，得到未来 $N$ 步的最优控制序列，只执行第一步，下一个周期滚动重复。</p>
+<p><strong>优化目标</strong>（以经济性为例）：</p>
+<p>$$\min_{u_t, …, u_{t+N}} \sum_{k&#x3D;0}^{N-1} \left[ c_k^{buy} \cdot P_{grid,k}^+ - c_k^{sell} \cdot P_{grid,k}^- + \lambda \cdot \Delta u_k^2 \right]$$</p>
+<p>其中 $c_k^{buy&#x2F;sell}$ 是预测的电价，$P_{grid}^+$ 是购电功率，$P_{grid}^-$ 是售电功率，$\lambda \cdot \Delta u_k^2$ 是控制平滑项（避免频繁切换充放电）。</p>
+<p><strong>约束条件</strong>：</p>
+<p>$$SOC_{min} \leq SOC_k \leq SOC_{max}$$<br>$$P_{batt,min} \leq P_{batt,k} \leq P_{batt,max}$$<br>$$SOC_{k+1} &#x3D; SOC_k + \frac{\eta_{chg} \cdot P_{batt,k}^+ - P_{batt,k}^- &#x2F; \eta_{dis}}{E_{cap}} \cdot \Delta t$$</p>
+<p>功率平衡约束：</p>
+<p>$$P_{pv,k} + P_{batt,k} + P_{grid,k} &#x3D; P_{load,k}$$</p>
+<p>这里 $P_{pv,k}$ 和 $P_{load,k}$ 就是预测模型的输出。</p>
+<h3 id="5-3-与现有代码的接口设计"><a href="#5-3-与现有代码的接口设计" class="headerlink" title="5.3 与现有代码的接口设计"></a>5.3 与现有代码的接口设计</h3><p>要把 MPC 嵌入现有系统，最小侵入的方式是：<strong>不改变底层执行逻辑，只替换决策层的参数生成</strong>。</p>
+<p>现有系统通过 MQTT 下发 <code>cmd/set/emu/powerCmd</code> 来控制充放电模式，通过 <code>cmd/set/emu/dispatchPower</code> 下发调度计划。MPC 优化器可以作为一个独立进程运行，每 15 分钟执行一次：</p>
+<ol>
+<li>从数据库读取最新的 <code>fTotalPVOutputActPower</code>、<code>fGridMeter_Power</code>、<code>nSOC</code></li>
+<li>调用预测模型，生成未来 24 小时的 $\hat{P}<em>{pv}$ 和 $\hat{P}</em>{load}$</li>
+<li>求解 MPC 优化问题（用 <code>scipy.optimize</code> 或 <code>cvxpy</code>）</li>
+<li>把优化结果转换为 <code>dispatchPower</code> 的 JSON 格式，通过 MQTT 下发</li>
+</ol>
+<p>注意 <code>EMU_dispatchPower</code> 函数（<code>GH_DigitalEnergy_Pub.c:2582</code>）里有时间戳校验：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// GH_DigitalEnergy_Pub.c:2631</span></span><br><span class="line"><span class="keyword">if</span>(ABS(Now_time - Ts_val-&gt;valueint) &gt; <span class="number">15</span>) &#123;</span><br><span class="line">    pMqtt-&gt;bDisPower = TRUE;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>MPC 优化器下发指令时，时间戳字段必须用设备当前时间（误差 ≤15 秒），这是一个容易踩的坑。</p>
+<h3 id="5-4-不确定性在-MPC-中的处理"><a href="#5-4-不确定性在-MPC-中的处理" class="headerlink" title="5.4 不确定性在 MPC 中的处理"></a>5.4 不确定性在 MPC 中的处理</h3><p>前面提到分位数预测给出了 P10&#x2F;P50&#x2F;P90 三条曲线。在 MPC 里，可以用<strong>鲁棒 MPC</strong> 的思路：</p>
+<ul>
+<li>光伏预测用 P10（保守估计），避免因高估光伏出力导致过度放电</li>
+<li>负荷预测用 P90（保守估计），确保高负荷场景下有足够储能余量</li>
+<li>在约束里加入 SOC 缓冲带（比如 SOC 下限从 10% 提高到 15%），为预测误差留出安全裕度</li>
+</ul>
+<p>这种处理方式不需要复杂的随机优化，计算开销小，适合嵌入式 Linux 环境。</p>
+<hr>
+<h2 id="六、工程落地的几个实际问题"><a href="#六、工程落地的几个实际问题" class="headerlink" title="六、工程落地的几个实际问题"></a>六、工程落地的几个实际问题</h2><h3 id="6-1-数据质量"><a href="#6-1-数据质量" class="headerlink" title="6.1 数据质量"></a>6.1 数据质量</h3><p>DLT645 采集偶尔会有通信超时，<code>ConvertBCD_2WhVal</code> 返回异常值。训练数据里需要做异常检测（3σ 准则或 IQR 过滤），否则一个坏点会严重影响模型。</p>
+<p>光伏逆变器的 <code>iWorkMode == 3</code>（故障）期间的数据要标记并剔除，不能用来训练”正常发电”的模式。</p>
+<h3 id="6-2-模型更新频率"><a href="#6-2-模型更新频率" class="headerlink" title="6.2 模型更新频率"></a>6.2 模型更新频率</h3><p>光伏组件会随时间老化（年衰减约 0.5-0.8%），负荷模式会随生产计划变化。模型不能训练一次就永久使用，建议每月用最新 90 天数据重新微调（fine-tune），而不是从头训练。</p>
+<h3 id="6-3-预测失效时的降级策略"><a href="#6-3-预测失效时的降级策略" class="headerlink" title="6.3 预测失效时的降级策略"></a>6.3 预测失效时的降级策略</h3><p>预测模型是软件，会出 bug，NWP 数据源也可能断线。系统必须有降级逻辑：当预测模块不可用时，自动回退到现有的规则驱动模式（<code>IsBatt_Plan2_StartChrg</code> 那套逻辑）。这个降级切换可以通过 <code>emControlMode</code> 字段来实现——预测驱动模式和规则模式对应不同的控制模式枚举值。</p>
+<h3 id="6-4-计算资源约束"><a href="#6-4-计算资源约束" class="headerlink" title="6.4 计算资源约束"></a>6.4 计算资源约束</h3><p>项目运行在 ARM 嵌入式 Linux 上（从 <code>src/mkenv_arm_st</code> 可以看出是 ARM 交叉编译环境）。深度学习模型推理需要考虑资源限制：</p>
+<ul>
+<li>N-BEATS 的 MLP 结构可以用 ONNX Runtime 部署，推理一次 24 小时预测在 ARM Cortex-A 上通常在 100ms 以内</li>
+<li>MPC 优化问题如果是线性规划（LP），用 <code>glpk</code> 或 <code>HiGHS</code> 求解，几十个变量的问题毫秒级可解</li>
+<li>如果资源实在紧张，可以把预测和优化放到云端，设备只负责执行，通过 MQTT 接收优化后的调度计划</li>
+</ul>
+<hr>
+<h2 id="七、小结"><a href="#七、小结" class="headerlink" title="七、小结"></a>七、小结</h2><p>从”当前 SOC + 时段表 → 充放电决策”到”未来 24 小时预测 + MPC 优化 → 前瞻调度”，这不是一个简单的模型替换，而是整个决策架构的升级。</p>
+<p>核心链路是：<strong>原始采样数据（PV 逆变器 + DLT645 电表）→ 特征工程 → 时序预测模型（PatchTST&#x2F;N-BEATS）→ 概率预测区间 → MPC 优化求解 → MQTT 指令下发 → 设备执行</strong>。</p>
+<p>每个环节都有工程细节需要处理，但最重要的是把预测结果真正接入决策闭环，而不是让它停留在离线分析报告里。现有代码里的 <code>dispatchPower</code> 接口已经提供了足够的控制自由度，缺的只是上游的预测驱动层。</p>
+<p>这套方案在理论上可以把储能系统的经济收益提升 15-30%（相比纯规则调度），具体数字取决于当地电价结构和光伏&#x2F;负荷的波动程度。值得投入工程资源去做。</p>
+<hr>
+<p><em>代码引用均来自项目实际文件，文中行号以当前代码版本为准。</em></p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://kuangyue111.github.io">kuangyue111</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://kuangyue111.github.io/2026/06/09/2026-06-09-pv-storage-load-joint-forecasting-ems/">https://kuangyue111.github.io/2026/06/09/2026-06-09-pv-storage-load-joint-forecasting-ems/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://kuangyue111.github.io" target="_blank">KuangYue's Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E5%82%A8%E8%83%BD/">储能</a><a class="post-meta__tags" href="/tags/EMS/">EMS</a><a class="post-meta__tags" href="/tags/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/">机器学习</a><a class="post-meta__tags" href="/tags/%E6%96%B0%E8%83%BD%E6%BA%90/">新能源</a><a class="post-meta__tags" href="/tags/%E5%85%89%E4%BC%8F/">光伏</a><a class="post-meta__tags" href="/tags/%E8%B4%9F%E8%8D%B7%E9%A2%84%E6%B5%8B/">负荷预测</a><a class="post-meta__tags" href="/tags/MPC/">MPC</a><a class="post-meta__tags" href="/tags/%E6%A8%A1%E5%9E%8B%E9%A2%84%E6%B5%8B%E6%8E%A7%E5%88%B6/">模型预测控制</a><a class="post-meta__tags" href="/tags/%E6%97%B6%E9%97%B4%E5%BA%8F%E5%88%97/">时间序列</a><a class="post-meta__tags" href="/tags/N-BEATS/">N-BEATS</a><a class="post-meta__tags" href="/tags/PatchTST/">PatchTST</a></div><div class="post-share"><div class="social-share" data-image="/img/butterfly-icon.png" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/2026/06/09/2026-06-09-solid-state-transformer-industry-analysis/" title="固态变压器（SST）行业深度分析报告"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">固态变压器（SST）行业深度分析报告</div></div><div class="info-2"><div class="info-item-1">固态变压器（SST）行业深度分析报告   2026年6月 | 研究日期：2026.06.05  一、核心结论  固态变压器正处于从技术验证向规模商用过渡的历史节点。2026年政策目录纳入、SiC器件持续降本、AI数据中心算力需求爆发三重因素共振，产业窗口期已经打开。这不是一个”未来三到五年可能爆发”的故事，而是正在发生的产业拐点。  二、市场规模：五年十倍的成长空间  全球SST市场2025年约为5.3亿美元，规模尚小，但增速极为罕见。据QYResearch预测，2032年市场规模将达20.93亿美元，2026至2032年复合增长率（CAGR）维持在22%。这一增速已超过同期锂电池储能系统的市场扩张节奏。   中国市场的成长更为激进。2026年国内SST市场规模约42亿元人民币，到2030年有望突破158亿元，四年间扩张近四倍。驱动这一增长的   核心逻辑有三：  1. 政策强制推动：2026年3月，工信部等四部门印发《节能装备高质量发展实施方案（2026—2028年）》，首次将大容量SST列为重点推广方向，明确”2028年新增节能变压器占比超75%”的硬性指标。政策从鼓励转向规...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/05/25/2026-05-25-ai-energy-storage-codebase-predictive-maintenance/" title="从被动告警到预测性维护——将 AI 引入真实储能系统代码库的工程实践"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-25</div><div class="info-item-2">从被动告警到预测性维护——将 AI 引入真实储能系统代码库的工程实践</div></div><div class="info-2"><div class="info-item-1"> From Reactive Alarms to Predictive Insight: Bringing AI into a Real-World Energy Storage Codebase  一、写在前面：为什么我要写这篇文章我所在的项目是一套分布式储能管理系统（Energy Storage Management System, ESMS），主控板基于 ARM-Linux，外围挂着 BMS（电池管理系统）、PCS（储能变流器）、电表、温控、消防、光伏逆变器、CCU（电池簇控制器）等十几类设备。整个项目有上百个 sampler 和 reporter 模块，核心数据流是： 1设备 → sampler（CAN/RS485/Modbus 采集） → DPR（数据处理中心） → reporter（MQTT/IEC104/Modbus 上报）  最近半年我在维护这套代码时，反复被一个问题困扰：**告警机制本质上是”事后响应”**。 举个真实例子。System.sql 里注册了上千条告警，比如： 123INSERT INTO Charger_DeviceModel_Alarms ......</div></div></div></a><a class="pagination-related" href="/2026/05/25/2026-05-25-commercial-ess-peak-valley-arbitrage/" title="工商储能峰谷套利的经济模型与工程实现——从 EMS 代码看储能收益"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-25</div><div class="info-item-2">工商储能峰谷套利的经济模型与工程实现——从 EMS 代码看储能收益</div></div><div class="info-2"><div class="info-item-1">工商储能峰谷套利的经济模型与工程实现——从 EMS 代码看储能收益写工商储能控制代码的时候，最常被问到的一个问题不是”算法对不对”，而是”这台柜子今天到底能赚多少钱”。这两个问题其实是同一个问题——调度算法决定了储能资产的现金流模型，而 EMS 里那几个不起眼的工作模式切换、SOC 阈值判断、功率限值计算，背后对应的是一套相当严谨的经济学决策链。 下面结合手头这套主控代码（ems_management.c），把峰谷套利这件事掰开讲一讲。 一、调度的最小单元：管理计划时段打开 GetCurrentTimeSector 这个函数，看里面的 EMS_LIMIT_SECTOR 结构体： 1234567pPlanSectorNow-&gt;tmStart =        pEMS-&gt;tmStart0sec;pPlanSectorNow-&gt;nInterval =      86400;pPlanSectorNow-&gt;emBatt_WorkMode = BATT_WORKMODE_IDLE;pPlanSectorNow-&gt;nStopSOC =       0;pPla...</div></div></div></a><a class="pagination-related" href="/2026/05/25/2026-05-25-sems-rems-demand-response-architecture/" title="电力需求响应——SEMS&#x2F;REMS 层级架构下的多站协调控制"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-25</div><div class="info-item-2">电力需求响应——SEMS&#x2F;REMS 层级架构下的多站协调控制</div></div><div class="info-2"><div class="info-item-1"> 作者：储能系统固件开发工程师日期：2026-04-14项目背景：工商业储能管理系统（BESS），支持川崎项目多站联合需求响应，SEMS为站级本地EMS，REMS为上级远程EMS  一、为什么需要两级EMS？最初，项目只有一个站级EMS（站级能量管理系统，SEMS）。SEMS负责控制本站的PCS充放电，执行时段计划、防逆流、防过载，运行得还算平稳。 然而，当客户在川崎项目提出”多个储能站联合响应电网调峰指令”的需求时，问题来了：  电网调度中心下发一条指令：整个工业园区在未来30分钟内需放电500kW 园区内有4个储能站，每站容量不同，当前SOC不同，部分站在检修 谁来决定每个站放多少？ 如果某站BMS故障，其他站如何自动补偿？  这就是 REMS（Remote Energy Management System，远程EMS） 存在的根本原因。REMS是站上的站——它管理多个SEMS，协调整体功率分配，对接电网调度。 头文件里这行注释写得很清楚： 12// LJH250205 REMS 川崎项目增加上级EMS// SEMS:本地EMS  REMS:上级EMS   二、系统架构：三层...</div></div></div></a><a class="pagination-related" href="/2026/06/01/2026-06-01-grid-frequency-regulation-200ms/" title="从一次需求落地看储能系统的200ms电网调频实现"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-01</div><div class="info-item-2">从一次需求落地看储能系统的200ms电网调频实现</div></div><div class="info-2"><div class="info-item-1">从一次需求落地看储能系统的200ms电网调频实现 作者：KuangYue日期：2026-06-01项目：Solaris储能管理系统（ILC-A2415）   一、背景：为什么电网调频需要200ms响应？在做储能系统的这几年里，我接触过各种各样的调度需求，但电网调频（Grid Frequency Regulation，简称GridSvc）这个需求是让我印象最深的一个。它不像普通的充放电控制那样”慢条斯理”，而是对时间有着近乎苛刻的要求。 电网频率是衡量电力系统健康状态的核心指标。在中国，电网标准频率为50Hz，允许偏差范围是±0.2Hz。一旦频率偏低，说明系统发电量不足，需要快速补充有功功率；频率偏高则相反。传统的调频手段依赖火电机组的调速器，响应时间在秒级甚至分钟级。而储能系统，尤其是锂电池储能，其功率响应时间可以做到毫秒级，这是它在调频市场上的核心竞争力。 国家能源局和各地电网公司对储能参与调频的技术规范中，明确要求储能系统在接收到调度指令后，有功功率响应时间不超过200ms。这个200ms，就是这次需求的核心约束。 在我们的系统里，原有的控制链路是这样的： 1上级EMS（Mo...</div></div></div></a><a class="pagination-related" href="/2026/05/27/2026-05-27-bms-pcs-can-protocol-deep-analysis/" title="BMS-PCS通信协议深度解析：CAN总线在储能系统中的工程实践"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-27</div><div class="info-item-2">BMS-PCS通信协议深度解析：CAN总线在储能系统中的工程实践</div></div><div class="info-2"><div class="info-item-1">BMS-PCS通信协议深度解析——CAN总线在储能系统中的工程实践 作者：储能系统固件开发工程师日期：2026-04-14项目背景：工商业储能管理系统（BESS），支持多品牌BMS并联接入，通过CAN总线与PCS（Power Conversion System）双向通信   一、为什么是CAN总线？刚加入这个项目时，我问了自己同样的问题。为什么储能系统不用Modbus RTU，不用RS485，而偏偏选择CAN总线？ 原因是多层次的：  实时性：CAN总线的优先级仲裁机制保证了高优先级帧（如保护命令）在总线竞争中必然胜出，最坏情况延迟可以精确计算。 可靠性：CAN协议内置CRC校验、位填充、帧错误检测，单个节点故障不会拉低整条总线。 多主通信：BMS可以主动广播数据，PCS也可以主动发送控制命令，无需轮询。 工业生态：主流BMS厂商（宁德时代、亿纬锂能、鹏辉能源等）均提供CAN接口，协议文档相对规范。  然而，理论是美好的，现实是：每家厂商的CAN协议都不一样。这就是我们项目中出现 can_pl_batt.c、can_nd_batt.c、can_nd_v33_batt.c、can_...</div></div></div></a><a class="pagination-related" href="/2026/06/09/2026-06-09-solid-state-transformer-industry-analysis/" title="固态变压器（SST）行业深度分析报告"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-09</div><div class="info-item-2">固态变压器（SST）行业深度分析报告</div></div><div class="info-2"><div class="info-item-1">固态变压器（SST）行业深度分析报告   2026年6月 | 研究日期：2026.06.05  一、核心结论  固态变压器正处于从技术验证向规模商用过渡的历史节点。2026年政策目录纳入、SiC器件持续降本、AI数据中心算力需求爆发三重因素共振，产业窗口期已经打开。这不是一个”未来三到五年可能爆发”的故事，而是正在发生的产业拐点。  二、市场规模：五年十倍的成长空间  全球SST市场2025年约为5.3亿美元，规模尚小，但增速极为罕见。据QYResearch预测，2032年市场规模将达20.93亿美元，2026至2032年复合增长率（CAGR）维持在22%。这一增速已超过同期锂电池储能系统的市场扩张节奏。   中国市场的成长更为激进。2026年国内SST市场规模约42亿元人民币，到2030年有望突破158亿元，四年间扩张近四倍。驱动这一增长的   核心逻辑有三：  1. 政策强制推动：2026年3月，工信部等四部门印发《节能装备高质量发展实施方案（2026—2028年）》，首次将大容量SST列为重点推广方向，明确”2028年新增节能变压器占比超75%”的硬性指标。政策从鼓励转向规...</div></div></div></a></div></div><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="giscus-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/img/butterfly-icon.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">kuangyue111</div><div class="author-info-description">嵌入式开发 | 储能系统 | 工业通信协议</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">16</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">90</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">11</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/kuangyue111"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/kuangyue111" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">专注于嵌入式与储能系统技术分享</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%85%89%E4%BC%8F-%E5%82%A8%E8%83%BD-%E8%B4%9F%E8%8D%B7%E8%81%94%E5%90%88%E9%A2%84%E6%B5%8B%EF%BC%9A%E7%BB%99-EMS-%E8%A3%85%E4%B8%8A%E2%80%9D%E9%A2%84%E7%9F%A5%E8%83%BD%E5%8A%9B%E2%80%9D"><span class="toc-number">1.</span> <span class="toc-text">光伏-储能-负荷联合预测：给 EMS 装上”预知能力”</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E4%B8%BA%E4%BB%80%E4%B9%88-EMS-%E9%9C%80%E8%A6%81%E9%A2%84%E6%B5%8B%EF%BC%9F"><span class="toc-number">1.1.</span> <span class="toc-text">一、为什么 EMS 需要预测？</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E6%95%B0%E6%8D%AE%E5%9F%BA%E7%A1%80%EF%BC%9A%E6%88%91%E4%BB%AC%E6%89%8B%E9%87%8C%E6%9C%89%E4%BB%80%E4%B9%88%E5%8E%9F%E6%96%99%EF%BC%9F"><span class="toc-number">1.2.</span> <span class="toc-text">二、数据基础：我们手里有什么原料？</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1-%E5%85%89%E4%BC%8F%E9%80%86%E5%8F%98%E5%99%A8%E9%87%87%E6%A0%B7%E6%95%B0%E6%8D%AE"><span class="toc-number">1.2.1.</span> <span class="toc-text">2.1 光伏逆变器采样数据</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-DLT645-%E8%B4%9F%E8%8D%B7%E8%AE%A1%E9%87%8F%E6%95%B0%E6%8D%AE"><span class="toc-number">1.2.2.</span> <span class="toc-text">2.2 DLT645 负荷计量数据</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-3-%E5%82%A8%E8%83%BD%E7%94%B5%E6%B1%A0%E7%8A%B6%E6%80%81"><span class="toc-number">1.2.3.</span> <span class="toc-text">2.3 储能电池状态</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E5%85%89%E4%BC%8F%E5%8F%91%E7%94%B5%E5%8A%9F%E7%8E%87%E9%A2%84%E6%B5%8B"><span class="toc-number">1.3.</span> <span class="toc-text">三、光伏发电功率预测</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-NWP-%E5%8E%86%E5%8F%B2%E6%95%B0%E6%8D%AE%E8%9E%8D%E5%90%88"><span class="toc-number">1.3.1.</span> <span class="toc-text">3.1 NWP + 历史数据融合</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-%E6%A8%A1%E5%9E%8B%E9%80%89%E5%9E%8B%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E4%B8%8D%E7%94%A8-LSTM%EF%BC%9F"><span class="toc-number">1.3.2.</span> <span class="toc-text">3.2 模型选型：为什么不用 LSTM？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-3-%E4%B8%8D%E7%A1%AE%E5%AE%9A%E6%80%A7%E9%87%8F%E5%8C%96%EF%BC%9A%E5%88%86%E4%BD%8D%E6%95%B0%E5%9B%9E%E5%BD%92"><span class="toc-number">1.3.3.</span> <span class="toc-text">3.3 不确定性量化：分位数回归</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E8%B4%9F%E8%8D%B7%E9%A2%84%E6%B5%8B%EF%BC%9A%E6%8C%96%E6%8E%98%E5%B7%A5%E4%B8%9A%E8%B4%9F%E8%8D%B7%E7%9A%84%E5%91%A8%E6%9C%9F%E6%80%A7%E8%A7%84%E5%BE%8B"><span class="toc-number">1.4.</span> <span class="toc-text">四、负荷预测：挖掘工业负荷的周期性规律</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-%E5%B7%A5%E4%B8%9A%E8%B4%9F%E8%8D%B7%E7%9A%84%E4%B8%89%E5%B1%82%E5%91%A8%E6%9C%9F%E7%BB%93%E6%9E%84"><span class="toc-number">1.4.1.</span> <span class="toc-text">4.1 工业负荷的三层周期结构</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-%E7%89%B9%E5%BE%81%E5%B7%A5%E7%A8%8B"><span class="toc-number">1.4.2.</span> <span class="toc-text">4.2 特征工程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-3-%E5%A4%9A%E5%8F%98%E9%87%8F%E6%97%B6%E5%BA%8F%E9%A2%84%E6%B5%8B"><span class="toc-number">1.4.3.</span> <span class="toc-text">4.3 多变量时序预测</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E9%A2%84%E6%B5%8B%E7%BB%93%E6%9E%9C%E6%B3%A8%E5%85%A5-EMS%EF%BC%9AMPC-%E6%A1%86%E6%9E%B6"><span class="toc-number">1.5.</span> <span class="toc-text">五、预测结果注入 EMS：MPC 框架</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#5-1-%E7%8E%B0%E6%9C%89-EMS-%E5%86%B3%E7%AD%96%E7%9A%84%E5%B1%80%E9%99%90"><span class="toc-number">1.5.1.</span> <span class="toc-text">5.1 现有 EMS 决策的局限</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-2-MPC-%E7%9A%84%E5%9F%BA%E6%9C%AC%E6%A1%86%E6%9E%B6"><span class="toc-number">1.5.2.</span> <span class="toc-text">5.2 MPC 的基本框架</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-3-%E4%B8%8E%E7%8E%B0%E6%9C%89%E4%BB%A3%E7%A0%81%E7%9A%84%E6%8E%A5%E5%8F%A3%E8%AE%BE%E8%AE%A1"><span class="toc-number">1.5.3.</span> <span class="toc-text">5.3 与现有代码的接口设计</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-4-%E4%B8%8D%E7%A1%AE%E5%AE%9A%E6%80%A7%E5%9C%A8-MPC-%E4%B8%AD%E7%9A%84%E5%A4%84%E7%90%86"><span class="toc-number">1.5.4.</span> <span class="toc-text">5.4 不确定性在 MPC 中的处理</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E5%B7%A5%E7%A8%8B%E8%90%BD%E5%9C%B0%E7%9A%84%E5%87%A0%E4%B8%AA%E5%AE%9E%E9%99%85%E9%97%AE%E9%A2%98"><span class="toc-number">1.6.</span> <span class="toc-text">六、工程落地的几个实际问题</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#6-1-%E6%95%B0%E6%8D%AE%E8%B4%A8%E9%87%8F"><span class="toc-number">1.6.1.</span> <span class="toc-text">6.1 数据质量</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-2-%E6%A8%A1%E5%9E%8B%E6%9B%B4%E6%96%B0%E9%A2%91%E7%8E%87"><span class="toc-number">1.6.2.</span> <span class="toc-text">6.2 模型更新频率</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-3-%E9%A2%84%E6%B5%8B%E5%A4%B1%E6%95%88%E6%97%B6%E7%9A%84%E9%99%8D%E7%BA%A7%E7%AD%96%E7%95%A5"><span class="toc-number">1.6.3.</span> <span class="toc-text">6.3 预测失效时的降级策略</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-4-%E8%AE%A1%E7%AE%97%E8%B5%84%E6%BA%90%E7%BA%A6%E6%9D%9F"><span class="toc-number">1.6.4.</span> <span class="toc-text">6.4 计算资源约束</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E5%B0%8F%E7%BB%93"><span class="toc-number">1.7.</span> <span class="toc-text">七、小结</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/06/09/2026-06-09-pv-storage-load-joint-forecasting-ems/" title="光伏-储能-负荷联合预测：给 EMS 装上&quot;预知能力&quot;">光伏-储能-负荷联合预测：给 EMS 装上&quot;预知能力&quot;</a><time datetime="2026-06-09T08:00:00.000Z" title="发表于 2026-06-09 16:00:00">2026-06-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/06/09/2026-06-09-solid-state-transformer-industry-analysis/" title="固态变压器（SST）行业深度分析报告">固态变压器（SST）行业深度分析报告</a><time datetime="2026-06-09T07:00:00.000Z" title="发表于 2026-06-09 15:00:00">2026-06-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/06/01/2026-06-01-grid-frequency-regulation-200ms-en/" title="Building a 200ms Grid Frequency Regulation Path in a Battery Storage System">Building a 200ms Grid Frequency Regulation Path in a Battery Storage System</a><time datetime="2026-06-01T11:00:00.000Z" title="发表于 2026-06-01 19:00:00">2026-06-01</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/06/01/2026-06-01-grid-frequency-regulation-200ms/" title="从一次需求落地看储能系统的200ms电网调频实现">从一次需求落地看储能系统的200ms电网调频实现</a><time datetime="2026-06-01T10:00:00.000Z" title="发表于 2026-06-01 18:00:00">2026-06-01</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/05/27/2026-05-27-bms-pcs-can-protocol-deep-analysis/" title="BMS-PCS通信协议深度解析：CAN总线在储能系统中的工程实践">BMS-PCS通信协议深度解析：CAN总线在储能系统中的工程实践</a><time datetime="2026-05-27T08:00:00.000Z" title="发表于 2026-05-27 16:00:00">2026-05-27</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By kuangyue111</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.4</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="前往评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.4"></script><script src="/js/main.js?v=5.5.4"></script><div class="js-pjax"><script>(() => {
+  const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
+  const option = {"mapping":"url","lang":"zh-CN"}
+
+  const getGiscusTheme = theme => theme === 'dark' ? 'dark' : 'light'
+
+  const createScriptElement = config => {
+    const ele = document.createElement('script')
+    Object.entries(config).forEach(([key, value]) => {
+      ele.setAttribute(key, value)
+    })
+    return ele
+  }
+
+  const loadGiscus = (el = document, key) => {
+    const mappingConfig = isShuoshuo
+      ? { 'data-mapping': 'specific', 'data-term': key }
+      : { 'data-mapping': (option && option['data-mapping']) || 'pathname' }
+
+    const giscusConfig = {
+      src: 'https://giscus.app/client.js',
+      'data-repo': 'kuangyue111/kuangyue111.github.io',
+      'data-repo-id': 'R_kgDOSQde2Q',
+      'data-category-id': 'DIC_kwDOSQde2c4C8CgH',
+      'data-theme': getGiscusTheme(document.documentElement.getAttribute('data-theme')),
+      'data-reactions-enabled': '1',
+      crossorigin: 'anonymous',
+      async: true,
+      ...option,
+      ...mappingConfig
+    }
+
+    const scriptElement = createScriptElement(giscusConfig)
+
+    el.querySelector('#giscus-wrap').appendChild(scriptElement)
+
+    if (isShuoshuo) {
+      window.shuoshuoComment.destroyGiscus = () => {
+        if (el.children.length) {
+          el.innerHTML = ''
+          el.classList.add('no-comment')
+        }
+      }
+    }
+  }
+
+  const changeGiscusTheme = theme => {
+    const iframe = document.querySelector('#giscus-wrap iframe')
+    if (iframe) {
+      const message = {
+        giscus: {
+          setConfig: {
+            theme: getGiscusTheme(theme)
+          }
+        }
+      }
+      iframe.contentWindow.postMessage(message, 'https://giscus.app')
+    }
+  }
+
+  btf.addGlobalFn('themeChange', changeGiscusTheme, 'giscus')
+
+  if (isShuoshuo) {
+    'Giscus' === 'Giscus'
+      ? window.shuoshuoComment = { loadComment: loadGiscus }
+      : window.loadOtherComment = loadGiscus
+    return
+  }
+
+  if ('Giscus' === 'Giscus' || !false) {
+    if (false) btf.loadComment(document.getElementById('giscus-wrap'), loadGiscus)
+    else loadGiscus()
+  } else {
+    window.loadOtherComment = loadGiscus
+  }
+})()</script></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

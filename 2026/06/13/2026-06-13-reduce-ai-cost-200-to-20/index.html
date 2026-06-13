@@ -1,0 +1,394 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>我是怎么把每月200刀省到20的 | KuangYue's Blog</title><meta name="author" content="kuangyue111"><meta name="copyright" content="kuangyue111"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="我是怎么把每月200刀省到20的 上个月我把Claude升级到Max版本，$200一个月。 第五天，额度没了。 打开使用记录一看，好家伙——一个下午调研47篇论文，一口气吃掉一周10%的额度。这种会话一周跑两三回，额度跟流水一样哗哗就没了。 我肉疼啊。 后来想明白了——问题不在Claude本身，而在于我一直让它干一件它根本不该干的事：当全文检索引擎用。 你往对话框里塞50k字符的日志，问一个问题，">
+<meta property="og:type" content="article">
+<meta property="og:title" content="我是怎么把每月200刀省到20的">
+<meta property="og:url" content="https://kuangyue111.github.io/2026/06/13/2026-06-13-reduce-ai-cost-200-to-20/index.html">
+<meta property="og:site_name" content="KuangYue&#39;s Blog">
+<meta property="og:description" content="我是怎么把每月200刀省到20的 上个月我把Claude升级到Max版本，$200一个月。 第五天，额度没了。 打开使用记录一看，好家伙——一个下午调研47篇论文，一口气吃掉一周10%的额度。这种会话一周跑两三回，额度跟流水一样哗哗就没了。 我肉疼啊。 后来想明白了——问题不在Claude本身，而在于我一直让它干一件它根本不该干的事：当全文检索引擎用。 你往对话框里塞50k字符的日志，问一个问题，">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://kuangyue111.github.io/img/butterfly-icon.png">
+<meta property="article:published_time" content="2026-06-13T08:00:00.000Z">
+<meta property="article:modified_time" content="2026-06-13T03:25:58.615Z">
+<meta property="article:author" content="kuangyue111">
+<meta property="article:tag" content="AI">
+<meta property="article:tag" content="Claude">
+<meta property="article:tag" content="NotebookLM">
+<meta property="article:tag" content="省钱">
+<meta property="article:tag" content="效率工具">
+<meta property="article:tag" content="AI工具">
+<meta property="article:tag" content="工作流">
+<meta property="article:tag" content="Google">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://kuangyue111.github.io/img/butterfly-icon.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "我是怎么把每月200刀省到20的",
+  "url": "https://kuangyue111.github.io/2026/06/13/2026-06-13-reduce-ai-cost-200-to-20/",
+  "image": "https://kuangyue111.github.io/img/butterfly-icon.png",
+  "datePublished": "2026-06-13T08:00:00.000Z",
+  "dateModified": "2026-06-13T03:25:58.615Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "kuangyue111",
+      "url": "https://kuangyue111.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://kuangyue111.github.io/2026/06/13/2026-06-13-reduce-ai-cost-200-to-20/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.5.4"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.13.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '我是怎么把每月200刀省到20的',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/butterfly-icon.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">19</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">106</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">11</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">KuangYue's Blog</span></a><a class="nav-page-title" href="/"><span class="site-name">我是怎么把每月200刀省到20的</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">我是怎么把每月200刀省到20的</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-06-13T08:00:00.000Z" title="发表于 2026-06-13 16:00:00">2026-06-13</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-06-13T03:25:58.615Z" title="更新于 2026-06-13 11:25:58">2026-06-13</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/">技术分享</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/AI%E5%B7%A5%E5%85%B7/">AI工具</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="我是怎么把每月200刀省到20的"><a href="#我是怎么把每月200刀省到20的" class="headerlink" title="我是怎么把每月200刀省到20的"></a>我是怎么把每月200刀省到20的</h1><hr>
+<p>上个月我把Claude升级到Max版本，$200一个月。</p>
+<p>第五天，额度没了。</p>
+<p>打开使用记录一看，好家伙——一个下午调研47篇论文，一口气吃掉一周10%的额度。这种会话一周跑两三回，额度跟流水一样哗哗就没了。</p>
+<p>我肉疼啊。</p>
+<p>后来想明白了——问题不在Claude本身，而在于我一直让它干一件它根本不该干的事：<strong>当全文检索引擎用。</strong></p>
+<p>你往对话框里塞50k字符的日志，问一个问题，日志就被算一次input token。再问一个，好，命中了prompt cache，单价变成1&#x2F;10了，但主会话还是会随轮次缓慢累加。更坑的是cache只有1小时TTL，间隔久了就得重来一次全价。</p>
+<p>这感觉就像——每次问律师问题，都得先让他把你50页合同朗读一遍。</p>
+<p>Claude Code最擅长的是推理、编排、写代码。读原始语料这种脏活累活，干嘛不让别的工具干？</p>
+<p>顺着这个思路，我找到了NotebookLM。</p>
+<hr>
+<h2 id="一、NotebookLM到底香在哪"><a href="#一、NotebookLM到底香在哪" class="headerlink" title="一、NotebookLM到底香在哪"></a>一、NotebookLM到底香在哪</h2><p>先说说我怎么被朋友安利的。</p>
+<p>她写论文，reading list有60多篇。以前在PDF里Ctrl-F找半天，现在直接把全部论文丢进一个notebook，问一句“谁支持X观点、谁反对、分歧在哪”，答案直接带[1][2][3]引用甩过来，点一下就跳回原文。</p>
+<p>她说一周能省十几个小时。</p>
+<p>我本来不信，试了一周——好吧，我上瘾了。</p>
+<p>这玩意儿牛在哪：</p>
+<ul>
+<li><strong>免费档50个源，Pro档300个</strong></li>
+<li><strong>处理能力不要钱</strong>：上传、索引、生成、对话——全走Google的算力</li>
+<li><strong>能直接把notebook变成音频播客</strong>：通勤的时候听，资料被两个AI用我没想过的角度讲一遍，经常能听出新东西</li>
+<li><strong>格式从来不是问题</strong>：PDF、网页、YouTube字幕、Google Docs、图片OCR、音频转写——都能当源</li>
+</ul>
+<p>就上面这些，NotebookLM已经是个很强的独立工具了。如果你需求就是“坐下来问几个问题”，用到这儿就够了。</p>
+<p>但我用了两周，发现它有两个卡死我的点：</p>
+<p><strong>第一，tab切到崩溃。</strong> 调研一个课题：问一个问题 → 得到答案 → 点引用跳原文 → 读完 → 回notebook复制 → 切到Claude消费 → 做完实验 → 发现少一篇资料 → 切到Google搜 → 切到下载 → 切回notebook加源 → 继续问……一下午切200次tab。</p>
+<p><strong>第二，跟本地工具是两个世界。</strong> 我排查线上事故时把日志灌进notebook能查了，但我还要同时在终端grep配置、看k8s events、起pod复现——网页不能帮我跑任何本地命令。每次都是“网页看完 → 手动敲一遍 → 再切回网页”。</p>
+<p>NotebookLM网页把自己定位成终点——你问它，它答你，结束。</p>
+<p>但我需要它成为流水线上的一环——被调度、被批处理、输出能流到下一步。</p>
+<p>怎么办？</p>
+<p>把Claude套上去。</p>
+<hr>
+<h2 id="二、套上Claude，串起来用"><a href="#二、套上Claude，串起来用" class="headerlink" title="二、套上Claude，串起来用"></a>二、套上Claude，串起来用</h2><p>核心思路特别简单：<strong>让NotebookLM当老师，让Claude当助手。</strong></p>
+<p>老师（NotebookLM）是只读的咨询台：你一次性把47篇论文灌进去就不用管了，它就在那儿待着等你问。不用回灌、不用喂新笔记——论文本身的观点已经足够撑起所有查询。</p>
+<p>助手（Claude）负责写代码、跑脚本、整理结果、编排工具。不懂就去问老师，拿到答案继续干活。</p>
+<p>你是课题负责人，只在关键决策点介入。</p>
+<p><strong>这就是省钱的全部秘密：</strong></p>
+<ul>
+<li><p><strong>RAG vs 塞context是两种不同的成本模型。</strong> 把50k字符日志塞进Claude对话，这坨数据就被算进input token。每问一次就要被“看”一次，成本随语料大小线性涨。走RAG则是NotebookLM内部用向量检索命中相关片段，Claude只看到几百字的蒸馏答案，成本近乎常数。</p>
+</li>
+<li><p><strong>prompt cache有1h TTL，研究场景命中率很低。</strong> 很多人以为开了cache就万事大吉。实际Anthropic的prompt cache默认只存1小时，超时就自动失效；你思考几分钟、切去做别的、或者开新session，下一次调用就得按全价重写一次cache_creation。研究性会话恰好是“问一下、想一会、再问一下”的节奏，命中率惨不忍睹。这是账单暴涨的真正原因。</p>
+</li>
+<li><p><strong>基于事实输出会更有效。</strong> NotebookLM的答案被约束在你上传的源里，每句话带[1][2]引用，点回原文。不会胡编。Claude拿这种答案做决策，不用反复让它“再确认一下”，省下的是更难量化的时间成本。</p>
+</li>
+</ul>
+<p><strong>简单说：真正省Claude token的办法不是开cache，是让重数据一开始就不进Claude。</strong></p>
+<hr>
+<h2 id="三、10分钟装好，开干"><a href="#三、10分钟装好，开干" class="headerlink" title="三、10分钟装好，开干"></a>三、10分钟装好，开干</h2><p>Google官方没提供NotebookLM client，但有个第三方工具可以用——@icebear0828写的notebooklm-client。</p>
+<p>GitHub搜一下就有了。</p>
+<p>装完之后，在对话里说“查一下那个notebook里X的部分”，Claude会自动调——不用每次解释语法。</p>
+<p>具体安装页面上有，10分钟能搞定。</p>
+<hr>
+<h2 id="四、实测：到底省多少钱"><a href="#四、实测：到底省多少钱" class="headerlink" title="四、实测：到底省多少钱"></a>四、实测：到底省多少钱</h2><p>下面这组数不是模拟的，是真实一轮研究会话，从Claude Code的session log里扒出来的。</p>
+<p><strong>测试设置：</strong></p>
+<ul>
+<li>语料：47篇图像+LiDAR SLAM相关论文，一次性灌进同一个NotebookLM notebook</li>
+<li>模型：Claude Opus 4.7</li>
+<li>轮数：5轮深度问答</li>
+<li>方式：Claude Code里正常对话，每轮助手自己调&#x2F;notecraft chat去问老师</li>
+</ul>
+<p><strong>实测结果：</strong></p>
+<p>5轮贵档合计$0.55，平均每轮约$0.11。</p>
+<p>关键数字：cache_creation只有17,379。</p>
+<p>47篇论文的原文一个字都没进Claude的cache_creation——这就是省钱的全部秘密。</p>
+<p><strong>对比：如果把47篇论文直接塞prompt</strong></p>
+<p>47篇论文实测38.4万words≈50万token。</p>
+<p>传统做法分两种场景，最公平的是“单session多轮对话”——同一研究会话里首轮建cache、后续复用，是传统做法的最优情况。</p>
+<p>即使这样，5轮问答贵档差出<strong>17倍</strong>（$9.59 vs $0.55）。跨session场景只会更惨——<strong>86倍</strong>。</p>
+<p>语料再翻倍（100篇、200篇），差距继续线性拉开。传统做法cache_creation随论文数线性涨，本文做法基本不变。</p>
+<p>用Opus跑研究的人：200次研究会话一年就是小两千刀的差距——光“论文不进Claude”这一个动作，一年省下的够再升一次Max。</p>
+<p><strong>代价是什么？慢3倍。</strong></p>
+<ul>
+<li>建notebook + 加一个源：10-15秒</li>
+<li>NotebookLM chat一次：16-48秒（中位约45秒）</li>
+<li>Claude Opus单问：20-35秒</li>
+</ul>
+<p>如果你在乎响应速度超过账单，这套不适合你。</p>
+<hr>
+<h2 id="五、几个能直接抄的工作流"><a href="#五、几个能直接抄的工作流" class="headerlink" title="五、几个能直接抄的工作流"></a>五、几个能直接抄的工作流</h2><h3 id="1-学者-学生工作流"><a href="#1-学者-学生工作流" class="headerlink" title="1. 学者&#x2F;学生工作流"></a>1. 学者&#x2F;学生工作流</h3><p>reading list是天然的知识边界。</p>
+<p>一学期几十篇论文，同一批PDF要反复查几十次。以前Ctrl-F翻到眼花，问ChatGPT又怕它瞎编不带引用。</p>
+<p><strong>语料配方（灌一次用一学期）：</strong></p>
+<ul>
+<li>20-50篇课题相关论文PDF</li>
+<li>课程大纲、讲座字幕</li>
+<li>导师邮件、自己的章节草稿、读书笔记</li>
+</ul>
+<p><strong>老师能回答的杀手问题：</strong></p>
+<ul>
+<li>“哪两篇结论互相冲突，冲突在哪一层假设？”</li>
+<li>“X方法在这个语料里出现过几次，各自怎么用的？”</li>
+<li>“A论文的公式3和B论文的公式7实际等价吗？”</li>
+</ul>
+<p><strong>Claude在链路里干嘛：</strong> 按课题推进——问老师拿概念&#x2F;公式 → 写代码复现 → 跑实验 → 整理笔记。论文原文一次都不进Claude会话。</p>
+<hr>
+<h3 id="2-打新股-读招股书工作流"><a href="#2-打新股-读招股书工作流" class="headerlink" title="2. 打新股&#x2F;读招股书工作流"></a>2. 打新股&#x2F;读招股书工作流</h3><p>一本招股书300-600页，打新窗口就三天。靠人读完再决策根本来不及。</p>
+<p>港股&#x2F;A股打新节奏快，新股上市前只有聆讯后资料集（港股）或招股意向书（A股）能看，文档动辄500页+。一家看完至少4小时，一周5-8家新股，根本来不及。</p>
+<p>而且招股书最有信息量的不是“公司怎么夸自己”，是藏在风险因素、关联交易、历次融资估值里的那些红旗。这部分人眼最容易漏。</p>
+<p><strong>语料配方（一家公司一个notebook）：</strong></p>
+<ul>
+<li>招股书全本——必灌，最核心</li>
+<li>基石投资者披露表</li>
+<li>同行可比公司最新财报</li>
+<li>保荐人&#x2F;承销商研报</li>
+<li>管理层过往访谈、公司过去融资轮估值表</li>
+<li>行业监管政策文件</li>
+</ul>
+<p><strong>老师能回答的8个核心问题：</strong></p>
+<ol>
+<li>核心产品&#x2F;业务是什么？近3年收入结构变化如何？客户集中度？</li>
+<li>这家和同行在毛利率、营收增速、研发占比上的差异在哪？</li>
+<li>基石投资者是谁、认购金额、锁定期？有没有知名产业资本？</li>
+<li>募资用途按比例拆，哪部分最大？控股股东持股稀释到多少？</li>
+<li>风险因素里，哪些是行业共性，哪些是公司特有？</li>
+<li>过往融资估值：上轮估值&#x2F;IPO估值的跳涨倍数？上轮投资人锁定期多久？</li>
+<li>历史财务有没有一次性收益把利润做高的痕迹？经营现金流和净利润是否匹配？</li>
+<li>关联交易占营收比多少？前五大客户里有没有关联方？</li>
+</ol>
+<p><strong>Claude在链路里干嘛：</strong> 批处理。把一周打新池里8家的一页汇总成一张markdown决策表，15分钟扫完下单。</p>
+<p>一周打新池5-8家，全程招股书不进Claude对话——单本150-250k token，5家就是100万token的语料量，传统做法光这一项一周就能烧掉$50+。走本文做法$2以内。</p>
+<hr>
+<h3 id="3-个人知识库工作流"><a href="#3-个人知识库工作流" class="headerlink" title="3. 个人知识库工作流"></a>3. 个人知识库工作流</h3><p>给自己建“第二大脑”。</p>
+<p>Obsidian搜索只认关键词，答不出“我对X的看法这三年变过没”。所有笔记都是自己写的，合规上没顾虑，但体量散、格式杂，本地没工具能跨文件做语义检索。</p>
+<p><strong>语料配方：</strong></p>
+<ul>
+<li>Obsidian&#x2F;Notion全量导出</li>
+<li>Kindle高亮、Readwise剪藏</li>
+<li>工作日记、会议纪要、复盘文档</li>
+</ul>
+<p><strong>老师能回答的杀手问题：</strong></p>
+<ul>
+<li>“我这三年对’专注力’写过什么？观点变了吗？”</li>
+<li>“《原则》和《思考快与慢》对认知偏差的说法，哪里重叠哪里冲突？”</li>
+<li>“过去一个月所有会议纪要里，X项目各人的态度分别是什么？”</li>
+</ul>
+<p><strong>三个工作流的共同点：</strong> 反复查、跨文档、私有边界——占任何一条，建库15秒成本一周内摊平。</p>
+<hr>
+<h2 id="最后说几句"><a href="#最后说几句" class="headerlink" title="最后说几句"></a>最后说几句</h2><p>有几个事值得注意：</p>
+<ul>
+<li>storage_state.json里面是你Google的活session，注意保管</li>
+<li>notebooklm-client是逆向NotebookLM内部协议做出来的，Google不认账，随时可能改后端让你的命令突然报错</li>
+</ul>
+<p><strong>这套东西的核心就一句话——分工：</strong></p>
+<ul>
+<li>NotebookLM当老师：答领域知识，带引用，不乱外推</li>
+<li>Claude当助手：编排工具、写代码、整理结果，不懂就问老师</li>
+<li>你当课题负责人：只在关键决策点介入</li>
+</ul>
+<p>我用了一个月，省下来的钱够再吃好几顿大餐。</p>
+<p>但更重要的是，调研十几篇论文不再让我心疼额度了——这种“不用算账”的爽，比省钱本身还上瘾。</p>
+<hr>
+<p><em>如果你觉得这篇文章有点东西，点个关注咱们下次再聊。</em></p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://kuangyue111.github.io">kuangyue111</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://kuangyue111.github.io/2026/06/13/2026-06-13-reduce-ai-cost-200-to-20/">https://kuangyue111.github.io/2026/06/13/2026-06-13-reduce-ai-cost-200-to-20/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://kuangyue111.github.io" target="_blank">KuangYue's Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/AI/">AI</a><a class="post-meta__tags" href="/tags/Claude/">Claude</a><a class="post-meta__tags" href="/tags/NotebookLM/">NotebookLM</a><a class="post-meta__tags" href="/tags/%E7%9C%81%E9%92%B1/">省钱</a><a class="post-meta__tags" href="/tags/%E6%95%88%E7%8E%87%E5%B7%A5%E5%85%B7/">效率工具</a><a class="post-meta__tags" href="/tags/AI%E5%B7%A5%E5%85%B7/">AI工具</a><a class="post-meta__tags" href="/tags/%E5%B7%A5%E4%BD%9C%E6%B5%81/">工作流</a><a class="post-meta__tags" href="/tags/Google/">Google</a></div><div class="post-share"><div class="social-share" data-image="/img/butterfly-icon.png" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/2026/06/13/2026-06-13-energy-storage-underlying-logic/" title="储能系统技术的底层逻辑：从直流母线架构到SOC估计"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">储能系统技术的底层逻辑：从直流母线架构到SOC估计</div></div><div class="info-2"><div class="info-item-1">  最近认真研读了一份储能系统的技术研究报告，报告覆盖了直流母线架构、1500V高压系统、BMS控制策略、314AhLFP标定、EIS阻抗谱拟合到EKF SOC估算的完整技术链条。读完之后有些东西想写下来，不是为了做科普，而是因为这些技术细节在工程现场真的会决定一个项目最终能不能跑起来。  一、直流母线还是交流母线，这个问题没有标准答案  每次有人问我储能系统该用直流母线还是交流母线，我的第一反应是反问对方：你的场景是什么。   这不是在卖关子，而是这两种架构的适用边界确实是不同的，没法一刀切。   直流母线的本质是把所有电池簇都挂在一条共享的直流母线上，然后用一台集中式PCS统一逆变并网。这种架构最大的优势是对光储一体化场景非常友好——光伏直流直接挂进来，省掉一级AC&#x2F;DC转换，效率有先天优势。数据中心的UPS储能也是这个逻辑，负载本身就是直流，何必多此一举搞成交流再转回来。   但直流母线有一个绕不开的物理问题：环流。报告里给了一个让我印象很深的数字——两个电压差40V、内阻各0.5Ω的电池簇并联在一条直流母线上，环流会达到40A，持续功60kW。60kW不是一个可...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/05/25/2026-05-25-ai-energy-storage-codebase-predictive-maintenance/" title="从被动告警到预测性维护——将 AI 引入真实储能系统代码库的工程实践"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-25</div><div class="info-item-2">从被动告警到预测性维护——将 AI 引入真实储能系统代码库的工程实践</div></div><div class="info-2"><div class="info-item-1"> From Reactive Alarms to Predictive Insight: Bringing AI into a Real-World Energy Storage Codebase  一、写在前面：为什么我要写这篇文章我所在的项目是一套分布式储能管理系统（Energy Storage Management System, ESMS），主控板基于 ARM-Linux，外围挂着 BMS（电池管理系统）、PCS（储能变流器）、电表、温控、消防、光伏逆变器、CCU（电池簇控制器）等十几类设备。整个项目有上百个 sampler 和 reporter 模块，核心数据流是： 1设备 → sampler（CAN/RS485/Modbus 采集） → DPR（数据处理中心） → reporter（MQTT/IEC104/Modbus 上报）  最近半年我在维护这套代码时，反复被一个问题困扰：**告警机制本质上是”事后响应”**。 举个真实例子。System.sql 里注册了上千条告警，比如： 123INSERT INTO Charger_DeviceModel_Alarms ......</div></div></div></a></div></div><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="giscus-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/img/butterfly-icon.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">kuangyue111</div><div class="author-info-description">嵌入式开发 | 储能系统 | 工业通信协议</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">19</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">106</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">11</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/kuangyue111"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/kuangyue111" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">专注于嵌入式与储能系统技术分享</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%88%91%E6%98%AF%E6%80%8E%E4%B9%88%E6%8A%8A%E6%AF%8F%E6%9C%88200%E5%88%80%E7%9C%81%E5%88%B020%E7%9A%84"><span class="toc-number">1.</span> <span class="toc-text">我是怎么把每月200刀省到20的</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81NotebookLM%E5%88%B0%E5%BA%95%E9%A6%99%E5%9C%A8%E5%93%AA"><span class="toc-number">1.1.</span> <span class="toc-text">一、NotebookLM到底香在哪</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E5%A5%97%E4%B8%8AClaude%EF%BC%8C%E4%B8%B2%E8%B5%B7%E6%9D%A5%E7%94%A8"><span class="toc-number">1.2.</span> <span class="toc-text">二、套上Claude，串起来用</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%8110%E5%88%86%E9%92%9F%E8%A3%85%E5%A5%BD%EF%BC%8C%E5%BC%80%E5%B9%B2"><span class="toc-number">1.3.</span> <span class="toc-text">三、10分钟装好，开干</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E5%AE%9E%E6%B5%8B%EF%BC%9A%E5%88%B0%E5%BA%95%E7%9C%81%E5%A4%9A%E5%B0%91%E9%92%B1"><span class="toc-number">1.4.</span> <span class="toc-text">四、实测：到底省多少钱</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E5%87%A0%E4%B8%AA%E8%83%BD%E7%9B%B4%E6%8E%A5%E6%8A%84%E7%9A%84%E5%B7%A5%E4%BD%9C%E6%B5%81"><span class="toc-number">1.5.</span> <span class="toc-text">五、几个能直接抄的工作流</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-%E5%AD%A6%E8%80%85-%E5%AD%A6%E7%94%9F%E5%B7%A5%E4%BD%9C%E6%B5%81"><span class="toc-number">1.5.1.</span> <span class="toc-text">1. 学者&#x2F;学生工作流</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-%E6%89%93%E6%96%B0%E8%82%A1-%E8%AF%BB%E6%8B%9B%E8%82%A1%E4%B9%A6%E5%B7%A5%E4%BD%9C%E6%B5%81"><span class="toc-number">1.5.2.</span> <span class="toc-text">2. 打新股&#x2F;读招股书工作流</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-%E4%B8%AA%E4%BA%BA%E7%9F%A5%E8%AF%86%E5%BA%93%E5%B7%A5%E4%BD%9C%E6%B5%81"><span class="toc-number">1.5.3.</span> <span class="toc-text">3. 个人知识库工作流</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9C%80%E5%90%8E%E8%AF%B4%E5%87%A0%E5%8F%A5"><span class="toc-number">1.6.</span> <span class="toc-text">最后说几句</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/06/13/2026-06-13-reduce-ai-cost-200-to-20/" title="我是怎么把每月200刀省到20的">我是怎么把每月200刀省到20的</a><time datetime="2026-06-13T08:00:00.000Z" title="发表于 2026-06-13 16:00:00">2026-06-13</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/06/13/2026-06-13-energy-storage-underlying-logic/" title="储能系统技术的底层逻辑：从直流母线架构到SOC估计">储能系统技术的底层逻辑：从直流母线架构到SOC估计</a><time datetime="2026-06-13T07:00:00.000Z" title="发表于 2026-06-13 15:00:00">2026-06-13</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/06/09/2026-06-09-pv-storage-load-joint-forecasting-ems/" title="光伏-储能-负荷联合预测：给 EMS 装上&quot;预知能力&quot;">光伏-储能-负荷联合预测：给 EMS 装上&quot;预知能力&quot;</a><time datetime="2026-06-09T08:00:00.000Z" title="发表于 2026-06-09 16:00:00">2026-06-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/06/09/2026-06-09-solid-state-transformer-industry-analysis/" title="固态变压器（SST）行业深度分析报告">固态变压器（SST）行业深度分析报告</a><time datetime="2026-06-09T07:00:00.000Z" title="发表于 2026-06-09 15:00:00">2026-06-09</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/06/08/2026-06-08-eis-deep-analysis/" title="电化学阻抗谱（EIS）深度解析：从物理原理到工程代码实现">电化学阻抗谱（EIS）深度解析：从物理原理到工程代码实现</a><time datetime="2026-06-08T07:00:00.000Z" title="发表于 2026-06-08 15:00:00">2026-06-08</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By kuangyue111</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.4</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="前往评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.4"></script><script src="/js/main.js?v=5.5.4"></script><div class="js-pjax"><script>(() => {
+  const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
+  const option = {"mapping":"url","lang":"zh-CN"}
+
+  const getGiscusTheme = theme => theme === 'dark' ? 'dark' : 'light'
+
+  const createScriptElement = config => {
+    const ele = document.createElement('script')
+    Object.entries(config).forEach(([key, value]) => {
+      ele.setAttribute(key, value)
+    })
+    return ele
+  }
+
+  const loadGiscus = (el = document, key) => {
+    const mappingConfig = isShuoshuo
+      ? { 'data-mapping': 'specific', 'data-term': key }
+      : { 'data-mapping': (option && option['data-mapping']) || 'pathname' }
+
+    const giscusConfig = {
+      src: 'https://giscus.app/client.js',
+      'data-repo': 'kuangyue111/kuangyue111.github.io',
+      'data-repo-id': 'R_kgDOSQde2Q',
+      'data-category-id': 'DIC_kwDOSQde2c4C8CgH',
+      'data-theme': getGiscusTheme(document.documentElement.getAttribute('data-theme')),
+      'data-reactions-enabled': '1',
+      crossorigin: 'anonymous',
+      async: true,
+      ...option,
+      ...mappingConfig
+    }
+
+    const scriptElement = createScriptElement(giscusConfig)
+
+    el.querySelector('#giscus-wrap').appendChild(scriptElement)
+
+    if (isShuoshuo) {
+      window.shuoshuoComment.destroyGiscus = () => {
+        if (el.children.length) {
+          el.innerHTML = ''
+          el.classList.add('no-comment')
+        }
+      }
+    }
+  }
+
+  const changeGiscusTheme = theme => {
+    const iframe = document.querySelector('#giscus-wrap iframe')
+    if (iframe) {
+      const message = {
+        giscus: {
+          setConfig: {
+            theme: getGiscusTheme(theme)
+          }
+        }
+      }
+      iframe.contentWindow.postMessage(message, 'https://giscus.app')
+    }
+  }
+
+  btf.addGlobalFn('themeChange', changeGiscusTheme, 'giscus')
+
+  if (isShuoshuo) {
+    'Giscus' === 'Giscus'
+      ? window.shuoshuoComment = { loadComment: loadGiscus }
+      : window.loadOtherComment = loadGiscus
+    return
+  }
+
+  if ('Giscus' === 'Giscus' || !false) {
+    if (false) btf.loadComment(document.getElementById('giscus-wrap'), loadGiscus)
+    else loadGiscus()
+  } else {
+    window.loadOtherComment = loadGiscus
+  }
+})()</script></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

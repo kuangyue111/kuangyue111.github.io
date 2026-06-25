@@ -1,0 +1,370 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>卡尔曼滤波SOC估算技术调研读后感：从理论到工程的完整解读 | KuangYue's Blog</title><meta name="author" content="kuangyue111"><meta name="copyright" content="kuangyue111"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="▎ 最近精读了一份关于卡尔曼滤波SOC估算的技术调研报告，内容覆盖了理论基础、工程实现到前沿进展，干货密度极高。这篇文章是  ▎ 结合自身在储能BMS领域的工作经历，对这份报告的解读与延展，希望能帮助从事电池管理系统开发的工程师更系统地理解这一核  ▎ 心算法。  一、SOC为什么是BMS最难搞的参数  在我刚接触BMS开发的时候，有一个问题困扰了我很久：温度可以用热敏电阻测，电压可以用ADC">
+<meta property="og:type" content="article">
+<meta property="og:title" content="卡尔曼滤波SOC估算技术调研读后感：从理论到工程的完整解读">
+<meta property="og:url" content="https://kuangyue111.github.io/2026/06/25/2026-06-25-ekf-soc-estimation-reading-review/index.html">
+<meta property="og:site_name" content="KuangYue&#39;s Blog">
+<meta property="og:description" content="▎ 最近精读了一份关于卡尔曼滤波SOC估算的技术调研报告，内容覆盖了理论基础、工程实现到前沿进展，干货密度极高。这篇文章是  ▎ 结合自身在储能BMS领域的工作经历，对这份报告的解读与延展，希望能帮助从事电池管理系统开发的工程师更系统地理解这一核  ▎ 心算法。  一、SOC为什么是BMS最难搞的参数  在我刚接触BMS开发的时候，有一个问题困扰了我很久：温度可以用热敏电阻测，电压可以用ADC">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://kuangyue111.github.io/img/butterfly-icon.png">
+<meta property="article:published_time" content="2026-06-25T07:00:00.000Z">
+<meta property="article:modified_time" content="2026-06-25T11:14:55.886Z">
+<meta property="article:author" content="kuangyue111">
+<meta property="article:tag" content="BMS">
+<meta property="article:tag" content="电池管理">
+<meta property="article:tag" content="SOC估算">
+<meta property="article:tag" content="锂电池">
+<meta property="article:tag" content="储能">
+<meta property="article:tag" content="EKF">
+<meta property="article:tag" content="卡尔曼滤波">
+<meta property="article:tag" content="读后感">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://kuangyue111.github.io/img/butterfly-icon.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "卡尔曼滤波SOC估算技术调研读后感：从理论到工程的完整解读",
+  "url": "https://kuangyue111.github.io/2026/06/25/2026-06-25-ekf-soc-estimation-reading-review/",
+  "image": "https://kuangyue111.github.io/img/butterfly-icon.png",
+  "datePublished": "2026-06-25T07:00:00.000Z",
+  "dateModified": "2026-06-25T11:14:55.886Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "kuangyue111",
+      "url": "https://kuangyue111.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://kuangyue111.github.io/2026/06/25/2026-06-25-ekf-soc-estimation-reading-review/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.5.4"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.13.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '卡尔曼滤波SOC估算技术调研读后感：从理论到工程的完整解读',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/butterfly-icon.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">23</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">121</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">11</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">KuangYue's Blog</span></a><a class="nav-page-title" href="/"><span class="site-name">卡尔曼滤波SOC估算技术调研读后感：从理论到工程的完整解读</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">卡尔曼滤波SOC估算技术调研读后感：从理论到工程的完整解读</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-06-25T07:00:00.000Z" title="发表于 2026-06-25 15:00:00">2026-06-25</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-06-25T11:14:55.886Z" title="更新于 2026-06-25 19:14:55">2026-06-25</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/">技术分享</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/%E5%B5%8C%E5%85%A5%E5%BC%8F%E5%BC%80%E5%8F%91/">嵌入式开发</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><p>  ▎ 最近精读了一份关于卡尔曼滤波SOC估算的技术调研报告，内容覆盖了理论基础、工程实现到前沿进展，干货密度极高。这篇文章是<br>  ▎ 结合自身在储能BMS领域的工作经历，对这份报告的解读与延展，希望能帮助从事电池管理系统开发的工程师更系统地理解这一核<br>  ▎ 心算法。</p>
+<hr>
+<h1 id="一、SOC为什么是BMS最难搞的参数"><a href="#一、SOC为什么是BMS最难搞的参数" class="headerlink" title="一、SOC为什么是BMS最难搞的参数"></a>一、SOC为什么是BMS最难搞的参数</h1><p>  在我刚接触BMS开发的时候，有一个问题困扰了我很久：温度可以用热敏电阻测，电压可以用ADC量，电流可以用霍尔传感器采——为什么  SOC（荷电状态）偏偏要用算法估计，而不是直接测量？</p>
+<p>  答案是：SOC是一个隐含状态量，它描述的是电池内部还剩多少”可用能量”，这个物理量从根本上就无法直接测量。你看到的电压、电流、温度都只是它的”影子”——SOC通过这些可观测量折射出来，但它本身躲在电芯内部的电化学反应里。</p>
+<p>  这个报告把SOC的数学定义写得很清晰：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SOC(t) = SOC(t₀) − (1/Qmax) ·∫η·I(τ)dτ</span><br></pre></td></tr></table></figure>
+<p>  看起来不过是一个积分公式。但魔鬼藏在细节里：</p>
+<ul>
+<li>Qmax不是常数——它随着电池老化每年以1%~3%的速度衰减，30℃以上高温使用时衰减更快</li>
+<li>η（库伦效率）是个函数——受温度、充放电倍率影响，实测值在0.95~1.00之间浮动</li>
+<li>积分累积误差——电流传感器每0.1%的偏差，在一次完整充放电后带来的SOC误差可能达到0.1%~1%，长时间运行后累积不可忽视</li>
+<li>初值未知——设备上电或更换电池后，你不知道当前SOC是多少</li>
+</ul>
+<p>  报告中列出了六大核心难点，其中对我触动最深的是LFP电池的电压平台问题。磷酸铁锂电池在约20%~80% SOC区间内，OCV（开路电压）的变化幅度不足10mV&#x2F;10%SOC，几乎是一条水平线。这意味着你无法从电压反推SOC——就像在一片平坦的盐湖里走路，无论向哪个方向走，周围的地貌都一模一样，完全失去了方向感。</p>
+<p>  这正是为什么必须引入卡尔曼滤波这样的状态观测器：单靠安时积分会漂移，单靠OCV观测在平台区又失效，只有两者有机融合，才能在全工况范围内维持高精度估计。</p>
+<hr>
+<h1 id="二、安时积分：那个”用了但骗不了自己”的老方法"><a href="#二、安时积分：那个”用了但骗不了自己”的老方法" class="headerlink" title="二、安时积分：那个”用了但骗不了自己”的老方法"></a>二、安时积分：那个”用了但骗不了自己”的老方法</h1><p>  在理解卡尔曼滤波之前，必须先聊聊安时积分（Coulomb Counting &#x2F; AH Integration）——这是业界用了几十年的基准方法，现在几乎每一家BMS厂商都在用，但几乎每一家工程师都知道它有哪些问题。</p>
+<p>  安时积分的原理极为简单：SOC的变化量等于流进&#x2F;流出的电量除以电池容量。公式上的含义就是把每个采样周期的电流值累加起来。</p>
+<p>  它的优点也很突出：计算量几乎为零，嵌入式8位MCU上几十微秒就能跑完，不需要复杂的模型。</p>
+<p>  但问题在于它是完全开环的——它就像一个在黑暗中走路只靠计步器的人，不知道自己有没有偏离路线。一旦初值不准确，或者电流传感器有偏置，或者库伦效率估计有误，这些误差会在积分过程中一直累加，永远不会自我修正。</p>
+<p>  工程上，我们通常用安时积分做短时窗口内的精确递推，然后想方设法找”锚点”来校准——比如电池满充到截止电压时设SOC&#x3D;100%，放电到截止电压时设SOC&#x3D;0%。但问题是储能系统往往不会每天满充满放，校准机会有限；再加上LFP电池的”伪满电”现象（电压到了截止点但容量还差1%~2%），单靠电压截止校准也不够精确。</p>
+<p>  这就是卡尔曼滤波被引入的根本动机：让SOC估计从开环积分升级为闭环状态观测。</p>
+<hr>
+<h1 id="三、卡尔曼滤波的核心逻辑：预测与修正的完美婚姻"><a href="#三、卡尔曼滤波的核心逻辑：预测与修正的完美婚姻" class="headerlink" title="三、卡尔曼滤波的核心逻辑：预测与修正的完美婚姻"></a>三、卡尔曼滤波的核心逻辑：预测与修正的完美婚姻</h1><p>  报告中对卡尔曼滤波五大方程的推导非常清晰，但我想用更直白的语言把背后的思想讲出来。</p>
+<p>  想象你在一条高速公路上蒙眼开车（极端场景），有两个信息源可以帮你判断位置：</p>
+<ol>
+<li>你的速度表——基于物理模型，你知道自己开了多快、开了多久，可以推算出大概在哪里</li>
+<li>GPS信号——每隔一段时间给你一个位置读数，但有一定误差</li>
+</ol>
+<p>  卡尔曼滤波就是在每一时刻，把这两个信息聪明地融合起来：</p>
+<ul>
+<li>如果速度表很准（过程噪声Q小）、GPS很差（测量噪声R大），就更相信速度表的推算</li>
+<li>如果速度表不准（Q大）、GPS很准（R小），就更相信GPS的读数</li>
+<li>卡尔曼增益K就是这两者的动态权重，由算法自动计算</li>
+</ul>
+<p>  翻译到电池SOC估计上：</p>
+<ul>
+<li>速度表 &#x3D; 安时积分（基于电流测量的SOC递推）</li>
+<li>GPS &#x3D; 端电压观测（通过等效电路模型反算SOC）</li>
+<li>卡尔曼增益 &#x3D; 算法自动权衡两者的可信程度</li>
+</ul>
+<p>  这五个方程（状态预测、协方差预测、卡尔曼增益、状态更新、协方差更新）组成了一个完整的闭环：先用安时积分预测下一时刻的SOC（预测阶段），再用实测端电压与模型预测电压的差值来校正SOC（更新阶段）。这个差值——技术上叫”新息（innovation）”——正是反映”模型偏了多少”的信号。</p>
+<p>  这就是为什么卡尔曼滤波能抑制漂移：只要电压测量提供了信息，滤波器就会把模型预测拉回到真实轨道。</p>
+<hr>
+<h1 id="四、等效电路模型：卡尔曼滤波的物理基础"><a href="#四、等效电路模型：卡尔曼滤波的物理基础" class="headerlink" title="四、等效电路模型：卡尔曼滤波的物理基础"></a>四、等效电路模型：卡尔曼滤波的物理基础</h1><p>  卡尔曼滤波不是空中楼阁，它需要一个能描述电池动态特性的物理模型作为基础。这就是等效电路模型（ECM）的作用。</p>
+<p>  报告对四种主流模型做了系统对比，结论很清晰：二阶RC模型（PNGV模型）是工业界的最优平衡点。</p>
+<p>  让我解释一下为什么：</p>
+<p>  零阶Rint模型：只有一个开路电压源和一个欧姆内阻，完全无法描述电池的极化动态，只适合做极简仿真，不具备估算SOC的价值。</p>
+<p>  一阶RC模型（Thevenin模型）：加入了一个RC并联环节来描述电化学极化，能捕捉几秒到几十秒的电压响应过程，对算力极其受限的场合勉强够用，但在大倍率充放电时精度明显不足。</p>
+<p>  二阶RC模型：两个RC并联环节，一个描述秒级的电化学极化（τ₁≈几秒<del>几十秒），另一个描述分钟级的浓差极化（τ₂≈几十秒</del>数分钟）。实践表明，这两个时间常数基本覆盖了主要的极化动态，电压跟踪误差可控制在20mV以内。</p>
+<p>  三阶RC及以上：精度提升有限（通常不超过1%），但计算复杂度大幅上升，在嵌入式平台上容易遇到算力瓶颈，且过多参数会带来过拟合风险。</p>
+<p>  在我们的储能BMS项目中，一开始用一阶RC + 安时积分的组合，在动态工况下SOC误差经常超过5%，后来切换到二阶RC + EKF后，稳态误差稳定在3%以内，动态工况也能达到±3%。这与报告中的数据完全吻合。</p>
+<hr>
+<h1 id="五、从EKF到AEKF：卡尔曼滤波族的进化逻辑"><a href="#五、从EKF到AEKF：卡尔曼滤波族的进化逻辑" class="headerlink" title="五、从EKF到AEKF：卡尔曼滤波族的进化逻辑"></a>五、从EKF到AEKF：卡尔曼滤波族的进化逻辑</h1><p>  这是报告最核心的部分，也是工程师选型时最容易迷失的地方。我来整理一下这六种算法的进化脉络。</p>
+<h2 id="5-1-EKF：工业界的”主力军”"><a href="#5-1-EKF：工业界的”主力军”" class="headerlink" title="5.1 EKF：工业界的”主力军”"></a>5.1 EKF：工业界的”主力军”</h2><p>  扩展卡尔曼滤波（EKF）是目前车载和储能BMS中应用最广泛的算法。它解决了一个关键问题：标准KF只适用于线性系统，但OCV-SOC关系是非线性的怎么办？</p>
+<p>  EKF的答案是一阶泰勒展开：在每一步计算中，对OCV曲线在当前SOC估计点做切线近似，用这条切线的斜率（dUocv&#x2F;dSOC）来代替线性观测矩阵中的对应元素。这在大多数SOC范围内是有效的。</p>
+<p>  EKF的实测精度：某BMS项目实测SOC&#x3D;47.2%，静置法测得真值48.3%，相对误差仅2.3%。这个数字已经能满足GB&#x2F;T<br>38661对SOC精度的要求。</p>
+<p>  但EKF有两个痛点：</p>
+<ol>
+<li>在LFP电池的电压平台区，dUocv&#x2F;dSOC ≈ 0，一阶线性化几乎失效，滤波器退化为纯安时积分</li>
+<li>噪声协方差Q和R需要手动整定，一旦工况变化（温度、老化）就可能失准</li>
+</ol>
+<h2 id="5-2-UKF：精度更高但”贵”一些"><a href="#5-2-UKF：精度更高但”贵”一些" class="headerlink" title="5.2 UKF：精度更高但”贵”一些"></a>5.2 UKF：精度更高但”贵”一些</h2><p>  无迹卡尔曼滤波（UKF）放弃了线性化近似，改用无迹变换（UT）：在状态均值附近选取2n+1个Sigma点，每个点都直接通过非线性函数传播，然后从这些点集统计出新的均值和协方差。</p>
+<p>  理论上，UKF的精度可以达到二阶甚至三阶泰勒精度，而EKF只有一阶。在LFP电压平台区，UKF的优势尤为明显：精度通常比EKF提升0.5%~1.5%。</p>
+<p>  代价是：UKF需要传播2n+1次（n是状态维度），计算量约为EKF的2~3倍。在资源受限的车规MCU上可能比较吃力，但在储能BMS（通常配备更强的边缘计算硬件）上完全可以承受。</p>
+<p>  另一个优点：UKF不需要手动推导雅可比矩阵，免去了EKF开发中最繁琐的部分，降低了实现难度和出错概率。</p>
+<h2 id="5-3-AEKF：让滤波器”感知”噪声变化"><a href="#5-3-AEKF：让滤波器”感知”噪声变化" class="headerlink" title="5.3 AEKF：让滤波器”感知”噪声变化"></a>5.3 AEKF：让滤波器”感知”噪声变化</h2><p>  自适应扩展卡尔曼滤波（AEKF）针对EKF的第二个痛点——固定的Q&#x2F;R导致不适应工况变化——做了专项改进。</p>
+<p>  核心思想是：通过滑动窗口统计”新息”序列的统计特性（新息就是实测值与预测值的差），反推当前噪声协方差的实际水平，从而动态更新Q和R。</p>
+<p>  一个工程经验：当电池温度从25℃降到-10℃时，内阻可能增大3倍，模型的电压预测误差随之大幅上升——这就是测量噪声R实际变大了 。固定R的EKF会低估模型误差，过度信任预测值，导致SOC漂移。AEKF会自动检测到新息方差变大，相应调高R，让滤波器多参考测量值修正。</p>
+<p>  计算开销增量不大（约15%<del>30%），但鲁棒性显著提升，尤其在宽温度范围（如-20℃</del>55℃）运行的储能系统里，AEKF是我的第一推荐 。</p>
+<h2 id="5-4-DEKF：SOC与SOH联合估计的破题之道"><a href="#5-4-DEKF：SOC与SOH联合估计的破题之道" class="headerlink" title="5.4 DEKF：SOC与SOH联合估计的破题之道"></a>5.4 DEKF：SOC与SOH联合估计的破题之道</h2><p>  双扩展卡尔曼滤波（DEKF）是应对”电池老化”问题的专门方案。</p>
+<p>  随着电池使用，容量衰减（SOH下降），内阻增大，OCV-SOC曲线也会发生轻微漂移。如果BMS里的模型参数永远是出厂时标定的值，那随着时间推移，SOC估计误差会越来越大。</p>
+<p>  DEKF的方案是两个EKF并行运行：一个快EKF（秒级&#x2F;毫秒级更新）负责估计SOC，一个慢EKF（分钟级&#x2F;小时级更新）负责跟踪容量Qmax和内阻R₀的变化。两者通过当前的参数和状态估计互相交叉支撑，实现SOC-SOH的联合在线估计。</p>
+<p>  这对大规模储能系统尤为重要：一个运行了2年的5MWh储能电站，电芯容量可能已经衰减到原来的92%，如果SOC估计仍基于初始容量，每个满充周期的SOC误差就达到8%，会严重影响调度效率和循环寿命管理。</p>
+<hr>
+<h1 id="六、LFP电池：这个特殊的”硬骨头”"><a href="#六、LFP电池：这个特殊的”硬骨头”" class="headerlink" title="六、LFP电池：这个特殊的”硬骨头”"></a>六、LFP电池：这个特殊的”硬骨头”</h1><p>  报告专门用了一个章节讨论磷酸铁锂电池的特殊性，这部分对储能工程师来说尤为重要，因为储能市场的主流电芯正是314Ah LFP。</p>
+<p>  LFP电池的难点用一个数据就能说清楚：在20%~80% SOC范围内，OCV从约3.30V变化到约3.33V，变化幅度不足30mV，对应10%的SOC跨度平均变化不足3mV。</p>
+<p>  这意味着：</p>
+<ul>
+<li>OCV法几乎完全失效——你需要让电池静置3小时以上才能测到稳态OCV，而且根据OCV推算出的SOC误差可能达到5%~10%</li>
+<li>EKF的卡尔曼增益在平台区趋近于零——观测方程提供的修正信息极少，滤波器实际上退化为纯安时积分</li>
+<li>充放电磁滞现象——充电时的OCV和放电时的OCV存在5<del>15mV的差异，如果不单独建模，会引入1%</del>2%的系统误差</li>
+</ul>
+<p>  报告给出的针对LFP的改进策略，其中我认为最实用的两条是：</p>
+<p>  ①多算法融合：在LFP电压平台区（20%~80% SOC），以安时积分为主、适当施加动态约束；在两端陡峭区（&lt;20%或&gt;80%），充分利用EKF&#x2F;UKF的观测修正能力。这种”分区策略”在我们的实际产品中验证了全SOC区间精度均衡。</p>
+<p>  ②定期满充校准：当电池电压到达充电截止电压（LFP约3.65V）时，将SOC强制修正为100%（同时更新Qmax估计）。虽然不能每天做，<br>  但每周一次的满充校准可以有效消除安时积分的累积漂移。</p>
+<hr>
+<p>  七、储能BMS与车载BMS的算法选型差异</p>
+<p>  报告中有一个对比表格，值得认真细读，因为它道出了储能和动力电池在SOC算法选型上的本质差异。</p>
+<p>  算力资源：车规MCU（如英飞凌TriCore或瑞萨RH850）通常算力有限，优先EKF；储能BMS通常配备边缘网关或工控机，算力宽裕，UKF&#x2F;AEKF&#x2F;DEKF都可以考虑。</p>
+<p>  精度要求：动力电池SOC误差±5%是行业普遍水平；储能BMS因为直接影响调度收益和保护策略，通常要求±3%，高端场景要求±2%。</p>
+<p>  校准机会：电动汽车每次充电到100%就可以校准一次；储能系统的SOC可能长期维持在20%~80%之间（为了延长循环寿命），满充机会远少于汽车，更依赖算法自身的长期漂移抑制能力。</p>
+<p>  电芯数量：大型储能电站动辄数千颗电芯串并联，不仅需要单芯SOC估计，还需要簇级SOC融合（多电芯中哪个最弱？系统SOC怎么定义？）和SOH老化追踪（哪些电芯开始衰减？整簇什么时候需要均衡？）。DEKF在这里的优势是天然的。</p>
+<p>  基于以上分析，对于314Ah LFP储能电芯，报告推荐AEKF或UKF+二阶RC模型，同时配备定期满充校准机制，这与我们团队的实践选型完全一致。</p>
+<hr>
+<h1 id="八、工程落地的三个关键环节"><a href="#八、工程落地的三个关键环节" class="headerlink" title="八、工程落地的三个关键环节"></a>八、工程落地的三个关键环节</h1><p>  读完理论，很多工程师会问：这些公式我都懂，但在实际项目中怎么落地？报告的第7章给出了三个核心答案。</p>
+<p>  ①HPPC测试：参数辨识的标准动作</p>
+<p>  等效电路模型的参数不是拍脑袋定的，必须通过HPPC（混合脉冲功率特性）测试来辨识。具体做法是在不同SOC点（每隔5%~10%）注入标准脉冲电流，从电压响应曲线中拟合出R₀、R₁C₁、R₂C₂各参数。</p>
+<p>  关键点：一定要在多温度（-20℃&#x2F;0℃&#x2F;25℃&#x2F;40℃）和多SOH状态（100%&#x2F;90%&#x2F;80%）下重复测试，建立二维查找表。实际运行时，根据当前温度和SOH插值取参数，而不是用一套参数打天下。</p>
+<p>  ②Q&#x2F;R整定：最难标准化的环节</p>
+<p>  过程噪声Q和测量噪声R的整定至今仍是更多依赖经验的环节。报告给出的原则是：两者保持同一数量级，通过静态测试确定R（传感器数据手册+ 离线统计），再通过动态工况调优Q，直到新息序列接近白噪声（自相关函数接近冲激函数）。</p>
+<p>  AEKF的优势在这里体现得很清楚：通过在线估计Q&#x2F;R，可以绕开繁琐的手动整定，让算法自适应找到合适的权重。</p>
+<p>  ③初值收敛策略</p>
+<p>  卡尔曼滤波器对初值有自修正能力，但如果初值偏差太大，收敛过程可能需要数分钟甚至更长。工程上常用的加速收敛策略是：设置较大的初始协方差P₀，让滤波器在初期更相信测量值、快速修正；同时，如果电池静置超过2小时，可以通过OCV查表获得较好的初值，大幅缩短收敛时间。</p>
+<hr>
+<h1 id="九、前沿方向：AI与KF的融合是大势所趋"><a href="#九、前沿方向：AI与KF的融合是大势所趋" class="headerlink" title="九、前沿方向：AI与KF的融合是大势所趋"></a>九、前沿方向：AI与KF的融合是大势所趋</h1><p>  报告最后一章展望了七个前沿方向，我认为其中最值得关注的是数据驱动 + KF融合这条路。</p>
+<p>  传统KF的局限性在于它依赖一个精确的物理模型——等效电路模型本质上是对复杂电化学行为的工程近似。当电池进入深度老化或极端温度时，模型失配会导致精度下降。</p>
+<p>  而纯数据驱动方法（如LSTM、Transformer等神经网络）虽然拟合能力强，但缺乏物理约束，容易在训练数据之外泛化能力不足，且难以给出不确定性估计。</p>
+<p>  混合方案正在成为学界和工业界的共识：神经网络负责学习OCV-SOC映射或在线更新模型参数，卡尔曼滤波负责状态递推和不确定性传播。两者各司其职：模型的物理合理性由KF保证，参数的精度由数据驱动提升。</p>
+<p>  另一个值得期待的方向是云BMS + 数字孪生：边缘侧运行轻量EKF负责实时控制，云端运行复杂的UKF&#x2F;DEKF负责跨电站的横向对比和长期SOH追踪。这种云-边协同的架构，正是大规模储能系统未来的技术方向。</p>
+<hr>
+<h1 id="十、写在最后：选型的本质是权衡"><a href="#十、写在最后：选型的本质是权衡" class="headerlink" title="十、写在最后：选型的本质是权衡"></a>十、写在最后：选型的本质是权衡</h1><p>  读完这份报告，我最想传递的一个观点是：SOC估算算法的选型没有”最好”，只有”最适合”。</p>
+<p>  EKF用了20年，至今仍是车载BMS的主流选择，不是因为它技术上最先进，而是因为它在精度、计算量、工程成熟度之间找到了最好的平衡。</p>
+<p>  UKF更精准，但算力要求更高——对算力受限的车规MCU是负担，对储能网关却是毛毛雨。</p>
+<p>  AEKF鲁棒性更好，但需要自适应机制的额外开发成本——如果你的系统工况稳定、温度范围窄，标准EKF已经够用。</p>
+<p>  DEKF解决了SOH联合估计的问题，但两个滤波器的耦合调参难度更高——只有在确实需要全寿命周期高精度追踪时才值得投入。</p>
+<p>  总的来说，对于当前储能市场主流的大容量LFP电芯，我的推荐路径是：</p>
+<ul>
+<li>入门级：安时积分 + 定期OCV校准，适合精度要求不高、成本优先的场景</li>
+<li>主流级：EKF + 二阶RC + 满充校准，满足大部分储能项目的精度要求</li>
+<li>进阶级：AEKF&#x2F;UKF + 二阶RC + 分区策略，适合精度要求≤3%且有一定算力裕量的系统</li>
+<li>高端级：DEKF + 在线参数辨识，适合需要全寿命周期SOC-SOH联合追踪的大型储能电站</li>
+</ul>
+<p>  希望这篇文章能帮助各位工程师在下一个BMS项目中做出更清晰的技术决策。如果你在实际项目中有不同的实践经验，欢迎在评论区交流——毕竟，最好的工程经验往往来自踩过坑之后的复盘。</p>
+<hr>
+<p>  本文基于《卡尔曼滤波法估算SOC — 技术调研报告》（2026年6月）整理撰写，结合作者在储能BMS领域的工程实践经验，适合具有一定数学和控制系统基础的工程师阅读。</p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://kuangyue111.github.io">kuangyue111</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://kuangyue111.github.io/2026/06/25/2026-06-25-ekf-soc-estimation-reading-review/">https://kuangyue111.github.io/2026/06/25/2026-06-25-ekf-soc-estimation-reading-review/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://kuangyue111.github.io" target="_blank">KuangYue's Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/BMS/">BMS</a><a class="post-meta__tags" href="/tags/%E7%94%B5%E6%B1%A0%E7%AE%A1%E7%90%86/">电池管理</a><a class="post-meta__tags" href="/tags/SOC%E4%BC%B0%E7%AE%97/">SOC估算</a><a class="post-meta__tags" href="/tags/%E9%94%82%E7%94%B5%E6%B1%A0/">锂电池</a><a class="post-meta__tags" href="/tags/%E5%82%A8%E8%83%BD/">储能</a><a class="post-meta__tags" href="/tags/EKF/">EKF</a><a class="post-meta__tags" href="/tags/%E5%8D%A1%E5%B0%94%E6%9B%BC%E6%BB%A4%E6%B3%A2/">卡尔曼滤波</a><a class="post-meta__tags" href="/tags/%E8%AF%BB%E5%90%8E%E6%84%9F/">读后感</a></div><div class="post-share"><div class="social-share" data-image="/img/butterfly-icon.png" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/2026/06/22/2026-06-22-kalman-filter-soc-estimation/" title="卡尔曼滤波法估算SOC — 技术调研报告"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">卡尔曼滤波法估算SOC — 技术调研报告</div></div><div class="info-2"><div class="info-item-1">🔋 卡尔曼滤波法估算SOC — 技术调研报告 调研时间：2026年6月 &nbsp;|&nbsp; 适用领域：动力电池/储能BMS &nbsp;|&nbsp; 作者：WorkBuddy AI   1. 概述 荷电状态（State of Charge, SOC）是电池管理系统（BMS）最核心的状态参数，直接关系到电池的安全运行、寿命管理和能量调度。SOC无法通过传感器直接测量，只能通过电压、电流和温度等外部可观测信号进行间接估计。 卡尔曼滤波（Kalman Filter, KF）及其衍生算法是当前工业界应用最广泛的高精度SOC估计方法。它以电池等效电路模型为基础，结合安时积分法的递推预测与端电压的观测修正，在递推过程中实现"预测-更新"的闭环迭代，有效抑制传感器噪声和初始误差的影响。     📌 核心结论   行业主流方案为 "安时积分（AH） + 扩展卡尔曼滤波（EKF）" 组合算法：安时积分负责实时递推，EKF通过等效电路模型和OCV曲线进行状态观测与修正。实测相对误差可控制在 2%~5%，满足GB/T 38661及《电动汽车用电池管理系统技术条件》等国标对SOC精度的要求...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/06/22/2026-06-22-kalman-filter-soc-estimation/" title="卡尔曼滤波法估算SOC — 技术调研报告"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-22</div><div class="info-item-2">卡尔曼滤波法估算SOC — 技术调研报告</div></div><div class="info-2"><div class="info-item-1">🔋 卡尔曼滤波法估算SOC — 技术调研报告 调研时间：2026年6月 &nbsp;|&nbsp; 适用领域：动力电池/储能BMS &nbsp;|&nbsp; 作者：WorkBuddy AI   1. 概述 荷电状态（State of Charge, SOC）是电池管理系统（BMS）最核心的状态参数，直接关系到电池的安全运行、寿命管理和能量调度。SOC无法通过传感器直接测量，只能通过电压、电流和温度等外部可观测信号进行间接估计。 卡尔曼滤波（Kalman Filter, KF）及其衍生算法是当前工业界应用最广泛的高精度SOC估计方法。它以电池等效电路模型为基础，结合安时积分法的递推预测与端电压的观测修正，在递推过程中实现"预测-更新"的闭环迭代，有效抑制传感器噪声和初始误差的影响。     📌 核心结论   行业主流方案为 "安时积分（AH） + 扩展卡尔曼滤波（EKF）" 组合算法：安时积分负责实时递推，EKF通过等效电路模型和OCV曲线进行状态观测与修正。实测相对误差可控制在 2%~5%，满足GB/T 38661及《电动汽车用电池管理系统技术条件》等国标对SOC精度的要求...</div></div></div></a><a class="pagination-related" href="/2026/06/13/2026-06-13-energy-storage-underlying-logic/" title="储能系统技术的底层逻辑：从直流母线架构到SOC估计"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-13</div><div class="info-item-2">储能系统技术的底层逻辑：从直流母线架构到SOC估计</div></div><div class="info-2"><div class="info-item-1">  最近认真研读了一份储能系统的技术研究报告，报告覆盖了直流母线架构、1500V高压系统、BMS控制策略、314AhLFP标定、EIS阻抗谱拟合到EKF SOC估算的完整技术链条。读完之后有些东西想写下来，不是为了做科普，而是因为这些技术细节在工程现场真的会决定一个项目最终能不能跑起来。  一、直流母线还是交流母线，这个问题没有标准答案  每次有人问我储能系统该用直流母线还是交流母线，我的第一反应是反问对方：你的场景是什么。   这不是在卖关子，而是这两种架构的适用边界确实是不同的，没法一刀切。   直流母线的本质是把所有电池簇都挂在一条共享的直流母线上，然后用一台集中式PCS统一逆变并网。这种架构最大的优势是对光储一体化场景非常友好——光伏直流直接挂进来，省掉一级AC&#x2F;DC转换，效率有先天优势。数据中心的UPS储能也是这个逻辑，负载本身就是直流，何必多此一举搞成交流再转回来。   但直流母线有一个绕不开的物理问题：环流。报告里给了一个让我印象很深的数字——两个电压差40V、内阻各0.5Ω的电池簇并联在一条直流母线上，环流会达到40A，持续功60kW。60kW不是一个可...</div></div></div></a><a class="pagination-related" href="/2026/06/08/2026-06-08-eis-deep-analysis/" title="电化学阻抗谱（EIS）深度解析：从物理原理到工程代码实现"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-08</div><div class="info-item-2">电化学阻抗谱（EIS）深度解析：从物理原理到工程代码实现</div></div><div class="info-2"><div class="info-item-1">电化学阻抗谱（EIS）深度解析：从物理原理到工程代码实现  一、为什么EIS是电池诊断的天花板工具  做储能系统的人都知道，判断一块电池的健康状态，常用的手段无非是容量标定、内阻测试、OCV曲线这几招。这些方法能告诉你电池现在的状态，但告诉不了你它为什么衰减，衰减发生在哪个环节，是SEI膜增厚、活性材料失活，还是锂离子扩散通道堵塞。   这就是电化学阻抗谱（Electrochemical Impedance Spectroscopy，EIS）存在的意义。   EIS的核心思想非常直接：在不同频率下向电池施加一个微小的正弦扰动信号（通常是幅值5到10mV的电压信号，或幅值C&#x2F;20以下的电流信号），测量电池的电压和电流响应，计算出各频率下的复数阻抗。不同的内部物理过程在不同频率段留下”指纹”，把这些指纹拼在一起，就能把电池的内部状态解读出来。   一个成熟的EIS测量通常覆盖频率范围从100kHz到1mHz，横跨约8个数量级。高频段揭示欧姆效应，中频段对应SEI膜和电荷传递过程，低频段反映锂离子的扩散行为。这种多频率多维度的信息密度，是任何单点测量方法都无法比拟的。  二、...</div></div></div></a><a class="pagination-related" href="/2026/05/27/2026-05-27-bms-pcs-can-protocol-deep-analysis/" title="BMS-PCS通信协议深度解析：CAN总线在储能系统中的工程实践"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-27</div><div class="info-item-2">BMS-PCS通信协议深度解析：CAN总线在储能系统中的工程实践</div></div><div class="info-2"><div class="info-item-1">BMS-PCS通信协议深度解析——CAN总线在储能系统中的工程实践 作者：储能系统固件开发工程师日期：2026-04-14项目背景：工商业储能管理系统（BESS），支持多品牌BMS并联接入，通过CAN总线与PCS（Power Conversion System）双向通信   一、为什么是CAN总线？刚加入这个项目时，我问了自己同样的问题。为什么储能系统不用Modbus RTU，不用RS485，而偏偏选择CAN总线？ 原因是多层次的：  实时性：CAN总线的优先级仲裁机制保证了高优先级帧（如保护命令）在总线竞争中必然胜出，最坏情况延迟可以精确计算。 可靠性：CAN协议内置CRC校验、位填充、帧错误检测，单个节点故障不会拉低整条总线。 多主通信：BMS可以主动广播数据，PCS也可以主动发送控制命令，无需轮询。 工业生态：主流BMS厂商（宁德时代、亿纬锂能、鹏辉能源等）均提供CAN接口，协议文档相对规范。  然而，理论是美好的，现实是：每家厂商的CAN协议都不一样。这就是我们项目中出现 can_pl_batt.c、can_nd_batt.c、can_nd_v33_batt.c、can_...</div></div></div></a><a class="pagination-related" href="/2026/05/08/2026-05-08-bms-soc-ampere-hour-integration/" title="安时积分法在车规级 BMS 中的工程实现"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-08</div><div class="info-item-2">安时积分法在车规级 BMS 中的工程实现</div></div><div class="info-2"><div class="info-item-1">安时积分法在车规级 BMS 中的工程实现 123▎ 作者：嵌入式系统开发工程师▎ 日期：2026-05-08▎ 代码基础：车规级 BMS 项目（基于 NXP 芯片）  引言在动力电池管理系统（BMS）中，SOC（State of Charge，荷电状态）估算是最核心的功能之一。它直接关系到电池的使用安全、续航里程预测以及充放电策略的制定。在众多SOC估算算法中，安时积分法（也称库仑计法）因其原理简单、实时性好而成为工程应用中的基础算法。 然而，看似简单的”电流乘以时间”背后，隐藏着大量工程实现细节：如何在没有浮点运算单元的MCU上高效计算？如何设计单位换算避免精度损失？如何处理累积误差？本文将基于一个真实的车规级BMS项目（基于NXP芯片），深入剖析安时积分法的完整工程实现。 一、安时积分法的理论基础1.1 基本原理安时积分法的核心思想源于电荷守恒定律。电池的SOC本质上是当前剩余电量与总容量的比值： 1SOC(t) = SOC(t0) + (1/Crated) × ∫[t0→t] η(I) × I(τ) dτ  其中：  SOC(t0)：初始荷电状态 Crated：电池额定容量...</div></div></div></a><a class="pagination-related" href="/2026/05/10/2026-05-10-bms-soh-calculation-capacity-and-cycle-methods/" title="锂电池 SOH 计算：容量实测法与循环计数法的双重验证"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-10</div><div class="info-item-2">锂电池 SOH 计算：容量实测法与循环计数法的双重验证</div></div><div class="info-2"><div class="info-item-1">锂电池SOH计算：容量实测法与循环计数法的双重验证引言如果说SOC（荷电状态）是电池的”油表”，那么SOH（健康状态）就是电池的”体检报告”。在动力电池和储能系统中，准确评估SOH不仅关系到续航里程的预测，更直接影响安全性判断、维护决策和资产管理。 一块标称100Ah的电池，使用两年后实际容量可能只剩80Ah。这20%的衰减如何量化？何时该更换电池？这些问题的答案都藏在SOH算法中。 然而，SOH估算远比SOC复杂。电池容量会随温度、倍率、循环次数、存储时间等多种因素变化，单一方法难以准确评估。本文将基于一个真实的车规级BMS项目，深入剖析两种主流SOH计算方法——容量实测法和循环计数法，以及它们的融合策略。 一、SOH的定义与工程意义1.1 SOH的数学定义SOH（State of Health）的标准定义是： $$SOH &#x3D; \frac{当前最大可用容量}{出厂额定容量} \times 100%$$ 这里的”最大可用容量”是指在标准条件下（25℃，0.5C倍率），电池从满电到截止电压能够释放的电量。 在代码中，这个定义被直接实现： 12345678910111213...</div></div></div></a></div></div><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="giscus-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/img/butterfly-icon.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">kuangyue111</div><div class="author-info-description">嵌入式开发 | 储能系统 | 工业通信协议</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">23</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">121</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">11</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/kuangyue111"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/kuangyue111" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">专注于嵌入式与储能系统技术分享</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%80%E3%80%81SOC%E4%B8%BA%E4%BB%80%E4%B9%88%E6%98%AFBMS%E6%9C%80%E9%9A%BE%E6%90%9E%E7%9A%84%E5%8F%82%E6%95%B0"><span class="toc-number">1.</span> <span class="toc-text">一、SOC为什么是BMS最难搞的参数</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E5%AE%89%E6%97%B6%E7%A7%AF%E5%88%86%EF%BC%9A%E9%82%A3%E4%B8%AA%E2%80%9D%E7%94%A8%E4%BA%86%E4%BD%86%E9%AA%97%E4%B8%8D%E4%BA%86%E8%87%AA%E5%B7%B1%E2%80%9D%E7%9A%84%E8%80%81%E6%96%B9%E6%B3%95"><span class="toc-number">2.</span> <span class="toc-text">二、安时积分：那个”用了但骗不了自己”的老方法</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E5%8D%A1%E5%B0%94%E6%9B%BC%E6%BB%A4%E6%B3%A2%E7%9A%84%E6%A0%B8%E5%BF%83%E9%80%BB%E8%BE%91%EF%BC%9A%E9%A2%84%E6%B5%8B%E4%B8%8E%E4%BF%AE%E6%AD%A3%E7%9A%84%E5%AE%8C%E7%BE%8E%E5%A9%9A%E5%A7%BB"><span class="toc-number">3.</span> <span class="toc-text">三、卡尔曼滤波的核心逻辑：预测与修正的完美婚姻</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E7%AD%89%E6%95%88%E7%94%B5%E8%B7%AF%E6%A8%A1%E5%9E%8B%EF%BC%9A%E5%8D%A1%E5%B0%94%E6%9B%BC%E6%BB%A4%E6%B3%A2%E7%9A%84%E7%89%A9%E7%90%86%E5%9F%BA%E7%A1%80"><span class="toc-number">4.</span> <span class="toc-text">四、等效电路模型：卡尔曼滤波的物理基础</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E4%BB%8EEKF%E5%88%B0AEKF%EF%BC%9A%E5%8D%A1%E5%B0%94%E6%9B%BC%E6%BB%A4%E6%B3%A2%E6%97%8F%E7%9A%84%E8%BF%9B%E5%8C%96%E9%80%BB%E8%BE%91"><span class="toc-number">5.</span> <span class="toc-text">五、从EKF到AEKF：卡尔曼滤波族的进化逻辑</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#5-1-EKF%EF%BC%9A%E5%B7%A5%E4%B8%9A%E7%95%8C%E7%9A%84%E2%80%9D%E4%B8%BB%E5%8A%9B%E5%86%9B%E2%80%9D"><span class="toc-number">5.1.</span> <span class="toc-text">5.1 EKF：工业界的”主力军”</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5-2-UKF%EF%BC%9A%E7%B2%BE%E5%BA%A6%E6%9B%B4%E9%AB%98%E4%BD%86%E2%80%9D%E8%B4%B5%E2%80%9D%E4%B8%80%E4%BA%9B"><span class="toc-number">5.2.</span> <span class="toc-text">5.2 UKF：精度更高但”贵”一些</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5-3-AEKF%EF%BC%9A%E8%AE%A9%E6%BB%A4%E6%B3%A2%E5%99%A8%E2%80%9D%E6%84%9F%E7%9F%A5%E2%80%9D%E5%99%AA%E5%A3%B0%E5%8F%98%E5%8C%96"><span class="toc-number">5.3.</span> <span class="toc-text">5.3 AEKF：让滤波器”感知”噪声变化</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5-4-DEKF%EF%BC%9ASOC%E4%B8%8ESOH%E8%81%94%E5%90%88%E4%BC%B0%E8%AE%A1%E7%9A%84%E7%A0%B4%E9%A2%98%E4%B9%8B%E9%81%93"><span class="toc-number">5.4.</span> <span class="toc-text">5.4 DEKF：SOC与SOH联合估计的破题之道</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%85%AD%E3%80%81LFP%E7%94%B5%E6%B1%A0%EF%BC%9A%E8%BF%99%E4%B8%AA%E7%89%B9%E6%AE%8A%E7%9A%84%E2%80%9D%E7%A1%AC%E9%AA%A8%E5%A4%B4%E2%80%9D"><span class="toc-number">6.</span> <span class="toc-text">六、LFP电池：这个特殊的”硬骨头”</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E5%B7%A5%E7%A8%8B%E8%90%BD%E5%9C%B0%E7%9A%84%E4%B8%89%E4%B8%AA%E5%85%B3%E9%94%AE%E7%8E%AF%E8%8A%82"><span class="toc-number">7.</span> <span class="toc-text">八、工程落地的三个关键环节</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B9%9D%E3%80%81%E5%89%8D%E6%B2%BF%E6%96%B9%E5%90%91%EF%BC%9AAI%E4%B8%8EKF%E7%9A%84%E8%9E%8D%E5%90%88%E6%98%AF%E5%A4%A7%E5%8A%BF%E6%89%80%E8%B6%8B"><span class="toc-number">8.</span> <span class="toc-text">九、前沿方向：AI与KF的融合是大势所趋</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8D%81%E3%80%81%E5%86%99%E5%9C%A8%E6%9C%80%E5%90%8E%EF%BC%9A%E9%80%89%E5%9E%8B%E7%9A%84%E6%9C%AC%E8%B4%A8%E6%98%AF%E6%9D%83%E8%A1%A1"><span class="toc-number">9.</span> <span class="toc-text">十、写在最后：选型的本质是权衡</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/06/25/2026-06-25-ekf-soc-estimation-reading-review/" title="卡尔曼滤波SOC估算技术调研读后感：从理论到工程的完整解读">卡尔曼滤波SOC估算技术调研读后感：从理论到工程的完整解读</a><time datetime="2026-06-25T07:00:00.000Z" title="发表于 2026-06-25 15:00:00">2026-06-25</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/06/22/2026-06-22-kalman-filter-soc-estimation/" title="卡尔曼滤波法估算SOC — 技术调研报告">卡尔曼滤波法估算SOC — 技术调研报告</a><time datetime="2026-06-22T07:00:00.000Z" title="发表于 2026-06-22 15:00:00">2026-06-22</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/06/18/2026-06-18-tesla-thermal-management-system/" title="特斯拉热管理系统完整技术资料">特斯拉热管理系统完整技术资料</a><time datetime="2026-06-18T07:00:00.000Z" title="发表于 2026-06-18 15:00:00">2026-06-18</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/06/16/2026-06-16-iec61850-in-energy-storage/" title="IEC 61850 在储能系统中的深度解析：从标准架构到工程代码实现">IEC 61850 在储能系统中的深度解析：从标准架构到工程代码实现</a><time datetime="2026-06-16T07:00:00.000Z" title="发表于 2026-06-16 15:00:00">2026-06-16</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/06/13/2026-06-13-reduce-ai-cost-200-to-20/" title="我是怎么把每月200刀省到20的">我是怎么把每月200刀省到20的</a><time datetime="2026-06-13T08:00:00.000Z" title="发表于 2026-06-13 16:00:00">2026-06-13</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By kuangyue111</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.4</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="前往评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.4"></script><script src="/js/main.js?v=5.5.4"></script><div class="js-pjax"><script>(() => {
+  const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
+  const option = {"mapping":"url","lang":"zh-CN"}
+
+  const getGiscusTheme = theme => theme === 'dark' ? 'dark' : 'light'
+
+  const createScriptElement = config => {
+    const ele = document.createElement('script')
+    Object.entries(config).forEach(([key, value]) => {
+      ele.setAttribute(key, value)
+    })
+    return ele
+  }
+
+  const loadGiscus = (el = document, key) => {
+    const mappingConfig = isShuoshuo
+      ? { 'data-mapping': 'specific', 'data-term': key }
+      : { 'data-mapping': (option && option['data-mapping']) || 'pathname' }
+
+    const giscusConfig = {
+      src: 'https://giscus.app/client.js',
+      'data-repo': 'kuangyue111/kuangyue111.github.io',
+      'data-repo-id': 'R_kgDOSQde2Q',
+      'data-category-id': 'DIC_kwDOSQde2c4C8CgH',
+      'data-theme': getGiscusTheme(document.documentElement.getAttribute('data-theme')),
+      'data-reactions-enabled': '1',
+      crossorigin: 'anonymous',
+      async: true,
+      ...option,
+      ...mappingConfig
+    }
+
+    const scriptElement = createScriptElement(giscusConfig)
+
+    el.querySelector('#giscus-wrap').appendChild(scriptElement)
+
+    if (isShuoshuo) {
+      window.shuoshuoComment.destroyGiscus = () => {
+        if (el.children.length) {
+          el.innerHTML = ''
+          el.classList.add('no-comment')
+        }
+      }
+    }
+  }
+
+  const changeGiscusTheme = theme => {
+    const iframe = document.querySelector('#giscus-wrap iframe')
+    if (iframe) {
+      const message = {
+        giscus: {
+          setConfig: {
+            theme: getGiscusTheme(theme)
+          }
+        }
+      }
+      iframe.contentWindow.postMessage(message, 'https://giscus.app')
+    }
+  }
+
+  btf.addGlobalFn('themeChange', changeGiscusTheme, 'giscus')
+
+  if (isShuoshuo) {
+    'Giscus' === 'Giscus'
+      ? window.shuoshuoComment = { loadComment: loadGiscus }
+      : window.loadOtherComment = loadGiscus
+    return
+  }
+
+  if ('Giscus' === 'Giscus' || !false) {
+    if (false) btf.loadComment(document.getElementById('giscus-wrap'), loadGiscus)
+    else loadGiscus()
+  } else {
+    window.loadOtherComment = loadGiscus
+  }
+})()</script></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

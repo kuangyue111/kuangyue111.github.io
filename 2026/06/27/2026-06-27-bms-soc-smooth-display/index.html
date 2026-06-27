@@ -1,0 +1,481 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>BMS SOC显示平滑算法：让百分比变化符合用户直觉 | KuangYue's Blog</title><meta name="author" content="kuangyue111"><meta name="copyright" content="kuangyue111"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="BMS SOC显示平滑算法：让百分比变化符合用户直觉 前言在储能BMS系统里，SOC（State of Charge，荷电状态）是用户最直接感知的核心指标。从EMS大屏到HMI触摸屏，SOC百分比就是电池的”油表”。 然而，算法层计算出来的SOC是一个不断跳变的原始值。把它直接推给显示层，用户看到的将是一个毫无规律、时快时慢、甚至会”倒退”的数字——这在工程上是不可接受的。 这套S32K146 B">
+<meta property="og:type" content="article">
+<meta property="og:title" content="BMS SOC显示平滑算法：让百分比变化符合用户直觉">
+<meta property="og:url" content="https://kuangyue111.github.io/2026/06/27/2026-06-27-bms-soc-smooth-display/index.html">
+<meta property="og:site_name" content="KuangYue&#39;s Blog">
+<meta property="og:description" content="BMS SOC显示平滑算法：让百分比变化符合用户直觉 前言在储能BMS系统里，SOC（State of Charge，荷电状态）是用户最直接感知的核心指标。从EMS大屏到HMI触摸屏，SOC百分比就是电池的”油表”。 然而，算法层计算出来的SOC是一个不断跳变的原始值。把它直接推给显示层，用户看到的将是一个毫无规律、时快时慢、甚至会”倒退”的数字——这在工程上是不可接受的。 这套S32K146 B">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://kuangyue111.github.io/img/butterfly-icon.png">
+<meta property="article:published_time" content="2026-06-27T07:00:00.000Z">
+<meta property="article:modified_time" content="2026-06-27T09:54:26.878Z">
+<meta property="article:author" content="kuangyue111">
+<meta property="article:tag" content="嵌入式">
+<meta property="article:tag" content="BMS">
+<meta property="article:tag" content="SOC">
+<meta property="article:tag" content="FreeRTOS">
+<meta property="article:tag" content="S32K146">
+<meta property="article:tag" content="显示平滑">
+<meta property="article:tag" content="算法">
+<meta property="article:tag" content="用户体验">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://kuangyue111.github.io/img/butterfly-icon.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "BMS SOC显示平滑算法：让百分比变化符合用户直觉",
+  "url": "https://kuangyue111.github.io/2026/06/27/2026-06-27-bms-soc-smooth-display/",
+  "image": "https://kuangyue111.github.io/img/butterfly-icon.png",
+  "datePublished": "2026-06-27T07:00:00.000Z",
+  "dateModified": "2026-06-27T09:54:26.878Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "kuangyue111",
+      "url": "https://kuangyue111.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://kuangyue111.github.io/2026/06/27/2026-06-27-bms-soc-smooth-display/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.5.4"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.13.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'BMS SOC显示平滑算法：让百分比变化符合用户直觉',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/butterfly-icon.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">26</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">132</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">11</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">KuangYue's Blog</span></a><a class="nav-page-title" href="/"><span class="site-name">BMS SOC显示平滑算法：让百分比变化符合用户直觉</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">BMS SOC显示平滑算法：让百分比变化符合用户直觉</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-06-27T07:00:00.000Z" title="发表于 2026-06-27 15:00:00">2026-06-27</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-06-27T09:54:26.878Z" title="更新于 2026-06-27 17:54:26">2026-06-27</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/">技术分享</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/%E5%B5%8C%E5%85%A5%E5%BC%8F%E5%BC%80%E5%8F%91/">嵌入式开发</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="BMS-SOC显示平滑算法：让百分比变化符合用户直觉"><a href="#BMS-SOC显示平滑算法：让百分比变化符合用户直觉" class="headerlink" title="BMS SOC显示平滑算法：让百分比变化符合用户直觉"></a>BMS SOC显示平滑算法：让百分比变化符合用户直觉</h1><hr>
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在储能BMS系统里，SOC（State of Charge，荷电状态）是用户最直接感知的核心指标。从EMS大屏到HMI触摸屏，SOC百分比就是电池的”油表”。</p>
+<p>然而，算法层计算出来的SOC是一个不断跳变的原始值。把它直接推给显示层，用户看到的将是一个毫无规律、时快时慢、甚至会”倒退”的数字——这在工程上是不可接受的。</p>
+<p>这套S32K146 BMS工程实现了一套完整的 <strong>SOC显示平滑系统</strong>，涉及速度自适应跟踪、端点加速、边界锁定、强制修正四个机制，总代码约350行，集中在 <code>SocDisplay.c</code> 一个文件中。本文将逐层拆解其实现逻辑。</p>
+<hr>
+<h2 id="一、为什么需要显示平滑"><a href="#一、为什么需要显示平滑" class="headerlink" title="一、为什么需要显示平滑"></a>一、为什么需要显示平滑</h2><p>理解”为什么做”比”怎么做”更重要。SOC显示不平滑的根源有三类：</p>
+<h3 id="1-1-安时积分的固有噪声"><a href="#1-1-安时积分的固有噪声" class="headerlink" title="1.1 安时积分的固有噪声"></a>1.1 安时积分的固有噪声</h3><p>安时积分法（Coulomb Counting）是这套工程的核心SOC算法。其原理是对电流采样值持续积分：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SOC(t) = SOC(t₀) + ∫I·dt / C_total</span><br></pre></td></tr></table></figure>
+
+<p>ADC采样的电流值本身存在噪声，微小的电流偏差经过积分累积后，会在SOC计算值上产生肉眼可见的抖动。即使实际电流完全稳定，电流传感器的零漂（几十mA量级）也会让SOC以微小但不规律的步长漂移。</p>
+<h3 id="1-2-保护触发时的强制修正"><a href="#1-2-保护触发时的强制修正" class="headerlink" title="1.2 保护触发时的强制修正"></a>1.2 保护触发时的强制修正</h3><p>BMS的诊断层在检测到过充、过放保护时，会对SOC进行强制修正。例如：</p>
+<ul>
+<li>过充保护触发 → SOC强制跳至100%</li>
+<li>单体电压跌破低压阈值 → SOC强制修正至3%</li>
+</ul>
+<p>这种修正对算法层是正确的，但从显示层看，就是一个瞬间的几十个百分点跳变。用户会看到：刚才还显示75%，下一秒突然变成100%。</p>
+<h3 id="1-3-充放电末期的收敛加速"><a href="#1-3-充放电末期的收敛加速" class="headerlink" title="1.3 充放电末期的收敛加速"></a>1.3 充放电末期的收敛加速</h3><p>充电末期，电流逐渐减小，安时积分的变化量也随之减小，SOC的实际增长越来越慢。但此时电池真实容量已经很高，显示值必须”加速追上”真实值，否则充满了电却显示不到100%，用户会误认为电池坏了。</p>
+<p>这三类问题，决定了显示平滑算法必须是<strong>有状态的、方向感知的、速度自适应的</strong>，而不是简单的低通滤波。</p>
+<hr>
+<h2 id="二、整体架构：三层函数调用"><a href="#二、整体架构：三层函数调用" class="headerlink" title="二、整体架构：三层函数调用"></a>二、整体架构：三层函数调用</h2><p>在 <code>GroupSocDisplayTask()</code>（100ms周期调用）中，整个显示平滑流程分为三个步骤：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">GroupSocDisplayTask</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    u16 aimSoc = <span class="number">0</span>;</span><br><span class="line">    u16 slowSoc = <span class="number">0</span>;</span><br><span class="line">    </span><br><span class="line">    aimSoc = GetGRealSocTenThousAPI();       <span class="comment">// 第一步：取算法层真实SOC</span></span><br><span class="line">    </span><br><span class="line">    aimSoc = CalcSocChgDhgEndCorr(aimSoc);  <span class="comment">// 第二步：充放电末端修正</span></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">if</span>(<span class="number">0xffff</span> == sSlowDisplaySoc)</span><br><span class="line">    &#123;</span><br><span class="line">        slowSoc = aimSoc;                    <span class="comment">// 首次初始化：直接等于真实值</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    &#123;</span><br><span class="line">        slowSoc = CalcSocSlowChang(aimSoc); <span class="comment">// 第三步：平滑变化计算</span></span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    UpdateSocSlowDisplay(slowSoc);           <span class="comment">// 第四步：端点锁定并更新输出</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>数值单位说明</strong>：整个模块内部使用”<strong>万分之一</strong>“作为SOC精度单位（10000 &#x3D; 100%，9750 &#x3D; 97.50%）。最终输出时转换为”千分之一”（1&#x2F;1000）推给上层：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// UpdateSocSlowDisplay内部</span></span><br><span class="line">gGSysCapInfo_61[eSysCapInfo61_SOC] = (sSlowDisplaySoc + <span class="number">5</span>) / <span class="number">10</span>;</span><br><span class="line"><span class="comment">//                                    ^^^^^^^^^^^^^^ 四舍五入，转换为0.1%精度</span></span><br></pre></td></tr></table></figure>
+
+<p>核心状态变量只有一个：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> u16 sSlowDisplaySoc = <span class="number">0xffff</span>;   <span class="comment">// 平滑显示SOC中间变量（万分之一）</span></span><br></pre></td></tr></table></figure>
+
+<p><code>0xffff</code> 是未初始化标志，首次运行时直接用真实SOC赋值，避免从0缓慢爬升的冷启动问题。</p>
+<hr>
+<h2 id="三、速度自适应的单向跟踪"><a href="#三、速度自适应的单向跟踪" class="headerlink" title="三、速度自适应的单向跟踪"></a>三、速度自适应的单向跟踪</h2><h3 id="3-1-核心设计思想"><a href="#3-1-核心设计思想" class="headerlink" title="3.1 核心设计思想"></a>3.1 核心设计思想</h3><p><code>CalcSocSlowChang()</code> 是整个平滑算法的核心。它的设计原则只有两条：</p>
+<ol>
+<li><strong>方向感知</strong>：充电时显示值只能增加，放电时只能减少，不允许逆向变化</li>
+<li><strong>步进叠加</strong>：每个周期的显示变化量 &#x3D; 本周期真实SOC变化量 + 强制步进量（stepSoc）</li>
+</ol>
+<p>这个”步进叠加”是关键。仅靠安时积分的变化量驱动显示，在充电末期电流极小时会完全停滞。强制步进保证了显示值一定在向目标值靠拢。</p>
+<h3 id="3-2-充电状态下的跟踪逻辑"><a href="#3-2-充电状态下的跟踪逻辑" class="headerlink" title="3.2 充电状态下的跟踪逻辑"></a>3.2 充电状态下的跟踪逻辑</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 判断当前状态：电流&lt;0为充电</span></span><br><span class="line"><span class="keyword">if</span>(GetGSampOutCurrAPI() &lt; <span class="number">0</span>)</span><br><span class="line">&#123;</span><br><span class="line">    state = <span class="number">1</span>;  <span class="comment">// 充电</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>充电时（<code>state==1</code> 且 <code>sHisState==1</code>），计算本周期容量变化：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">changCap = ABS(sHisCap, inteCap);               <span class="comment">// 本周期充入电量（mAh）</span></span><br><span class="line">changSoc = (u16)(changCap * <span class="number">10000</span> / totalCap);  <span class="comment">// 换算为SOC变化量（万分之一）</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>设计细节</strong>：<code>sHisCap</code> 记录上一次调用时的积分电量，<code>inteCap</code> 是当前值，差值就是本100ms内充入的电量。若差值为0（噪声消抖），保持上次的积分基准点不动。</p>
+</blockquote>
+<p>当显示值落后于真实SOC（<code>copySoc &lt; aimSoc</code>），叠加步进量：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">changSoc += stepSoc;   <span class="comment">// 实际变化量 + 强制步进量</span></span><br><span class="line">copySoc += changSoc;   <span class="comment">// 本次显示变化</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span>(copySoc &gt; aimSoc)   <span class="comment">// 防止追过头</span></span><br><span class="line">&#123;</span><br><span class="line">    copySoc = aimSoc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-3-放电状态下的跟踪逻辑"><a href="#3-3-放电状态下的跟踪逻辑" class="headerlink" title="3.3 放电状态下的跟踪逻辑"></a>3.3 放电状态下的跟踪逻辑</h3><p>放电时（<code>state==2</code> 且 <code>sHisState==2</code>），逻辑完全镜像：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">changSoc += stepSoc;         <span class="comment">// 变化量+步进量</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span>(copySoc &gt; changSoc)</span><br><span class="line">&#123;</span><br><span class="line">    copySoc -= changSoc;     <span class="comment">// 显示值下降</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">&#123;</span><br><span class="line">    copySoc = <span class="number">0</span>;             <span class="comment">// 防止下溢</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span>(copySoc &lt; aimSoc)         <span class="comment">// 防止降过头</span></span><br><span class="line">&#123;</span><br><span class="line">    copySoc = aimSoc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-4-显示值超前时的降速处理"><a href="#3-4-显示值超前时的降速处理" class="headerlink" title="3.4 显示值超前时的降速处理"></a>3.4 显示值超前时的降速处理</h3><p>如果显示值<strong>超过</strong>了真实SOC（例如充电过程中算法SOC被向下修正），不能直接让显示跳回，而是以真实变化量除以 <code>SOC_SLOW_SPEED</code>（&#x3D; 5）的速度缓慢回落：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 充电时 copySoc &gt; aimSoc（显示超前）</span></span><br><span class="line">changSoc = changSoc / SOC_SLOW_SPEED;   <span class="comment">// 降速到真实速度的1/5</span></span><br><span class="line">copySoc += changSoc;                     <span class="comment">// 继续缓慢增加（等待真实值追上）</span></span><br></pre></td></tr></table></figure>
+
+<p>这里有一个微妙处：充电时即使显示值超前，<code>copySoc</code> 仍然是加法（因为是充电状态，方向不变），只是速度放慢了，等待真实SOC追上来。这保证了”充电时SOC绝对不会在显示上减小”这一原则。</p>
+<hr>
+<h2 id="四、接近端点时加速显示"><a href="#四、接近端点时加速显示" class="headerlink" title="四、接近端点时加速显示"></a>四、接近端点时加速显示</h2><h3 id="4-1-充电侧的分段加速（SOC趋向100-）"><a href="#4-1-充电侧的分段加速（SOC趋向100-）" class="headerlink" title="4.1 充电侧的分段加速（SOC趋向100%）"></a>4.1 充电侧的分段加速（SOC趋向100%）</h3><p>这是整个算法最精妙的部分。当电池快充满时，电流越来越小，安时积分驱动的 <code>changSoc</code> 趋近于零。如果没有步进补偿，显示SOC会在95%附近”卡住”，充满了电却显示不出来。</p>
+<p>分段加速的逻辑如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span>(copySoc &lt; aimSoc)   <span class="comment">// 显示滞后于真实SOC</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span>(aimSoc &gt;= <span class="number">9000</span>)   <span class="comment">// 真实SOC &gt; 90%，进入加速区</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span>(aimSoc &gt;= <span class="number">9750</span>)           <span class="comment">// &gt; 97.5%：最快</span></span><br><span class="line">        &#123;</span><br><span class="line">            stepSoc = (aimSoc - copySoc) / <span class="number">50</span>;</span><br><span class="line">            <span class="comment">// 剩余差距 / 50步 = 5s追完（50×100ms）</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span>(aimSoc &gt;= <span class="number">9500</span>)     <span class="comment">// &gt; 95%</span></span><br><span class="line">        &#123;</span><br><span class="line">            stepSoc = (aimSoc - copySoc) / <span class="number">150</span>;  <span class="comment">// 15s追完</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span>(aimSoc &gt;= <span class="number">9300</span>)     <span class="comment">// &gt; 93%</span></span><br><span class="line">        &#123;</span><br><span class="line">            stepSoc = (aimSoc - copySoc) / <span class="number">200</span>;  <span class="comment">// 20s追完</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span>                         <span class="comment">// &gt; 90%</span></span><br><span class="line">        &#123;</span><br><span class="line">            stepSoc = (aimSoc - copySoc) / <span class="number">300</span>;  <span class="comment">// 30s追完</span></span><br><span class="line">        &#125;</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">if</span>(<span class="number">0</span> == stepSoc)   <span class="comment">// 差距极小时保底步进1</span></span><br><span class="line">        &#123;</span><br><span class="line">            stepSoc = <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span>(aimSoc &gt;= <span class="number">8000</span>)   <span class="comment">// 80~90%：中速区</span></span><br><span class="line">    &#123;</span><br><span class="line">        stepSoc = (aimSoc - copySoc) / <span class="number">600</span>;  <span class="comment">// 60s追完</span></span><br><span class="line">        <span class="keyword">if</span>(<span class="number">0</span> == stepSoc)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">if</span>(sTime &gt;= <span class="number">2</span>)   <span class="comment">// 每3次调用（300ms）步进1</span></span><br><span class="line">            &#123;</span><br><span class="line">                stepSoc = <span class="number">1</span>;</span><br><span class="line">                sTime = <span class="number">0</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span></span><br><span class="line">            &#123;</span><br><span class="line">                stepSoc = <span class="number">0</span>;</span><br><span class="line">                sTime++;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span>                     <span class="comment">// &lt; 80%：最慢区</span></span><br><span class="line">    &#123;</span><br><span class="line">        stepSoc = (aimSoc - copySoc) / <span class="number">1200</span>;  <span class="comment">// 120s追完</span></span><br><span class="line">        <span class="keyword">if</span>(<span class="number">0</span> == stepSoc)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">if</span>(sTime &gt;= <span class="number">3</span>)   <span class="comment">// 每4次调用（400ms）步进1</span></span><br><span class="line">            &#123;</span><br><span class="line">                stepSoc = <span class="number">1</span>;</span><br><span class="line">                sTime = <span class="number">0</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span></span><br><span class="line">            &#123;</span><br><span class="line">                stepSoc = <span class="number">0</span>;</span><br><span class="line">                sTime++;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>汇总为表格：</p>
+<table>
+<thead>
+<tr>
+<th>真实SOC区间</th>
+<th>追赶时间（理论值）</th>
+<th>步进计算公式</th>
+<th>体感</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>&gt; 97.5%</td>
+<td><strong>5秒</strong></td>
+<td><code>(aim - copy) / 50</code></td>
+<td>快速收尾</td>
+</tr>
+<tr>
+<td>95% ~ 97.5%</td>
+<td><strong>15秒</strong></td>
+<td><code>(aim - copy) / 150</code></td>
+<td>加速趋近</td>
+</tr>
+<tr>
+<td>93% ~ 95%</td>
+<td><strong>20秒</strong></td>
+<td><code>(aim - copy) / 200</code></td>
+<td>平稳加速</td>
+</tr>
+<tr>
+<td>90% ~ 93%</td>
+<td><strong>30秒</strong></td>
+<td><code>(aim - copy) / 300</code></td>
+<td>缓慢加速</td>
+</tr>
+<tr>
+<td>80% ~ 90%</td>
+<td><strong>60秒</strong></td>
+<td><code>(aim - copy) / 600</code></td>
+<td>正常速度</td>
+</tr>
+<tr>
+<td>&lt; 80%</td>
+<td><strong>120秒</strong></td>
+<td><code>(aim - copy) / 1200</code></td>
+<td>最慢</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>设计意图</strong>：用户在接近充满时最敏感。在97.5%以上，5秒内完成收尾，避免充满了还在转圈；而在中间段（80%以下），120秒的追赶时间意味着显示不会因为电流噪声频繁抖动。</p>
+</blockquote>
+<h3 id="4-2-放电侧的镜像加速（SOC趋向0-）"><a href="#4-2-放电侧的镜像加速（SOC趋向0-）" class="headerlink" title="4.2 放电侧的镜像加速（SOC趋向0%）"></a>4.2 放电侧的镜像加速（SOC趋向0%）</h3><p>放电侧完全对称，阈值反向：</p>
+<table>
+<thead>
+<tr>
+<th>真实SOC区间</th>
+<th>追赶时间</th>
+<th>体感</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>&lt; 3.5%（350&#x2F;10000）</td>
+<td><strong>5秒</strong></td>
+<td>快速告警</td>
+</tr>
+<tr>
+<td>3.5% ~ 8%（800）</td>
+<td><strong>15秒</strong></td>
+<td>加速下降</td>
+</tr>
+<tr>
+<td>8% ~ 14%（1400）</td>
+<td><strong>20秒</strong></td>
+<td>平稳加速</td>
+</tr>
+<tr>
+<td>14% ~ 20%（2000）</td>
+<td><strong>30秒</strong></td>
+<td>缓慢加速</td>
+</tr>
+<tr>
+<td>20% ~ 25%（2500）</td>
+<td><strong>60秒</strong></td>
+<td>正常速度</td>
+</tr>
+<tr>
+<td>&gt; 25%</td>
+<td><strong>120秒</strong></td>
+<td>最慢</td>
+</tr>
+</tbody></table>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 放电端点加速示例</span></span><br><span class="line"><span class="keyword">if</span>(aimSoc &lt;= <span class="number">2000</span>)   <span class="comment">// 真实SOC &lt; 20%</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span>(aimSoc &lt;= <span class="number">350</span>)   <span class="comment">// &lt; 3.5%</span></span><br><span class="line">    &#123;</span><br><span class="line">        stepSoc = (copySoc - aimSoc) / <span class="number">50</span>;  <span class="comment">// 5s追完</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="五、端点锁定机制"><a href="#五、端点锁定机制" class="headerlink" title="五、端点锁定机制"></a>五、端点锁定机制</h2><p><code>UpdateSocSlowDisplay()</code> 在写入最终显示值之前，有一层边界保护逻辑：</p>
+<h3 id="5-1-99-上锁（充电侧）"><a href="#5-1-99-上锁（充电侧）" class="headerlink" title="5.1 99% 上锁（充电侧）"></a>5.1 99% 上锁（充电侧）</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">else</span> <span class="keyword">if</span>((slowSoc &gt;= <span class="number">9900</span>)                         <span class="comment">// 平滑值 &gt;= 99%</span></span><br><span class="line">    &amp;&amp; (<span class="number">0</span> == EnerGetGroupVHLimStateHook()))        <span class="comment">// 且尚未触发高压告警</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span>(sSlowDisplaySoc &lt;= <span class="number">9900</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        sSlowDisplaySoc = <span class="number">9900</span>;    <span class="comment">// 上限锁在99%，不显示100%</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span>(slowSoc &lt; sSlowDisplaySoc)   <span class="comment">// 如果是放电（值在减小）</span></span><br><span class="line">    &#123;</span><br><span class="line">        sSlowDisplaySoc = slowSoc;       <span class="comment">// 允许继续减小</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>为什么不显示100%？</strong></p>
+<p>99% 锁定是一种”余量感”设计。用户看到100%会认为”满了，可以拔枪了”，然而BMS内部可能还在做均衡补充充电。在高压告警（<code>VHLimState</code>）触发之前显示停在99%，意思是”快满了，但还在充”。只有当高压保护真正触发（充电真正完成）后，才会跳到100%。</p>
+<h3 id="5-2-1-下锁（放电侧）"><a href="#5-2-1-下锁（放电侧）" class="headerlink" title="5.2 1% 下锁（放电侧）"></a>5.2 1% 下锁（放电侧）</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">else</span> <span class="keyword">if</span>((slowSoc &lt;= <span class="number">100</span>)                          <span class="comment">// 平滑值 &lt;= 1%</span></span><br><span class="line">    &amp;&amp; (<span class="number">0</span> == EnerGetGroupVLLimStateHook()))        <span class="comment">// 且尚未触发低压告警</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span>(sSlowDisplaySoc &gt;= <span class="number">100</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        sSlowDisplaySoc = <span class="number">100</span>;     <span class="comment">// 下限锁在1%，不显示0%</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span>(slowSoc &gt; sSlowDisplaySoc)   <span class="comment">// 如果是充电（值在增加）</span></span><br><span class="line">    &#123;</span><br><span class="line">        sSlowDisplaySoc = slowSoc;       <span class="comment">// 允许继续增加</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>SOC锁在1%不显示0%，是为了给用户”还有一点余量”的心理暗示，避免用户因为看到0%而恐慌。低压保护触发后才真正显示0%，表示”必须停止使用”。</p>
+<h3 id="5-3-EEPROM节流写入"><a href="#5-3-EEPROM节流写入" class="headerlink" title="5.3 EEPROM节流写入"></a>5.3 EEPROM节流写入</h3><p>每次更新完显示值，还有一个节流保存逻辑：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span>((sShowCopy / <span class="number">100</span>) != (sSlowDisplaySoc / <span class="number">100</span>))   <span class="comment">// 变化超过1%</span></span><br><span class="line">&#123;</span><br><span class="line">    EnerChangEepGNowSocHook((sSlowDisplaySoc / <span class="number">10</span>)); <span class="comment">// 保存显示SOC到EEPROM</span></span><br><span class="line">    sShowCopy = sSlowDisplaySoc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>SOC以100ms为周期更新，如果每次都写EEPROM，一天会产生864000次写操作，远超Flash的擦写寿命（约10万次）。这里的设计是：<strong>只有显示变化超过1%时才写EEPROM</strong>，大幅降低写入频率，同时保证掉电后重启的SOC精度误差不超过1%。</p>
+<hr>
+<h2 id="六、强制修正：跳过平滑直接覆写"><a href="#六、强制修正：跳过平滑直接覆写" class="headerlink" title="六、强制修正：跳过平滑直接覆写"></a>六、强制修正：跳过平滑直接覆写</h2><p>平滑跟踪保证了”正常工况”下的用户体验，但面对保护触发，必须有即时响应机制。这就是 <code>CorrGDisplaySocByUser()</code> 接口：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">CorrGDisplaySocByUser</span><span class="params">(u16 soc)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span>(soc &gt; <span class="number">10000</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">return</span>;   <span class="comment">// 参数防护</span></span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    sSlowDisplaySoc = soc;   <span class="comment">// 直接覆写平滑中间变量</span></span><br><span class="line">    </span><br><span class="line">    UpdateSocSlowDisplay(soc); <span class="comment">// 立即更新显示输出</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这个函数完全绕过了 <code>CalcSocSlowChang()</code> 的缓慢追赶逻辑，直接将平滑中间变量设置为目标值，然后立即输出。</p>
+<p>它由 <code>CalcSocChgDhgEndCorr()</code> 中的保护逻辑调用：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 过充一级保护触发</span></span><br><span class="line"><span class="keyword">if</span>(EnerGetGroupVHProStateHook() &gt; <span class="number">0</span>)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span>((<span class="number">1</span> != sCorrFlag)</span><br><span class="line">        &amp;&amp; ((nowSoc &lt; SOC_SLOW_VHER_SOC) || (sSlowDisplaySoc &lt; SOC_SLOW_VHER_SOC)))</span><br><span class="line">    &#123;</span><br><span class="line">        CorrGRemainCapBySocAPI(SOC_SLOW_VHER_SOC / <span class="number">10</span>);  <span class="comment">// 修正算法层SOC</span></span><br><span class="line">        CorrGNowCapBySocAPI(SOC_SLOW_VHER_SOC / <span class="number">10</span>);     <span class="comment">// 修正容量基准</span></span><br><span class="line">        sSlowDisplaySoc = SOC_SLOW_VHER_SOC;             <span class="comment">// 直接覆写显示值</span></span><br><span class="line">        aimSoc = SOC_SLOW_VHER_SOC;                      <span class="comment">// 目标也设为100%</span></span><br><span class="line">        sCorrFlag = <span class="number">1</span>;                                   <span class="comment">// 标记已执行修正</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>sCorrFlag</code> 是一个单次执行标志，防止保护状态持续时重复修正。在 <code>UpdateSocSlowDisplay()</code> 中，还有最终的兜底显示覆写：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span>(EnerGetGroupVHProStateHook() &gt; <span class="number">0</span>)</span><br><span class="line">&#123;</span><br><span class="line">    sSlowDisplaySoc = <span class="number">10000</span>;   <span class="comment">// 过充保护：直接显示100%</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">else</span> <span class="keyword">if</span>(EnerGetGroupVLProStateHook() &gt; <span class="number">0</span>)</span><br><span class="line">&#123;</span><br><span class="line">    sSlowDisplaySoc = <span class="number">0</span>;       <span class="comment">// 过放保护：直接显示0%</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>各保护状态下的显示行为总结：</p>
+<table>
+<thead>
+<tr>
+<th>触发条件</th>
+<th>宏定义常量</th>
+<th>显示值</th>
+<th>机制</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>过充一级保护（VH_PRO）</td>
+<td><code>SOC_SLOW_VHER_SOC = 10000</code></td>
+<td><strong>100%</strong></td>
+<td>直接覆写+算法修正</td>
+</tr>
+<tr>
+<td>过放一级保护（VL_PRO）</td>
+<td><code>SOC_SLOW_VLER_SOC = 0</code></td>
+<td><strong>0%</strong></td>
+<td>直接覆写+算法修正</td>
+</tr>
+<tr>
+<td>高压告警（VH_LIM）</td>
+<td><code>SOC_SLOW_VH_SOC = 9950</code></td>
+<td><strong>99.5%</strong></td>
+<td>平滑趋近，放电可减</td>
+</tr>
+<tr>
+<td>低压告警（VL_LIM）</td>
+<td><code>SOC_SLOW_VL_SOC = 50</code></td>
+<td><strong>0.5%</strong></td>
+<td>平滑趋近，充电可增</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="七、充放电末端的电压辅助修正"><a href="#七、充放电末端的电压辅助修正" class="headerlink" title="七、充放电末端的电压辅助修正"></a>七、充放电末端的电压辅助修正</h2><p>在 <code>CalcSocChgDhgEndCorr()</code> 中，还有一套基于单体电压的辅助修正逻辑，这套逻辑在<strong>充放电末端</strong>发挥作用：</p>
+<h3 id="7-1-充电末端修正（以磷酸铁锂为例）"><a href="#7-1-充电末端修正（以磷酸铁锂为例）" class="headerlink" title="7.1 充电末端修正（以磷酸铁锂为例）"></a>7.1 充电末端修正（以磷酸铁锂为例）</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 单体最高电压超过3.495V（接近充满）且SOC偏低</span></span><br><span class="line"><span class="keyword">if</span>((GetGCellMaxVoltAPI() &gt;= SOC_V_CHG_UP_MAX_V) &amp;&amp; (nowSoc &lt; SOC_V_CHG_UP_LES_SOC))</span><br><span class="line">&#123;</span><br><span class="line">    CorrGNowCapBySocAPI(SOC_V_CHG_UP_LES_SOC / <span class="number">10</span>);  <span class="comment">// 强制SOC修正为96%</span></span><br><span class="line">    aimSoc = SOC_V_CHG_UP_LES_SOC;                    <span class="comment">// 显示目标拉到96%</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 单体最高电压超过3.437V（充电初段末端）且SOC偏低</span></span><br><span class="line"><span class="keyword">else</span> <span class="keyword">if</span>((GetGCellMaxVoltAPI() &gt;= SOC_V_CHG_DN_MAX_V) &amp;&amp; (nowSoc &lt; SOC_V_CHG_DN_LES_SOC))</span><br><span class="line">&#123;</span><br><span class="line">    CorrGNowCapBySocAPI(SOC_V_CHG_DN_LES_SOC / <span class="number">10</span>);  <span class="comment">// 强制SOC修正为91%</span></span><br><span class="line">    aimSoc = SOC_V_CHG_DN_LES_SOC;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这是一套”电压-SOC交叉校验”机制：磷酸铁锂电池的充电末端电压特征非常明显（3.4V以上进入尾段），利用这一特征对安时积分的累积误差进行修正。</p>
+<h3 id="7-2-静置时的电压平台修正"><a href="#7-2-静置时的电压平台修正" class="headerlink" title="7.2 静置时的电压平台修正"></a>7.2 静置时的电压平台修正</h3><p>系统静置超过600秒（<code>SOC_SLOW_CORR_IDLE_T = 6000</code> × 0.1s）后，会基于开路电压（OCV）与SOC的对应关系进行修正：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span>(sIdleTime &gt;= SOC_SLOW_CORR_IDLE_T)   <span class="comment">// 静置10分钟</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span>(GetGCellMaxVoltAPI() &lt; SOC_V_SEC_DN_MAX_V)   <span class="comment">// 单体最高电压很低</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span>(nowSoc &gt; SOC_V_SEC_DN_MOS_SOC)           <span class="comment">// 但SOC偏高</span></span><br><span class="line">        &#123;</span><br><span class="line">            CorrGNowCapBySocAPI(SOC_V_SEC_DN_MOS_SOC / <span class="number">10</span>); <span class="comment">// 向下修正SOC</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// ...其他电压区间类似处理</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这种修正设计为<strong>单次触发</strong>，利用开路电压平台排除安时积分漂移。静置时间要求足够长（10分钟），确保电压已完全平衡，减少测量误差。</p>
+<hr>
+<h2 id="八、完整数据流梳理"><a href="#八、完整数据流梳理" class="headerlink" title="八、完整数据流梳理"></a>八、完整数据流梳理</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">算法层真实SOC（每10ms积分更新）</span><br><span class="line">        │</span><br><span class="line">        ▼</span><br><span class="line">GetGRealSocTenThousAPI()     ← 取值，单位：万分之一</span><br><span class="line">        │</span><br><span class="line">        ▼</span><br><span class="line">CalcSocChgDhgEndCorr()       ← 充放电末端修正 / 保护触发修正</span><br><span class="line">        │  ┌──────────────────────────────────────────┐</span><br><span class="line">        │  │ VH保护 → aimSoc=10000（100%）           │</span><br><span class="line">        │  │ VL保护 → aimSoc=0（0%）                 │</span><br><span class="line">        │  │ 充电末端 → 电压辅助拉高SOC              │</span><br><span class="line">        │  │ 放电末端 → 电压辅助压低SOC              │</span><br><span class="line">        │  │ 静置10min → OCV平台校准                 │</span><br><span class="line">        │  └──────────────────────────────────────────┘</span><br><span class="line">        │ aimSoc（修正后目标值）</span><br><span class="line">        ▼</span><br><span class="line">CalcSocSlowChang()           ← 平滑追赶计算（核心）</span><br><span class="line">        │  ┌──────────────────────────────────────────┐</span><br><span class="line">        │  │ 判断充放电方向（state）                  │</span><br><span class="line">        │  │ 计算真实变化量 changSoc                  │</span><br><span class="line">        │  │ 查表得步进量 stepSoc（端点加速）         │</span><br><span class="line">        │  │ 叠加：changSoc += stepSoc                │</span><br><span class="line">        │  │ 单向更新：充电只加 / 放电只减            │</span><br><span class="line">        │  │ 防越界：不超过/不低于aimSoc              │</span><br><span class="line">        │  └──────────────────────────────────────────┘</span><br><span class="line">        │ slowSoc（平滑值）</span><br><span class="line">        ▼</span><br><span class="line">UpdateSocSlowDisplay()       ← 端点锁定+输出</span><br><span class="line">        │  ┌──────────────────────────────────────────┐</span><br><span class="line">        │  │ VH保护 → 强制100%                       │</span><br><span class="line">        │  │ VL保护 → 强制0%                         │</span><br><span class="line">        │  │ slowSoc≥99% 且无VH告警 → 锁99%          │</span><br><span class="line">        │  │ slowSoc≤1%  且无VL告警 → 锁1%           │</span><br><span class="line">        │  │ 转换单位：/10 → 千分之一（0.1%精度）    │</span><br><span class="line">        │  │ 变化&gt;1% → 写EEPROM                      │</span><br><span class="line">        │  └──────────────────────────────────────────┘</span><br><span class="line">        │</span><br><span class="line">        ▼</span><br><span class="line">gGSysCapInfo_61[eSysCapInfo61_SOC]   ← 最终显示值（上层读取）</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="九、工程经验总结"><a href="#九、工程经验总结" class="headerlink" title="九、工程经验总结"></a>九、工程经验总结</h2><p><strong>1. 平滑不是低通滤波</strong></p>
+<p>简单的 <code>display = 0.9×display + 0.1×real</code> 对BMS毫无意义——它对充放电方向无感知，会产生”放电时SOC短暂增加”的悖论显示。这套工程选择的是有状态的、方向敏感的单向追赶，才是正确思路。</p>
+<p><strong>2. 步进叠加解决了末端卡顿问题</strong></p>
+<p><code>changSoc += stepSoc</code> 这一行是灵魂。仅靠电流积分驱动，充电末期电流趋零时显示会完全停滞。强制步进保证显示”永远在动”，向用户传达”充电进行中”的状态。</p>
+<p><strong>3. 分段加速是用户体验的精细调校</strong></p>
+<p>从120秒到5秒，六个加速档位是反复调试的结果。80%以下的缓慢追赶防止了中间段的抖动，97.5%以上的快速收尾保证了充满提示的及时性。这种非线性设计，不是算法的精妙，而是对用户心理的理解。</p>
+<p><strong>4. 端点锁定是用户引导的艺术</strong></p>
+<p>不显示100%（锁99%），是主动欺骗——但这种欺骗对用户有益。它给用户留了余量感，减少了”满了又没满”的焦虑。只有触发了实际的过充保护，才真正告诉用户”满了”。这是产品设计和嵌入式工程相交汇的地方。</p>
+<p><strong>5. EEPROM节流写入是寿命工程</strong></p>
+<p>100ms的更新周期，如果每次都写EEPROM，设备寿命按天计算。1%阈值的节流策略将写入频率降低了约100倍，且重启时SOC误差不超过1%，是性能与寿命的平衡点。</p>
+<hr>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>SOC显示平滑，表面上是一个UI优化问题，本质上是<strong>算法层与显示层之间的接口设计问题</strong>。这套工程给出的答案是：用一个有状态的、速度自适应的单向跟踪器作为桥梁，辅以端点锁定和强制覆写的逃生通道，实现了在任何工况下都”符合直觉”的SOC显示。</p>
+<p><code>SocDisplay.c</code> 的350行代码，是BMS用户体验工程的缩影——它不属于任何核心算法，却是用户感知最直接的那层。</p>
+<hr>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://kuangyue111.github.io">kuangyue111</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://kuangyue111.github.io/2026/06/27/2026-06-27-bms-soc-smooth-display/">https://kuangyue111.github.io/2026/06/27/2026-06-27-bms-soc-smooth-display/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://kuangyue111.github.io" target="_blank">KuangYue's Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E5%B5%8C%E5%85%A5%E5%BC%8F/">嵌入式</a><a class="post-meta__tags" href="/tags/BMS/">BMS</a><a class="post-meta__tags" href="/tags/SOC/">SOC</a><a class="post-meta__tags" href="/tags/FreeRTOS/">FreeRTOS</a><a class="post-meta__tags" href="/tags/S32K146/">S32K146</a><a class="post-meta__tags" href="/tags/%E6%98%BE%E7%A4%BA%E5%B9%B3%E6%BB%91/">显示平滑</a><a class="post-meta__tags" href="/tags/%E7%AE%97%E6%B3%95/">算法</a><a class="post-meta__tags" href="/tags/%E7%94%A8%E6%88%B7%E4%BD%93%E9%AA%8C/">用户体验</a></div><div class="post-share"><div class="social-share" data-image="/img/butterfly-icon.png" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/2026/06/27/2026-06-27-bms-engineering-evaluation-report/" title="BMS工程专业评价报告"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">BMS工程专业评价报告</div></div><div class="info-2"><div class="info-item-1">BMS工程专业评价报告一、总体评价1.1 专业性评分   评价维度 评分 说明    算法实现 ⭐⭐⭐⭐☆ (4&#x2F;5) SOC&#x2F;SOH算法较为专业，但缺少高级算法   系统架构 ⭐⭐⭐⭐⭐ (5&#x2F;5) 分层清晰，模块化设计优秀   安全保护 ⭐⭐⭐⭐☆ (4&#x2F;5) 保护机制完善，但部分细节可优化   功能完整性 ⭐⭐⭐⭐☆ (4&#x2F;5) 核心功能齐全，部分高级功能缺失   代码质量 ⭐⭐⭐⭐☆ (4&#x2F;5) 代码规范，注释清晰，但部分可优化   实时性 ⭐⭐⭐⭐⭐ (5&#x2F;5) RTOS任务调度合理，实时性良好   综合评分: ⭐⭐⭐⭐☆ (4.2&#x2F;5) - 专业级BMS系统  二、优点分析2.1 系统架构优势 ✅1. 清晰的分层架构1应用层 → 功能层 → BSP层 → RTOS层 → 硬件层  优点: 层次分明，便于维护和扩展 专业评价: 符合嵌入式系统设计最佳实践  2. 模块化设计 各功能模块独立，接口清晰 便于单元测试和功能验证 符合软件工程模块化原则  3. RTOS任务调度合理 10个不同周期...</div></div></div></a><a class="pagination-related" href="/2026/06/25/2026-06-25-ekf-soc-estimation-reading-review/" title="卡尔曼滤波SOC估算技术调研读后感：从理论到工程的完整解读"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">卡尔曼滤波SOC估算技术调研读后感：从理论到工程的完整解读</div></div><div class="info-2"><div class="info-item-1">  ▎ 最近精读了一份关于卡尔曼滤波SOC估算的技术调研报告，内容覆盖了理论基础、工程实现到前沿进展，干货密度极高。这篇文章是  ▎ 结合自身在储能BMS领域的工作经历，对这份报告的解读与延展，希望能帮助从事电池管理系统开发的工程师更系统地理解这一核  ▎ 心算法。  一、SOC为什么是BMS最难搞的参数  在我刚接触BMS开发的时候，有一个问题困扰了我很久：温度可以用热敏电阻测，电压可以用ADC量，电流可以用霍尔传感器采——为什么  SOC（荷电状态）偏偏要用算法估计，而不是直接测量？   答案是：SOC是一个隐含状态量，它描述的是电池内部还剩多少”可用能量”，这个物理量从根本上就无法直接测量。你看到的电压、电流、温度都只是它的”影子”——SOC通过这些可观测量折射出来，但它本身躲在电芯内部的电化学反应里。   这个报告把SOC的数学定义写得很清晰： 1SOC(t) = SOC(t₀) − (1/Qmax) ·∫η·I(τ)dτ   看起来不过是一个积分公式。但魔鬼藏在细节里：  Qmax不是常数——它随着电池老化每年以1%~3%的速度衰减，30℃以上高温使用时衰减更快 η（库...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/06/27/2026-06-27-bms-code-analysis-document/" title="电池管理系统工程代码分析文档"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-27</div><div class="info-item-2">电池管理系统工程代码分析文档</div></div><div class="info-2"><div class="info-item-1">电池管理系统工程代码分析文档目录 工程概述 系统架构 RTOS运行机制 核心模块分析 SOC算法详解 SOH算法详解 系统运行流程 关键接口说明   工程概述项目信息 项目名称: BMS 处理器: NXP S32K146 RTOS: FreeRTOS 功能: 电池管理系统(BMS - Battery Management System)  主要功能 电池组电压、电流、温度监测 SOC(State of Charge)状态估算 SOH(State of Health)健康度评估 SOE(State of Energy)能量状态计算 电池保护与故障诊断 CAN&#x2F;Modbus通信 均衡控制 绝缘检测 数据记录与统计   系统架构目录结构1234567891011121314151617181920212223242526272829303132S32K146OFBMU_B/├── Sources/                    # 源代码目录│   ├── main.c                 # 主程序入口│   ├── OSUser/           ...</div></div></div></a><a class="pagination-related" href="/2026/05/08/2026-05-08-bms-soc-ampere-hour-integration/" title="安时积分法在车规级 BMS 中的工程实现"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-08</div><div class="info-item-2">安时积分法在车规级 BMS 中的工程实现</div></div><div class="info-2"><div class="info-item-1">安时积分法在车规级 BMS 中的工程实现 123▎ 作者：嵌入式系统开发工程师▎ 日期：2026-05-08▎ 代码基础：车规级 BMS 项目（基于 NXP 芯片）  引言在动力电池管理系统（BMS）中，SOC（State of Charge，荷电状态）估算是最核心的功能之一。它直接关系到电池的使用安全、续航里程预测以及充放电策略的制定。在众多SOC估算算法中，安时积分法（也称库仑计法）因其原理简单、实时性好而成为工程应用中的基础算法。 然而，看似简单的”电流乘以时间”背后，隐藏着大量工程实现细节：如何在没有浮点运算单元的MCU上高效计算？如何设计单位换算避免精度损失？如何处理累积误差？本文将基于一个真实的车规级BMS项目（基于NXP芯片），深入剖析安时积分法的完整工程实现。 一、安时积分法的理论基础1.1 基本原理安时积分法的核心思想源于电荷守恒定律。电池的SOC本质上是当前剩余电量与总容量的比值： 1SOC(t) = SOC(t0) + (1/Crated) × ∫[t0→t] η(I) × I(τ) dτ  其中：  SOC(t0)：初始荷电状态 Crated：电池额定容量...</div></div></div></a><a class="pagination-related" href="/2026/06/27/2026-06-27-bms-engineering-evaluation-report/" title="BMS工程专业评价报告"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-27</div><div class="info-item-2">BMS工程专业评价报告</div></div><div class="info-2"><div class="info-item-1">BMS工程专业评价报告一、总体评价1.1 专业性评分   评价维度 评分 说明    算法实现 ⭐⭐⭐⭐☆ (4&#x2F;5) SOC&#x2F;SOH算法较为专业，但缺少高级算法   系统架构 ⭐⭐⭐⭐⭐ (5&#x2F;5) 分层清晰，模块化设计优秀   安全保护 ⭐⭐⭐⭐☆ (4&#x2F;5) 保护机制完善，但部分细节可优化   功能完整性 ⭐⭐⭐⭐☆ (4&#x2F;5) 核心功能齐全，部分高级功能缺失   代码质量 ⭐⭐⭐⭐☆ (4&#x2F;5) 代码规范，注释清晰，但部分可优化   实时性 ⭐⭐⭐⭐⭐ (5&#x2F;5) RTOS任务调度合理，实时性良好   综合评分: ⭐⭐⭐⭐☆ (4.2&#x2F;5) - 专业级BMS系统  二、优点分析2.1 系统架构优势 ✅1. 清晰的分层架构1应用层 → 功能层 → BSP层 → RTOS层 → 硬件层  优点: 层次分明，便于维护和扩展 专业评价: 符合嵌入式系统设计最佳实践  2. 模块化设计 各功能模块独立，接口清晰 便于单元测试和功能验证 符合软件工程模块化原则  3. RTOS任务调度合理 10个不同周期...</div></div></div></a><a class="pagination-related" href="/2026/05/27/2026-05-27-embedded-multithread-manager-design/" title="嵌入式多线程管理框架设计：从 pthread 到工业级线程管家"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-27</div><div class="info-item-2">嵌入式多线程管理框架设计：从 pthread 到工业级线程管家</div></div><div class="info-2"><div class="info-item-1">Topic 2：嵌入式多线程管理框架设计——从 pthread 到工业级线程管家 核心切入点：publib/iThread.c（256线程上限、动态条目池、心跳监控） 本文基于一个实际的储能系统（BMS&#x2F;EMS）嵌入式工程代码，深入剖析一套从裸 pthread 封装而成的工业级线程管理框架。我们将从设计哲学、实现细节、到AI驱动的异常检测，完整还原一个”线程管家”的诞生过程。   一、引言：为什么需要一个”线程管家”？在我参与的这个储能管理系统项目中，系统需要同时运行 IEC-104 通信、MQTT 上报、Modbus 采集、BMS 采样、GUI 显示等数十个功能模块。每个模块都运行在独立的 pthread 中。如果直接使用裸 pthread API，会面临以下问题：  线程失控：没有统一的注册机制，无法知道系统中到底有多少线程在跑 死锁频发：多层嵌套锁、递归锁使用不当导致系统卡死 故障不可恢复：某个线程崩溃后，整个系统可能僵死 调试困难：出了问题不知道哪个线程挂了、为什么挂  正是在这样的背景下，工程中诞生了 iThread.c 这个线程管理框架——它不是线程池，不是...</div></div></div></a><a class="pagination-related" href="/2026/05/27/2026-05-27-bms-pcs-can-protocol-deep-analysis/" title="BMS-PCS通信协议深度解析：CAN总线在储能系统中的工程实践"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-27</div><div class="info-item-2">BMS-PCS通信协议深度解析：CAN总线在储能系统中的工程实践</div></div><div class="info-2"><div class="info-item-1">BMS-PCS通信协议深度解析——CAN总线在储能系统中的工程实践 作者：储能系统固件开发工程师日期：2026-04-14项目背景：工商业储能管理系统（BESS），支持多品牌BMS并联接入，通过CAN总线与PCS（Power Conversion System）双向通信   一、为什么是CAN总线？刚加入这个项目时，我问了自己同样的问题。为什么储能系统不用Modbus RTU，不用RS485，而偏偏选择CAN总线？ 原因是多层次的：  实时性：CAN总线的优先级仲裁机制保证了高优先级帧（如保护命令）在总线竞争中必然胜出，最坏情况延迟可以精确计算。 可靠性：CAN协议内置CRC校验、位填充、帧错误检测，单个节点故障不会拉低整条总线。 多主通信：BMS可以主动广播数据，PCS也可以主动发送控制命令，无需轮询。 工业生态：主流BMS厂商（宁德时代、亿纬锂能、鹏辉能源等）均提供CAN接口，协议文档相对规范。  然而，理论是美好的，现实是：每家厂商的CAN协议都不一样。这就是我们项目中出现 can_pl_batt.c、can_nd_batt.c、can_nd_v33_batt.c、can_...</div></div></div></a><a class="pagination-related" href="/2026/06/08/2026-06-08-eis-deep-analysis/" title="电化学阻抗谱（EIS）深度解析：从物理原理到工程代码实现"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-08</div><div class="info-item-2">电化学阻抗谱（EIS）深度解析：从物理原理到工程代码实现</div></div><div class="info-2"><div class="info-item-1">电化学阻抗谱（EIS）深度解析：从物理原理到工程代码实现  一、为什么EIS是电池诊断的天花板工具  做储能系统的人都知道，判断一块电池的健康状态，常用的手段无非是容量标定、内阻测试、OCV曲线这几招。这些方法能告诉你电池现在的状态，但告诉不了你它为什么衰减，衰减发生在哪个环节，是SEI膜增厚、活性材料失活，还是锂离子扩散通道堵塞。   这就是电化学阻抗谱（Electrochemical Impedance Spectroscopy，EIS）存在的意义。   EIS的核心思想非常直接：在不同频率下向电池施加一个微小的正弦扰动信号（通常是幅值5到10mV的电压信号，或幅值C&#x2F;20以下的电流信号），测量电池的电压和电流响应，计算出各频率下的复数阻抗。不同的内部物理过程在不同频率段留下”指纹”，把这些指纹拼在一起，就能把电池的内部状态解读出来。   一个成熟的EIS测量通常覆盖频率范围从100kHz到1mHz，横跨约8个数量级。高频段揭示欧姆效应，中频段对应SEI膜和电荷传递过程，低频段反映锂离子的扩散行为。这种多频率多维度的信息密度，是任何单点测量方法都无法比拟的。  二、...</div></div></div></a></div></div><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="giscus-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/img/butterfly-icon.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">kuangyue111</div><div class="author-info-description">嵌入式开发 | 储能系统 | 工业通信协议</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">26</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">132</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">11</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/kuangyue111"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/kuangyue111" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">专注于嵌入式与储能系统技术分享</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#BMS-SOC%E6%98%BE%E7%A4%BA%E5%B9%B3%E6%BB%91%E7%AE%97%E6%B3%95%EF%BC%9A%E8%AE%A9%E7%99%BE%E5%88%86%E6%AF%94%E5%8F%98%E5%8C%96%E7%AC%A6%E5%90%88%E7%94%A8%E6%88%B7%E7%9B%B4%E8%A7%89"><span class="toc-number">1.</span> <span class="toc-text">BMS SOC显示平滑算法：让百分比变化符合用户直觉</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E6%98%BE%E7%A4%BA%E5%B9%B3%E6%BB%91"><span class="toc-number">1.2.</span> <span class="toc-text">一、为什么需要显示平滑</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-1-%E5%AE%89%E6%97%B6%E7%A7%AF%E5%88%86%E7%9A%84%E5%9B%BA%E6%9C%89%E5%99%AA%E5%A3%B0"><span class="toc-number">1.2.1.</span> <span class="toc-text">1.1 安时积分的固有噪声</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-2-%E4%BF%9D%E6%8A%A4%E8%A7%A6%E5%8F%91%E6%97%B6%E7%9A%84%E5%BC%BA%E5%88%B6%E4%BF%AE%E6%AD%A3"><span class="toc-number">1.2.2.</span> <span class="toc-text">1.2 保护触发时的强制修正</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-3-%E5%85%85%E6%94%BE%E7%94%B5%E6%9C%AB%E6%9C%9F%E7%9A%84%E6%94%B6%E6%95%9B%E5%8A%A0%E9%80%9F"><span class="toc-number">1.2.3.</span> <span class="toc-text">1.3 充放电末期的收敛加速</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E6%95%B4%E4%BD%93%E6%9E%B6%E6%9E%84%EF%BC%9A%E4%B8%89%E5%B1%82%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8"><span class="toc-number">1.3.</span> <span class="toc-text">二、整体架构：三层函数调用</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E9%80%9F%E5%BA%A6%E8%87%AA%E9%80%82%E5%BA%94%E7%9A%84%E5%8D%95%E5%90%91%E8%B7%9F%E8%B8%AA"><span class="toc-number">1.4.</span> <span class="toc-text">三、速度自适应的单向跟踪</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-%E6%A0%B8%E5%BF%83%E8%AE%BE%E8%AE%A1%E6%80%9D%E6%83%B3"><span class="toc-number">1.4.1.</span> <span class="toc-text">3.1 核心设计思想</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-%E5%85%85%E7%94%B5%E7%8A%B6%E6%80%81%E4%B8%8B%E7%9A%84%E8%B7%9F%E8%B8%AA%E9%80%BB%E8%BE%91"><span class="toc-number">1.4.2.</span> <span class="toc-text">3.2 充电状态下的跟踪逻辑</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-3-%E6%94%BE%E7%94%B5%E7%8A%B6%E6%80%81%E4%B8%8B%E7%9A%84%E8%B7%9F%E8%B8%AA%E9%80%BB%E8%BE%91"><span class="toc-number">1.4.3.</span> <span class="toc-text">3.3 放电状态下的跟踪逻辑</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-4-%E6%98%BE%E7%A4%BA%E5%80%BC%E8%B6%85%E5%89%8D%E6%97%B6%E7%9A%84%E9%99%8D%E9%80%9F%E5%A4%84%E7%90%86"><span class="toc-number">1.4.4.</span> <span class="toc-text">3.4 显示值超前时的降速处理</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E6%8E%A5%E8%BF%91%E7%AB%AF%E7%82%B9%E6%97%B6%E5%8A%A0%E9%80%9F%E6%98%BE%E7%A4%BA"><span class="toc-number">1.5.</span> <span class="toc-text">四、接近端点时加速显示</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-%E5%85%85%E7%94%B5%E4%BE%A7%E7%9A%84%E5%88%86%E6%AE%B5%E5%8A%A0%E9%80%9F%EF%BC%88SOC%E8%B6%8B%E5%90%91100-%EF%BC%89"><span class="toc-number">1.5.1.</span> <span class="toc-text">4.1 充电侧的分段加速（SOC趋向100%）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-%E6%94%BE%E7%94%B5%E4%BE%A7%E7%9A%84%E9%95%9C%E5%83%8F%E5%8A%A0%E9%80%9F%EF%BC%88SOC%E8%B6%8B%E5%90%910-%EF%BC%89"><span class="toc-number">1.5.2.</span> <span class="toc-text">4.2 放电侧的镜像加速（SOC趋向0%）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E7%AB%AF%E7%82%B9%E9%94%81%E5%AE%9A%E6%9C%BA%E5%88%B6"><span class="toc-number">1.6.</span> <span class="toc-text">五、端点锁定机制</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#5-1-99-%E4%B8%8A%E9%94%81%EF%BC%88%E5%85%85%E7%94%B5%E4%BE%A7%EF%BC%89"><span class="toc-number">1.6.1.</span> <span class="toc-text">5.1 99% 上锁（充电侧）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-2-1-%E4%B8%8B%E9%94%81%EF%BC%88%E6%94%BE%E7%94%B5%E4%BE%A7%EF%BC%89"><span class="toc-number">1.6.2.</span> <span class="toc-text">5.2 1% 下锁（放电侧）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-3-EEPROM%E8%8A%82%E6%B5%81%E5%86%99%E5%85%A5"><span class="toc-number">1.6.3.</span> <span class="toc-text">5.3 EEPROM节流写入</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E5%BC%BA%E5%88%B6%E4%BF%AE%E6%AD%A3%EF%BC%9A%E8%B7%B3%E8%BF%87%E5%B9%B3%E6%BB%91%E7%9B%B4%E6%8E%A5%E8%A6%86%E5%86%99"><span class="toc-number">1.7.</span> <span class="toc-text">六、强制修正：跳过平滑直接覆写</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E5%85%85%E6%94%BE%E7%94%B5%E6%9C%AB%E7%AB%AF%E7%9A%84%E7%94%B5%E5%8E%8B%E8%BE%85%E5%8A%A9%E4%BF%AE%E6%AD%A3"><span class="toc-number">1.8.</span> <span class="toc-text">七、充放电末端的电压辅助修正</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#7-1-%E5%85%85%E7%94%B5%E6%9C%AB%E7%AB%AF%E4%BF%AE%E6%AD%A3%EF%BC%88%E4%BB%A5%E7%A3%B7%E9%85%B8%E9%93%81%E9%94%82%E4%B8%BA%E4%BE%8B%EF%BC%89"><span class="toc-number">1.8.1.</span> <span class="toc-text">7.1 充电末端修正（以磷酸铁锂为例）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-2-%E9%9D%99%E7%BD%AE%E6%97%B6%E7%9A%84%E7%94%B5%E5%8E%8B%E5%B9%B3%E5%8F%B0%E4%BF%AE%E6%AD%A3"><span class="toc-number">1.8.2.</span> <span class="toc-text">7.2 静置时的电压平台修正</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E5%AE%8C%E6%95%B4%E6%95%B0%E6%8D%AE%E6%B5%81%E6%A2%B3%E7%90%86"><span class="toc-number">1.9.</span> <span class="toc-text">八、完整数据流梳理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B9%9D%E3%80%81%E5%B7%A5%E7%A8%8B%E7%BB%8F%E9%AA%8C%E6%80%BB%E7%BB%93"><span class="toc-number">1.10.</span> <span class="toc-text">九、工程经验总结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BB%93%E8%AF%AD"><span class="toc-number">1.11.</span> <span class="toc-text">结语</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/06/27/2026-06-27-bms-code-analysis-document/" title="电池管理系统工程代码分析文档">电池管理系统工程代码分析文档</a><time datetime="2026-06-27T09:00:00.000Z" title="发表于 2026-06-27 17:00:00">2026-06-27</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/06/27/2026-06-27-bms-engineering-evaluation-report/" title="BMS工程专业评价报告">BMS工程专业评价报告</a><time datetime="2026-06-27T08:00:00.000Z" title="发表于 2026-06-27 16:00:00">2026-06-27</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/06/27/2026-06-27-bms-soc-smooth-display/" title="BMS SOC显示平滑算法：让百分比变化符合用户直觉">BMS SOC显示平滑算法：让百分比变化符合用户直觉</a><time datetime="2026-06-27T07:00:00.000Z" title="发表于 2026-06-27 15:00:00">2026-06-27</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/06/25/2026-06-25-ekf-soc-estimation-reading-review/" title="卡尔曼滤波SOC估算技术调研读后感：从理论到工程的完整解读">卡尔曼滤波SOC估算技术调研读后感：从理论到工程的完整解读</a><time datetime="2026-06-25T07:00:00.000Z" title="发表于 2026-06-25 15:00:00">2026-06-25</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/06/22/2026-06-22-kalman-filter-soc-estimation/" title="卡尔曼滤波法估算SOC — 技术调研报告">卡尔曼滤波法估算SOC — 技术调研报告</a><time datetime="2026-06-22T07:00:00.000Z" title="发表于 2026-06-22 15:00:00">2026-06-22</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By kuangyue111</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.4</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="前往评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.4"></script><script src="/js/main.js?v=5.5.4"></script><div class="js-pjax"><script>(() => {
+  const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
+  const option = {"mapping":"url","lang":"zh-CN"}
+
+  const getGiscusTheme = theme => theme === 'dark' ? 'dark' : 'light'
+
+  const createScriptElement = config => {
+    const ele = document.createElement('script')
+    Object.entries(config).forEach(([key, value]) => {
+      ele.setAttribute(key, value)
+    })
+    return ele
+  }
+
+  const loadGiscus = (el = document, key) => {
+    const mappingConfig = isShuoshuo
+      ? { 'data-mapping': 'specific', 'data-term': key }
+      : { 'data-mapping': (option && option['data-mapping']) || 'pathname' }
+
+    const giscusConfig = {
+      src: 'https://giscus.app/client.js',
+      'data-repo': 'kuangyue111/kuangyue111.github.io',
+      'data-repo-id': 'R_kgDOSQde2Q',
+      'data-category-id': 'DIC_kwDOSQde2c4C8CgH',
+      'data-theme': getGiscusTheme(document.documentElement.getAttribute('data-theme')),
+      'data-reactions-enabled': '1',
+      crossorigin: 'anonymous',
+      async: true,
+      ...option,
+      ...mappingConfig
+    }
+
+    const scriptElement = createScriptElement(giscusConfig)
+
+    el.querySelector('#giscus-wrap').appendChild(scriptElement)
+
+    if (isShuoshuo) {
+      window.shuoshuoComment.destroyGiscus = () => {
+        if (el.children.length) {
+          el.innerHTML = ''
+          el.classList.add('no-comment')
+        }
+      }
+    }
+  }
+
+  const changeGiscusTheme = theme => {
+    const iframe = document.querySelector('#giscus-wrap iframe')
+    if (iframe) {
+      const message = {
+        giscus: {
+          setConfig: {
+            theme: getGiscusTheme(theme)
+          }
+        }
+      }
+      iframe.contentWindow.postMessage(message, 'https://giscus.app')
+    }
+  }
+
+  btf.addGlobalFn('themeChange', changeGiscusTheme, 'giscus')
+
+  if (isShuoshuo) {
+    'Giscus' === 'Giscus'
+      ? window.shuoshuoComment = { loadComment: loadGiscus }
+      : window.loadOtherComment = loadGiscus
+    return
+  }
+
+  if ('Giscus' === 'Giscus' || !false) {
+    if (false) btf.loadComment(document.getElementById('giscus-wrap'), loadGiscus)
+    else loadGiscus()
+  } else {
+    window.loadOtherComment = loadGiscus
+  }
+})()</script></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

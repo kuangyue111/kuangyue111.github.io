@@ -1,0 +1,582 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>电池管理系统工程代码分析文档 | KuangYue's Blog</title><meta name="author" content="kuangyue111"><meta name="copyright" content="kuangyue111"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="电池管理系统工程代码分析文档目录 工程概述 系统架构 RTOS运行机制 核心模块分析 SOC算法详解 SOH算法详解 系统运行流程 关键接口说明   工程概述项目信息 项目名称: BMS 处理器: NXP S32K146 RTOS: FreeRTOS 功能: 电池管理系统(BMS - Battery Management System)  主要功能 电池组电压、电流、温度监测 SOC(State">
+<meta property="og:type" content="article">
+<meta property="og:title" content="电池管理系统工程代码分析文档">
+<meta property="og:url" content="https://kuangyue111.github.io/2026/06/27/2026-06-27-bms-code-analysis-document/index.html">
+<meta property="og:site_name" content="KuangYue&#39;s Blog">
+<meta property="og:description" content="电池管理系统工程代码分析文档目录 工程概述 系统架构 RTOS运行机制 核心模块分析 SOC算法详解 SOH算法详解 系统运行流程 关键接口说明   工程概述项目信息 项目名称: BMS 处理器: NXP S32K146 RTOS: FreeRTOS 功能: 电池管理系统(BMS - Battery Management System)  主要功能 电池组电压、电流、温度监测 SOC(State">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://kuangyue111.github.io/img/butterfly-icon.png">
+<meta property="article:published_time" content="2026-06-27T09:00:00.000Z">
+<meta property="article:modified_time" content="2026-06-27T09:54:15.362Z">
+<meta property="article:author" content="kuangyue111">
+<meta property="article:tag" content="嵌入式">
+<meta property="article:tag" content="BMS">
+<meta property="article:tag" content="SOC">
+<meta property="article:tag" content="SOH">
+<meta property="article:tag" content="系统架构">
+<meta property="article:tag" content="FreeRTOS">
+<meta property="article:tag" content="代码分析">
+<meta property="article:tag" content="S32K146">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://kuangyue111.github.io/img/butterfly-icon.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "电池管理系统工程代码分析文档",
+  "url": "https://kuangyue111.github.io/2026/06/27/2026-06-27-bms-code-analysis-document/",
+  "image": "https://kuangyue111.github.io/img/butterfly-icon.png",
+  "datePublished": "2026-06-27T09:00:00.000Z",
+  "dateModified": "2026-06-27T09:54:15.362Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "kuangyue111",
+      "url": "https://kuangyue111.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://kuangyue111.github.io/2026/06/27/2026-06-27-bms-code-analysis-document/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.5.4"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.13.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '电池管理系统工程代码分析文档',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/butterfly-icon.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">26</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">132</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">11</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">KuangYue's Blog</span></a><a class="nav-page-title" href="/"><span class="site-name">电池管理系统工程代码分析文档</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">电池管理系统工程代码分析文档</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-06-27T09:00:00.000Z" title="发表于 2026-06-27 17:00:00">2026-06-27</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-06-27T09:54:15.362Z" title="更新于 2026-06-27 17:54:15">2026-06-27</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/">技术分享</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/%E5%B5%8C%E5%85%A5%E5%BC%8F%E5%BC%80%E5%8F%91/">嵌入式开发</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="电池管理系统工程代码分析文档"><a href="#电池管理系统工程代码分析文档" class="headerlink" title="电池管理系统工程代码分析文档"></a>电池管理系统工程代码分析文档</h1><h2 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h2><ol>
+<li><a href="#%E5%B7%A5%E7%A8%8B%E6%A6%82%E8%BF%B0">工程概述</a></li>
+<li><a href="#%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84">系统架构</a></li>
+<li><a href="#rtos%E8%BF%90%E8%A1%8C%E6%9C%BA%E5%88%B6">RTOS运行机制</a></li>
+<li><a href="#%E6%A0%B8%E5%BF%83%E6%A8%A1%E5%9D%97%E5%88%86%E6%9E%90">核心模块分析</a></li>
+<li><a href="#soc%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3">SOC算法详解</a></li>
+<li><a href="#soh%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3">SOH算法详解</a></li>
+<li><a href="#%E7%B3%BB%E7%BB%9F%E8%BF%90%E8%A1%8C%E6%B5%81%E7%A8%8B">系统运行流程</a></li>
+<li><a href="#%E5%85%B3%E9%94%AE%E6%8E%A5%E5%8F%A3%E8%AF%B4%E6%98%8E">关键接口说明</a></li>
+</ol>
+<hr>
+<h2 id="工程概述"><a href="#工程概述" class="headerlink" title="工程概述"></a>工程概述</h2><h3 id="项目信息"><a href="#项目信息" class="headerlink" title="项目信息"></a>项目信息</h3><ul>
+<li><strong>项目名称</strong>: BMS</li>
+<li><strong>处理器</strong>: NXP S32K146</li>
+<li><strong>RTOS</strong>: FreeRTOS</li>
+<li><strong>功能</strong>: 电池管理系统(BMS - Battery Management System)</li>
+</ul>
+<h3 id="主要功能"><a href="#主要功能" class="headerlink" title="主要功能"></a>主要功能</h3><ul>
+<li>电池组电压、电流、温度监测</li>
+<li>SOC(State of Charge)状态估算</li>
+<li>SOH(State of Health)健康度评估</li>
+<li>SOE(State of Energy)能量状态计算</li>
+<li>电池保护与故障诊断</li>
+<li>CAN&#x2F;Modbus通信</li>
+<li>均衡控制</li>
+<li>绝缘检测</li>
+<li>数据记录与统计</li>
+</ul>
+<hr>
+<h2 id="系统架构"><a href="#系统架构" class="headerlink" title="系统架构"></a>系统架构</h2><h3 id="目录结构"><a href="#目录结构" class="headerlink" title="目录结构"></a>目录结构</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">S32K146OFBMU_B/</span><br><span class="line">├── Sources/                    # 源代码目录</span><br><span class="line">│   ├── main.c                 # 主程序入口</span><br><span class="line">│   ├── OSUser/                # RTOS用户层</span><br><span class="line">│   │   └── OSUserHOOK.c       # RTOS任务钩子函数</span><br><span class="line">│   ├── BSPSys/                # BSP系统层</span><br><span class="line">│   │   ├── Driver/            # 硬件驱动层</span><br><span class="line">│   │   └── Util/              # 工具函数</span><br><span class="line">│   ├── Funtion/               # 功能模块</span><br><span class="line">│   │   ├── SocLib/            # SOC/SOE算法库</span><br><span class="line">│   │   ├── EnergyCalc/        # 能量计算模块</span><br><span class="line">│   │   ├── Measurement/       # 测量采样模块</span><br><span class="line">│   │   ├── Diagnosis/         # 故障诊断模块</span><br><span class="line">│   │   ├── DataCalc/          # 数据计算模块</span><br><span class="line">│   │   ├── CanLib/            # CAN通信库</span><br><span class="line">│   │   ├── ModbusLib/         # Modbus通信库</span><br><span class="line">│   │   ├── Parameter/        # 参数管理模块</span><br><span class="line">│   │   ├── Statistics/       # 统计模块</span><br><span class="line">│   │   ├── Recording/         # 记录模块</span><br><span class="line">│   │   └── PowerManag/        # 电源管理模块</span><br><span class="line">│   ├── Logics/                # 逻辑控制层</span><br><span class="line">│   │   ├── Tactics/           # 策略控制</span><br><span class="line">│   │   ├── Balance/           # 均衡控制</span><br><span class="line">│   │   ├── FstChg/            # 快充策略</span><br><span class="line">│   │   ├── CanUser/           # CAN用户层</span><br><span class="line">│   │   └── EventUser/         # 事件处理</span><br><span class="line">│   └── SaftyCheck/            # 安全检测模块</span><br><span class="line">│       └── SafetyLib/      # 安全库</span><br><span class="line">├── SDK/                       # SDK库文件</span><br><span class="line">├── Generated_Code/            # 自动生成代码</span><br><span class="line">└── Project_Settings/          # 项目配置</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="系统分层架构"><a href="#系统分层架构" class="headerlink" title="系统分层架构"></a>系统分层架构</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">┌─────────────────────────────────────┐</span><br><span class="line">│        应用层 (Application)          │</span><br><span class="line">│  (策略控制、均衡、快充、事件处理)      │</span><br><span class="line">├─────────────────────────────────────┤</span><br><span class="line">│        功能层 (Function)             │</span><br><span class="line">│  (SOC/SOH算法、测量、诊断、通信)      │</span><br><span class="line">├─────────────────────────────────────┤</span><br><span class="line">│        BSP层 (Board Support)         │</span><br><span class="line">│  (驱动、硬件抽象、中断处理)            │</span><br><span class="line">├─────────────────────────────────────┤</span><br><span class="line">│        RTOS层 (FreeRTOS)            │</span><br><span class="line">│  (任务调度、定时器、队列、信号量)      │</span><br><span class="line">├─────────────────────────────────────┤</span><br><span class="line">│        硬件层 (Hardware)             │</span><br><span class="line">│  (S32K146 MCU、外设)                 │</span><br><span class="line">└─────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="RTOS运行机制"><a href="#RTOS运行机制" class="headerlink" title="RTOS运行机制"></a>RTOS运行机制</h2><h3 id="FreeRTOS配置"><a href="#FreeRTOS配置" class="headerlink" title="FreeRTOS配置"></a>FreeRTOS配置</h3><p>系统使用FreeRTOS作为实时操作系统，主要配置如下：</p>
+<ul>
+<li><strong>时钟频率</strong>: 80MHz (configCPU_CLOCK_HZ)</li>
+<li><strong>Tick频率</strong>: 1000Hz (configTICK_RATE_HZ &#x3D; 1ms)</li>
+<li><strong>最大优先级</strong>: 8级</li>
+<li><strong>调度方式</strong>: 抢占式调度 (configUSE_PREEMPTION &#x3D; 1)</li>
+<li><strong>时间片</strong>: 启用 (configUSE_TIME_SLICING &#x3D; 1)</li>
+</ul>
+<h3 id="任务创建与调度"><a href="#任务创建与调度" class="headerlink" title="任务创建与调度"></a>任务创建与调度</h3><h4 id="1-软件定时器任务"><a href="#1-软件定时器任务" class="headerlink" title="1. 软件定时器任务"></a>1. 软件定时器任务</h4><p>系统创建了10个周期性软件定时器，用于执行不同周期的任务：</p>
+<table>
+<thead>
+<tr>
+<th>定时器</th>
+<th>周期</th>
+<th>主要功能</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Timer5ms</td>
+<td>5ms</td>
+<td>CAN通信包发送、SBC诊断、CATL协议</td>
+</tr>
+<tr>
+<td>Timer10ms</td>
+<td>10ms</td>
+<td>电流限值计算、电压温度计算、故障诊断、电能量计算、均衡控制、绝缘检测</td>
+</tr>
+<tr>
+<td>Timer50ms</td>
+<td>50ms</td>
+<td>故障滤波检测、SOC&#x2F;SOE算法包总任务、远程升级</td>
+</tr>
+<tr>
+<td>Timer100ms</td>
+<td>100ms</td>
+<td>电池组工作状态检测、充放电状态检测、安全等级诊断、保护控制</td>
+</tr>
+<tr>
+<td>Timer200ms</td>
+<td>200ms</td>
+<td>热管理控制、电压限值计算、工作模式检测、通信诊断、校准</td>
+</tr>
+<tr>
+<td>Timer300ms</td>
+<td>300ms</td>
+<td>单次循环充放电量统计、在线升级</td>
+</tr>
+<tr>
+<td>Timer400ms</td>
+<td>400ms</td>
+<td>累计充放电量统计、累计充放电能统计</td>
+</tr>
+<tr>
+<td>Timer500ms</td>
+<td>500ms</td>
+<td>外围故障检测、快充策略、历史记录处理</td>
+</tr>
+<tr>
+<td>Timer1000ms</td>
+<td>1000ms</td>
+<td>外围输出口控制、充放电次数统计、DOD统计</td>
+</tr>
+<tr>
+<td>Timer2000ms</td>
+<td>2000ms</td>
+<td>系统下电保护、故障告警统计、系统时间记录</td>
+</tr>
+</tbody></table>
+<h4 id="2-独立任务"><a href="#2-独立任务" class="headerlink" title="2. 独立任务"></a>2. 独立任务</h4><p>系统创建了6个独立的任务，用于处理实时性要求高的操作：</p>
+<table>
+<thead>
+<tr>
+<th>任务名称</th>
+<th>优先级</th>
+<th>功能描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>HigInfoSampleTask</td>
+<td>RTOS_ID_HV_SAMP</td>
+<td>高压信息采样任务</td>
+</tr>
+<tr>
+<td>CellInfoSampleTask</td>
+<td>RTOS_ID_CELL_SAMP</td>
+<td>电池信息采样任务</td>
+</tr>
+<tr>
+<td>LowInfoSampleTask</td>
+<td>RTOS_ID_LV_SAMP</td>
+<td>低压信息采样任务</td>
+</tr>
+<tr>
+<td>BSPCANSendTask</td>
+<td>RTOS_ID_CAN_SEND</td>
+<td>CAN信息发送任务</td>
+</tr>
+<tr>
+<td>BSPCANRcvTask</td>
+<td>RTOS_ID_CAN_RCV</td>
+<td>CAN信息接收任务</td>
+</tr>
+<tr>
+<td>BSPUARTRcvTask</td>
+<td>RTOS_ID_UART_RCV</td>
+<td>UART信息接收任务</td>
+</tr>
+</tbody></table>
+<h3 id="任务调度流程"><a href="#任务调度流程" class="headerlink" title="任务调度流程"></a>任务调度流程</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">main()</span><br><span class="line">  ├── BSPUserCfgInit()          # BSP配置初始化</span><br><span class="line">  ├── BSPDriverInit()            # BSP驱动初始化</span><br><span class="line">  ├── BSPDisIRQUserInit()       # 中断初始化(禁用中断)</span><br><span class="line">  ├── BSPEnIRQUserInit()        # 中断初始化(使能中断)</span><br><span class="line">  └── RtosTaskStart()           # RTOS任务启动</span><br><span class="line">      ├── 创建10个软件定时器</span><br><span class="line">      ├── 创建6个独立任务</span><br><span class="line">      └── vTaskStartScheduler()  # 启动任务调度器</span><br></pre></td></tr></table></figure>
+
+<h3 id="任务执行时序"><a href="#任务执行时序" class="headerlink" title="任务执行时序"></a>任务执行时序</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">时间轴:</span><br><span class="line">0ms    5ms    10ms   50ms   100ms  200ms  300ms  400ms  500ms  1000ms 2000ms</span><br><span class="line">│      │      │      │      │      │      │      │      │      │      │</span><br><span class="line">├─5ms──┼─10ms─┼─50ms─┼─100ms┼─200ms┼─300ms┼─400ms┼─500ms┼─1000ms┼─2000ms─┤</span><br><span class="line">│      │      │      │      │      │      │      │      │      │      │</span><br><span class="line">定时器  定时器  定时器  定时器  定时器  定时器  定时器  定时器  定时器  定时器</span><br><span class="line">任务    任务    任务    任务    任务    任务    任务    任务    任务    任务</span><br><span class="line"></span><br><span class="line">独立任务(持续运行):</span><br><span class="line">- 采样任务(高压/电池/低压)</span><br><span class="line">- CAN发送/接收任务</span><br><span class="line">- UART接收任务</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="核心模块分析"><a href="#核心模块分析" class="headerlink" title="核心模块分析"></a>核心模块分析</h2><h3 id="1-测量采样模块-Measurement"><a href="#1-测量采样模块-Measurement" class="headerlink" title="1. 测量采样模块 (Measurement)"></a>1. 测量采样模块 (Measurement)</h3><h4 id="1-1-电池信息采样-CellAFESamp-c"><a href="#1-1-电池信息采样-CellAFESamp-c" class="headerlink" title="1.1 电池信息采样 (CellAFESamp.c)"></a>1.1 电池信息采样 (CellAFESamp.c)</h4><ul>
+<li><strong>功能</strong>: 采集单体电池电压、温度</li>
+<li><strong>采样频率</strong>: 独立任务实时采样</li>
+<li><strong>处理</strong>: 滤波、校准、异常检测</li>
+</ul>
+<h4 id="1-2-高压采样-HigAFESamp-c"><a href="#1-2-高压采样-HigAFESamp-c" class="headerlink" title="1.2 高压采样 (HigAFESamp.c)"></a>1.2 高压采样 (HigAFESamp.c)</h4><ul>
+<li><strong>功能</strong>: 采集电池组总电压、预充电压</li>
+<li><strong>采样频率</strong>: 独立任务实时采样</li>
+<li><strong>处理</strong>: 高压校准、异常检测</li>
+</ul>
+<h4 id="1-3-电流采样-CurrSample-c"><a href="#1-3-电流采样-CurrSample-c" class="headerlink" title="1.3 电流采样 (CurrSample.c)"></a>1.3 电流采样 (CurrSample.c)</h4><ul>
+<li><strong>功能</strong>: 采集充放电电流</li>
+<li><strong>采样频率</strong>: 独立任务实时采样</li>
+<li><strong>处理</strong>: 电流积分、方向判断</li>
+</ul>
+<h4 id="1-4-绝缘检测-InsuCheck-c"><a href="#1-4-绝缘检测-InsuCheck-c" class="headerlink" title="1.4 绝缘检测 (InsuCheck.c)"></a>1.4 绝缘检测 (InsuCheck.c)</h4><ul>
+<li><strong>功能</strong>: 检测电池组对地绝缘电阻</li>
+<li><strong>检测周期</strong>: 10ms任务中调用</li>
+<li><strong>算法</strong>: 通过注入信号测量绝缘值</li>
+<li><strong>保护</strong>: 绝缘值过低时触发保护</li>
+</ul>
+<h3 id="2-数据计算模块-DataCalc"><a href="#2-数据计算模块-DataCalc" class="headerlink" title="2. 数据计算模块 (DataCalc)"></a>2. 数据计算模块 (DataCalc)</h3><h4 id="2-1-电流限值计算-CurrLimCalc-c"><a href="#2-1-电流限值计算-CurrLimCalc-c" class="headerlink" title="2.1 电流限值计算 (CurrLimCalc.c)"></a>2.1 电流限值计算 (CurrLimCalc.c)</h4><ul>
+<li><strong>功能</strong>: 根据电压、温度、SOC计算充放电电流限值</li>
+<li><strong>算法</strong>: PID控制、限值衰减</li>
+<li><strong>周期</strong>: 10ms</li>
+</ul>
+<h4 id="2-2-电压限值计算-VoltLimCalc-c"><a href="#2-2-电压限值计算-VoltLimCalc-c" class="headerlink" title="2.2 电压限值计算 (VoltLimCalc.c)"></a>2.2 电压限值计算 (VoltLimCalc.c)</h4><ul>
+<li><strong>功能</strong>: 计算充放电电压限值</li>
+<li><strong>周期</strong>: 200ms</li>
+</ul>
+<h4 id="2-3-特征计算-CharactCalc-c"><a href="#2-3-特征计算-CharactCalc-c" class="headerlink" title="2.3 特征计算 (CharactCalc.c)"></a>2.3 特征计算 (CharactCalc.c)</h4><ul>
+<li><strong>功能</strong>: 计算电压、温度特征值</li>
+<li><strong>周期</strong>: 10ms</li>
+</ul>
+<h3 id="3-故障诊断模块-Diagnosis"><a href="#3-故障诊断模块-Diagnosis" class="headerlink" title="3. 故障诊断模块 (Diagnosis)"></a>3. 故障诊断模块 (Diagnosis)</h3><h4 id="3-1-故障检测-DiagCheck-c"><a href="#3-1-故障检测-DiagCheck-c" class="headerlink" title="3.1 故障检测 (DiagCheck.c)"></a>3.1 故障检测 (DiagCheck.c)</h4><ul>
+<li><strong>功能</strong>: 检测各类故障</li>
+<li><strong>类型</strong>: 电压异常、温度异常、电流异常、通信异常等</li>
+<li><strong>周期</strong>: 10ms&#x2F;100ms&#x2F;500ms</li>
+</ul>
+<h4 id="3-2-故障滤波-DiagFilter-c"><a href="#3-2-故障滤波-DiagFilter-c" class="headerlink" title="3.2 故障滤波 (DiagFilter.c)"></a>3.2 故障滤波 (DiagFilter.c)</h4><ul>
+<li><strong>功能</strong>: 对故障进行滤波，避免误报</li>
+<li><strong>算法</strong>: 时间滤波、计数滤波</li>
+</ul>
+<h4 id="3-3-故障生成-DiagMaker-c"><a href="#3-3-故障生成-DiagMaker-c" class="headerlink" title="3.3 故障生成 (DiagMaker.c)"></a>3.3 故障生成 (DiagMaker.c)</h4><ul>
+<li><strong>功能</strong>: 根据检测结果生成故障码</li>
+<li><strong>等级</strong>: A级(警告)、B级(故障)</li>
+</ul>
+<h4 id="3-4-安全等级-DiagSos-c"><a href="#3-4-安全等级-DiagSos-c" class="headerlink" title="3.4 安全等级 (DiagSos.c)"></a>3.4 安全等级 (DiagSos.c)</h4><ul>
+<li><strong>功能</strong>: 计算系统安全等级(SOS)</li>
+<li><strong>等级</strong>: 0-4级，级别越高越危险</li>
+</ul>
+<h3 id="4-通信模块"><a href="#4-通信模块" class="headerlink" title="4. 通信模块"></a>4. 通信模块</h3><h4 id="4-1-CAN通信-CanLib"><a href="#4-1-CAN通信-CanLib" class="headerlink" title="4.1 CAN通信 (CanLib&#x2F;)"></a>4.1 CAN通信 (CanLib&#x2F;)</h4><ul>
+<li><strong>功能</strong>: CAN总线通信</li>
+<li><strong>协议</strong>: 自定义协议、CATL协议</li>
+<li><strong>任务</strong>: 独立发送&#x2F;接收任务</li>
+</ul>
+<h4 id="4-2-Modbus通信-ModbusLib"><a href="#4-2-Modbus通信-ModbusLib" class="headerlink" title="4.2 Modbus通信 (ModbusLib&#x2F;)"></a>4.2 Modbus通信 (ModbusLib&#x2F;)</h4><ul>
+<li><strong>功能</strong>: Modbus RTU&#x2F;TCP通信</li>
+<li><strong>应用</strong>: 上位机通信、参数配置</li>
+</ul>
+<h3 id="5-参数管理模块-Parameter"><a href="#5-参数管理模块-Parameter" class="headerlink" title="5. 参数管理模块 (Parameter)"></a>5. 参数管理模块 (Parameter)</h3><h4 id="5-1-参数存储"><a href="#5-1-参数存储" class="headerlink" title="5.1 参数存储"></a>5.1 参数存储</h4><ul>
+<li><strong>存储位置</strong>: EEPROM、内部Flash、外部Flash</li>
+<li><strong>参数类型</strong>: 通用参数、高级参数、只读参数</li>
+</ul>
+<h4 id="5-2-参数读写"><a href="#5-2-参数读写" class="headerlink" title="5.2 参数读写"></a>5.2 参数读写</h4><ul>
+<li><strong>接口</strong>: ParaRead、ParaWrite</li>
+<li><strong>保护</strong>: 参数校验、备份恢复</li>
+</ul>
+<h3 id="6-记录统计模块"><a href="#6-记录统计模块" class="headerlink" title="6. 记录统计模块"></a>6. 记录统计模块</h3><h4 id="6-1-数据记录-Recording"><a href="#6-1-数据记录-Recording" class="headerlink" title="6.1 数据记录 (Recording&#x2F;)"></a>6.1 数据记录 (Recording&#x2F;)</h4><ul>
+<li><strong>功能</strong>: 记录故障波形、历史数据</li>
+<li><strong>存储</strong>: 外部Flash</li>
+</ul>
+<h4 id="6-2-统计分析-Statistics"><a href="#6-2-统计分析-Statistics" class="headerlink" title="6.2 统计分析 (Statistics&#x2F;)"></a>6.2 统计分析 (Statistics&#x2F;)</h4><ul>
+<li><strong>功能</strong>: 充放电次数、能量统计、DOD统计</li>
+<li><strong>周期</strong>: 300ms&#x2F;400ms&#x2F;1000ms</li>
+</ul>
+<hr>
+<h2 id="SOC算法详解"><a href="#SOC算法详解" class="headerlink" title="SOC算法详解"></a>SOC算法详解</h2><h3 id="SOC-State-of-Charge-状态估算"><a href="#SOC-State-of-Charge-状态估算" class="headerlink" title="SOC (State of Charge) 状态估算"></a>SOC (State of Charge) 状态估算</h3><p>SOC表示电池的剩余容量百分比，是BMS的核心算法之一。</p>
+<h3 id="1-SOC计算架构"><a href="#1-SOC计算架构" class="headerlink" title="1. SOC计算架构"></a>1. SOC计算架构</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">SOC算法包 (SocLib/)</span><br><span class="line">├── CapInfoCalc.c          # 容量信息计算</span><br><span class="line">├── SocSoeCorr.c           # SOC/SOE修正</span><br><span class="line">├── SocSoeSync.c           # SOC/SOE同步</span><br><span class="line">└── SocUserAPI.c           # SOC用户接口</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-核心计算方法"><a href="#2-核心计算方法" class="headerlink" title="2. 核心计算方法"></a>2. 核心计算方法</h3><h4 id="2-1-安时积分法-Coulomb-Counting"><a href="#2-1-安时积分法-Coulomb-Counting" class="headerlink" title="2.1 安时积分法 (Coulomb Counting)"></a>2.1 安时积分法 (Coulomb Counting)</h4><p><strong>原理</strong>: 通过积分电流计算容量变化</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 当前容量计算</span></span><br><span class="line">sCapForm.nowCap = sCapForm.nowCap + ΔQ</span><br><span class="line"><span class="comment">// ΔQ = I × Δt (电流积分)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// SOC计算</span></span><br><span class="line">SOC = (nowCap - baseCap) / (topCap - baseCap) × <span class="number">100</span>%</span><br></pre></td></tr></table></figure>
+
+<p><strong>位置</strong>: <code>CapInfoCalc.c</code> - <code>CalcGroupNowCapHandle()</code></p>
+<p><strong>特点</strong>:</p>
+<ul>
+<li>实时性好</li>
+<li>需要初始SOC</li>
+<li>存在累积误差</li>
+</ul>
+<h4 id="2-2-温度修正"><a href="#2-2-温度修正" class="headerlink" title="2.2 温度修正"></a>2.2 温度修正</h4><p><strong>原理</strong>: 温度影响电池可用容量</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 温度修正后的可用容量</span></span><br><span class="line">nowCap = remainCap × tempCapPercent / <span class="number">1000</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 温度修正后的SOC</span></span><br><span class="line">soc = nowCap × <span class="number">1000</span> / totalCap</span><br></pre></td></tr></table></figure>
+
+<p><strong>位置</strong>: <code>SocSoeCorr.c</code> - <code>SocSoeTempCorrDeal()</code></p>
+<p><strong>温度表</strong>: <code>cTempCapPercent[]</code> - 不同温度下的容量百分比</p>
+<h4 id="2-3-电压末端修正"><a href="#2-3-电压末端修正" class="headerlink" title="2.3 电压末端修正"></a>2.3 电压末端修正</h4><p><strong>原理</strong>: 充放电末端根据电压进行SOC修正</p>
+<p><strong>充电末端修正</strong>:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 当电压达到充电截止电压附近时</span></span><br><span class="line"><span class="keyword">if</span> (cellMaxVolt &gt;= startVolt &amp;&amp; cellMaxVolt &lt; finVolt) &#123;</span><br><span class="line">    <span class="comment">// 使用线性插值: SOC = K × (voltage - startVolt) + B</span></span><br><span class="line">    voltStepSoc = socVoltCorrK * (cellMaxVolt - startVolt) / <span class="number">1000</span> + socVoltCorrB;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>放电末端修正</strong>:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 当电压达到放电截止电压附近时</span></span><br><span class="line"><span class="keyword">if</span> (cellMinVolt &lt;= startVolt &amp;&amp; cellMinVolt &gt; finVolt) &#123;</span><br><span class="line">    <span class="comment">// 使用线性插值: SOC = B - K × (startVolt - voltage)</span></span><br><span class="line">    voltStepSoc = socVoltCorrB - (socVoltCorrK * (startVolt - cellMinVolt) / <span class="number">1000</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>位置</strong>: <code>SocSoeCorr.c</code> - <code>SocSoeVStepCorrDeal()</code></p>
+<h3 id="3-SOC修正策略"><a href="#3-SOC修正策略" class="headerlink" title="3. SOC修正策略"></a>3. SOC修正策略</h3><h4 id="3-1-多源融合修正"><a href="#3-1-多源融合修正" class="headerlink" title="3.1 多源融合修正"></a>3.1 多源融合修正</h4><p>系统采用多源融合的方式修正SOC：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 1. 温度修正SOC</span></span><br><span class="line">sTCapCorrSoc = 温度修正后的SOC</span><br><span class="line"></span><br><span class="line"><span class="comment">// 2. 电压末端修正SOC</span></span><br><span class="line">sVStepCorrSoc = 电压修正后的SOC</span><br><span class="line"></span><br><span class="line"><span class="comment">// 3. 当前SOC</span></span><br><span class="line">nowSoc = 安时积分计算的SOC</span><br><span class="line"></span><br><span class="line"><span class="comment">// 4. 融合策略</span></span><br><span class="line"><span class="keyword">if</span> (温度修正SOC与电压修正SOC误差 &lt;= <span class="number">3</span>%) &#123;</span><br><span class="line">    calcSoc = (温度修正SOC + 电压修正SOC) / <span class="number">2</span>;</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (温度修正SOC与当前SOC误差 &lt;= <span class="number">3</span>%) &#123;</span><br><span class="line">    calcSoc = (温度修正SOC + 当前SOC) / <span class="number">2</span>;</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (电压修正SOC与当前SOC误差 &lt;= <span class="number">3</span>%) &#123;</span><br><span class="line">    calcSoc = (电压修正SOC + 当前SOC) / <span class="number">2</span>;</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    calcSoc = (温度修正SOC + 电压修正SOC + 当前SOC) / <span class="number">3</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 5. 执行修正(修正量 &gt;= 0.5%才修正)</span></span><br><span class="line"><span class="keyword">if</span> (ABS(calcSoc, nowSoc) &gt;= <span class="number">5</span>) &#123;</span><br><span class="line">    CorrGNowCapBySocAPI(calcSoc);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>位置</strong>: <code>SocSoeCorr.c</code> - <code>SocSoeAllCorrTask()</code></p>
+<h3 id="4-SOC平滑显示"><a href="#4-SOC平滑显示" class="headerlink" title="4. SOC平滑显示"></a>4. SOC平滑显示</h3><p><strong>原理</strong>: 避免SOC跳变，平滑过渡到目标值</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 根据目标SOC与当前显示SOC的差值，计算步进值</span></span><br><span class="line"><span class="keyword">if</span> (aimSoc &gt;= <span class="number">97.5</span>%) &#123;</span><br><span class="line">    stepSoc = (aimSoc - copySoc) / <span class="number">50</span>;  <span class="comment">// 5s内到达目标值</span></span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (aimSoc &gt;= <span class="number">95</span>%) &#123;</span><br><span class="line">    stepSoc = (aimSoc - copySoc) / <span class="number">150</span>; <span class="comment">// 15s内到达目标值</span></span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (aimSoc &gt;= <span class="number">93</span>%) &#123;</span><br><span class="line">    stepSoc = (aimSoc - copySoc) / <span class="number">200</span>; <span class="comment">// 20s内到达目标值</span></span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (aimSoc &gt;= <span class="number">90</span>%) &#123;</span><br><span class="line">    stepSoc = (aimSoc - copySoc) / <span class="number">300</span>; <span class="comment">// 30s内到达目标值</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">copySoc += stepSoc;  <span class="comment">// 平滑更新显示SOC</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>位置</strong>: <code>SocDisplay.c</code> - <code>CalcSocSlowChang()</code></p>
+<h3 id="5-SOC算法执行流程"><a href="#5-SOC算法执行流程" class="headerlink" title="5. SOC算法执行流程"></a>5. SOC算法执行流程</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">50ms周期任务 (SocSoeLibAllTask)</span><br><span class="line">├── 1s周期: 总容量总能量自动标定</span><br><span class="line">├── 500ms周期: SOC/SOE扩展卡尔曼算法(预留)</span><br><span class="line">├── 500ms周期: SOC/SOE相互同步</span><br><span class="line">├── 500ms周期: SOC/SOE组间同步</span><br><span class="line">└── 500ms周期: SOC/SOE修正总任务</span><br><span class="line">    ├── 温度修正处理</span><br><span class="line">    ├── 电压末端修正处理</span><br><span class="line">    └── 多源融合修正</span><br></pre></td></tr></table></figure>
+
+<h3 id="6-总容量自动标定"><a href="#6-总容量自动标定" class="headerlink" title="6. 总容量自动标定"></a>6. 总容量自动标定</h3><p><strong>原理</strong>: 通过完整的充放电循环自动标定总容量</p>
+<p><strong>充电标定</strong>:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 记录低压点到高压点的充电容量</span></span><br><span class="line">chgCap = (高压点充电容量 - 低压点充电容量) × 充放电比</span><br><span class="line">dhgCap = (高压点放电容量 - 低压点放电容量)</span><br><span class="line"></span><br><span class="line"><span class="comment">// 计算实际充电容量</span></span><br><span class="line">calcCap = (chgCap - dhgCap) × <span class="number">1000</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 电流温度修正</span></span><br><span class="line">calcCap = CalcTotalCapEnerByCTCorr(<span class="number">0</span>, calcCap, finCurr, finTemp)</span><br><span class="line"></span><br><span class="line"><span class="comment">// 修正总容量(误差校验)</span></span><br><span class="line"><span class="keyword">if</span> (calcCap与历史值误差 &lt;= <span class="number">20</span>%) &#123;</span><br><span class="line">    totalCap = (calcCap + 历史值) / <span class="number">2</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>放电标定</strong>:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 记录高压点到低压点的放电容量</span></span><br><span class="line">dhgCap = (低压点放电容量 - 高压点放电容量)</span><br><span class="line">chgCap = (低压点充电容量 - 高压点充电容量) × 充放电比</span><br><span class="line"></span><br><span class="line"><span class="comment">// 计算实际放电容量</span></span><br><span class="line">calcCap = (dhgCap - chgCap) × <span class="number">1000</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 电流温度修正后修正总容量</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>位置</strong>: <code>CapEnerCorr.c</code> - <code>TotalCapEnerCorrTask()</code></p>
+<hr>
+<h2 id="SOH算法详解"><a href="#SOH算法详解" class="headerlink" title="SOH算法详解"></a>SOH算法详解</h2><h3 id="SOH-State-of-Health-健康度评估"><a href="#SOH-State-of-Health-健康度评估" class="headerlink" title="SOH (State of Health) 健康度评估"></a>SOH (State of Health) 健康度评估</h3><p>SOH表示电池的健康状态，反映电池的衰减程度。</p>
+<h3 id="1-SOH计算架构"><a href="#1-SOH计算架构" class="headerlink" title="1. SOH计算架构"></a>1. SOH计算架构</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SOH算法 (EnergyCalc/)</span><br><span class="line">├── CellFadeCalc.c         # 电池衰减计算</span><br><span class="line">└── SohDisplay.c           # SOH显示</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-SOH计算方法"><a href="#2-SOH计算方法" class="headerlink" title="2. SOH计算方法"></a>2. SOH计算方法</h3><h4 id="2-1-容量法计算SOH"><a href="#2-1-容量法计算SOH" class="headerlink" title="2.1 容量法计算SOH"></a>2.1 容量法计算SOH</h4><p><strong>原理</strong>: 通过实际总容量与额定容量的比值计算</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 容量法SOH</span></span><br><span class="line"><span class="keyword">if</span> (ratedCap &gt; <span class="number">0</span>) &#123;</span><br><span class="line">    capSoh = (totalCap × <span class="number">10</span>) / ratedCap;  <span class="comment">// 单位: 0.1%</span></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">if</span> (capSoh &gt; <span class="number">1000</span>) &#123;</span><br><span class="line">        capSoh = <span class="number">1000</span>;  <span class="comment">// 限制最大100%</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>位置</strong>: <code>CellFadeCalc.c</code> - <code>CalcGroupCellFadeHandle()</code></p>
+<h4 id="2-2-循环次数法计算SOH"><a href="#2-2-循环次数法计算SOH" class="headerlink" title="2.2 循环次数法计算SOH"></a>2.2 循环次数法计算SOH</h4><p><strong>原理</strong>: 通过充放电循环次数计算衰减</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 循环次数法SOH</span></span><br><span class="line"><span class="keyword">if</span> (ratedCycle &gt; <span class="number">0</span> &amp;&amp; ratedCycle &gt;= fadeCycle) &#123;</span><br><span class="line">    <span class="comment">// SOH = 100% - (实际循环次数 / 额定循环次数) × 20%</span></span><br><span class="line">    timSoh = <span class="number">1000</span> - (fadeCycle × <span class="number">200</span> / ratedCycle);</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    timSoh = <span class="number">800</span>;  <span class="comment">// 默认80%</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>位置</strong>: <code>CellFadeCalc.c</code> - <code>CalcGroupCellFadeHandle()</code></p>
+<h3 id="3-SOH融合策略"><a href="#3-SOH融合策略" class="headerlink" title="3. SOH融合策略"></a>3. SOH融合策略</h3><p>系统采用容量法和循环次数法融合计算SOH：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 1. 计算两种方法的SOH</span></span><br><span class="line">capSoh = 容量法计算的SOH</span><br><span class="line">timSoh = 循环次数法计算的SOH</span><br><span class="line"></span><br><span class="line"><span class="comment">// 2. 判断两种方法的一致性</span></span><br><span class="line"><span class="keyword">if</span> (ABS(capSoh, timSoh) &lt;= <span class="number">50</span>) &#123;  <span class="comment">// 误差 &lt;= 5%</span></span><br><span class="line">    <span class="comment">// 误差小，以循环次数法为准(防止跳变)</span></span><br><span class="line">    capSoh = timSoh;</span><br><span class="line">    fadeCap = ratedCap × capSoh / <span class="number">1000</span>;</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">// 误差大，取平均值</span></span><br><span class="line">    capSoh = (capSoh + timSoh) / <span class="number">2</span>;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// SOH不能增大</span></span><br><span class="line">    <span class="keyword">if</span> (capSoh &gt; currentSoh) &#123;</span><br><span class="line">        capSoh = currentSoh;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// SOH每次最大下降0.5%</span></span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> (ABS(capSoh, currentSoh) &gt; <span class="number">5</span>) &#123;</span><br><span class="line">        capSoh = currentSoh - <span class="number">5</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 反算衰减容量</span></span><br><span class="line">    fadeCap = ratedCap × capSoh / <span class="number">1000</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 3. 更新SOH</span></span><br><span class="line"><span class="keyword">if</span> (capSoh != currentSoh) &#123;</span><br><span class="line">    EnerChangEepGNowCapSohHook(capSoh);  <span class="comment">// 保存到EEPROM</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>位置</strong>: <code>CellFadeCalc.c</code> - <code>CalcGroupCellFadeHandle()</code></p>
+<h3 id="4-SOH计算触发条件"><a href="#4-SOH计算触发条件" class="headerlink" title="4. SOH计算触发条件"></a>4. SOH计算触发条件</h3><p>SOH在以下情况重新计算：</p>
+<ul>
+<li>充放电循环次数变化</li>
+<li>总容量被修正</li>
+</ul>
+<p><strong>周期</strong>: 100ms任务中调用 <code>GroupFadeSohCalcTask()</code></p>
+<h3 id="5-SOH显示"><a href="#5-SOH显示" class="headerlink" title="5. SOH显示"></a>5. SOH显示</h3><p>SOH直接显示计算值，无需平滑处理：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 获取当前SOH</span></span><br><span class="line">soh = GetGRealSohMilliAPI();  <span class="comment">// 单位: 0.1%</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 更新显示值</span></span><br><span class="line">gGSysCapInfo_61[eSysCapInfo61_SOH] = soh;</span><br></pre></td></tr></table></figure>
+
+<p><strong>位置</strong>: <code>SohDisplay.c</code> - <code>GroupSohDisplayTask()</code></p>
+<hr>
+<h2 id="系统运行流程"><a href="#系统运行流程" class="headerlink" title="系统运行流程"></a>系统运行流程</h2><h3 id="1-系统启动流程"><a href="#1-系统启动流程" class="headerlink" title="1. 系统启动流程"></a>1. 系统启动流程</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">系统上电</span><br><span class="line">  ├── 硬件初始化</span><br><span class="line">  │   ├── 时钟配置</span><br><span class="line">  │   ├── GPIO配置</span><br><span class="line">  │   └── 外设初始化</span><br><span class="line">  ├── BSP初始化</span><br><span class="line">  │   ├── BSPUserCfgInit()      # BSP配置</span><br><span class="line">  │   ├── BSPDriverInit()       # 驱动初始化</span><br><span class="line">  │   ├── BSPDisIRQUserInit()   # 中断初始化(禁用)</span><br><span class="line">  │   └── BSPEnIRQUserInit()    # 中断初始化(使能)</span><br><span class="line">  ├── RTOS启动</span><br><span class="line">  │   ├── 创建软件定时器</span><br><span class="line">  │   ├── 创建独立任务</span><br><span class="line">  │   └── vTaskStartScheduler() # 启动调度器</span><br><span class="line">  └── 系统运行</span><br><span class="line">      ├── 采样任务持续运行</span><br><span class="line">      ├── 定时器任务周期性执行</span><br><span class="line">      └── 通信任务处理数据交互</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-数据采集流程"><a href="#2-数据采集流程" class="headerlink" title="2. 数据采集流程"></a>2. 数据采集流程</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">硬件采样</span><br><span class="line">  ├── 电池信息采样任务</span><br><span class="line">  │   ├── 单体电压采样</span><br><span class="line">  │   ├── 温度采样</span><br><span class="line">  │   └── 数据滤波处理</span><br><span class="line">  ├── 高压采样任务</span><br><span class="line">  │   ├── 总电压采样</span><br><span class="line">  │   ├── 预充电压采样</span><br><span class="line">  │   └── 数据校准</span><br><span class="line">  └── 低压采样任务</span><br><span class="line">      ├── 辅助电压采样</span><br><span class="line">      └── 数据校准</span><br><span class="line"></span><br><span class="line">数据处理</span><br><span class="line">  ├── 电流积分计算</span><br><span class="line">  ├── 特征值计算</span><br><span class="line">  └── 异常检测</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-SOC-SOH计算流程"><a href="#3-SOC-SOH计算流程" class="headerlink" title="3. SOC&#x2F;SOH计算流程"></a>3. SOC&#x2F;SOH计算流程</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">10ms任务</span><br><span class="line">  ├── 电流积分</span><br><span class="line">  │   └── 更新当前容量</span><br><span class="line">  ├── 特征值计算</span><br><span class="line">  │   ├── 电压特征</span><br><span class="line">  │   └── 温度特征</span><br><span class="line">  └── 电能量计算</span><br><span class="line">      ├── SOC计算</span><br><span class="line">      └── SOE计算</span><br><span class="line"></span><br><span class="line">50ms任务</span><br><span class="line">  └── SOC/SOE算法包</span><br><span class="line">      ├── 总容量标定</span><br><span class="line">      ├── SOC/SOE同步</span><br><span class="line">      └── SOC/SOE修正</span><br><span class="line"></span><br><span class="line">100ms任务</span><br><span class="line">  └── SOH计算</span><br><span class="line">      ├── 容量法SOH</span><br><span class="line">      ├── 循环次数法SOH</span><br><span class="line">      └── SOH融合</span><br></pre></td></tr></table></figure>
+
+<h3 id="4-保护控制流程"><a href="#4-保护控制流程" class="headerlink" title="4. 保护控制流程"></a>4. 保护控制流程</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">10ms任务</span><br><span class="line">  ├── 故障诊断</span><br><span class="line">  │   ├── 电压异常检测</span><br><span class="line">  │   ├── 温度异常检测</span><br><span class="line">  │   └── 电流异常检测</span><br><span class="line">  └── 均衡控制</span><br><span class="line">      └── 电压均衡策略</span><br><span class="line"></span><br><span class="line">100ms任务</span><br><span class="line">  ├── 工作状态检测</span><br><span class="line">  ├── 充放电状态检测</span><br><span class="line">  ├── 安全等级诊断</span><br><span class="line">  └── 保护控制</span><br><span class="line">      ├── 故障保护</span><br><span class="line">      └── 接触器控制</span><br><span class="line"></span><br><span class="line">200ms任务</span><br><span class="line">  └── 电压限值计算</span><br></pre></td></tr></table></figure>
+
+<h3 id="5-通信流程"><a href="#5-通信流程" class="headerlink" title="5. 通信流程"></a>5. 通信流程</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">CAN通信</span><br><span class="line">  ├── 发送任务</span><br><span class="line">  │   ├── 周期发送</span><br><span class="line">  │   └── 事件发送</span><br><span class="line">  └── 接收任务</span><br><span class="line">      ├── 消息解析</span><br><span class="line">      └── 命令处理</span><br><span class="line"></span><br><span class="line">Modbus通信</span><br><span class="line">  ├── 服务器模式</span><br><span class="line">  │   ├── 参数读写</span><br><span class="line">  │   └── 数据查询</span><br><span class="line">  └── 客户端模式</span><br><span class="line">      └── 主动上报</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="关键接口说明"><a href="#关键接口说明" class="headerlink" title="关键接口说明"></a>关键接口说明</h2><h3 id="1-SOC相关接口"><a href="#1-SOC相关接口" class="headerlink" title="1. SOC相关接口"></a>1. SOC相关接口</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 获取当前SOC (单位: 0.1%)</span></span><br><span class="line">u16 <span class="title function_">GetGRealSocMilliAPI</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取显示SOC (单位: 0.1%)</span></span><br><span class="line">u16 <span class="title function_">GetGBattSocAPI</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 根据SOC修正当前容量</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">CorrGNowCapBySocAPI</span><span class="params">(u16 soc)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 根据SOC修正剩余容量</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">CorrGRemainCapBySocAPI</span><span class="params">(u16 soc)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 修正总容量</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">CorrGroupTotalCapAPI</span><span class="params">(u32 cap)</span>;</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-SOH相关接口"><a href="#2-SOH相关接口" class="headerlink" title="2. SOH相关接口"></a>2. SOH相关接口</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 获取当前SOH (单位: 0.1%)</span></span><br><span class="line">u16 <span class="title function_">GetGRealSohMilliAPI</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取衰减后的总容量</span></span><br><span class="line">u16 <span class="title function_">GetGFadeTotalCapAPI</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取额定容量</span></span><br><span class="line">u16 <span class="title function_">GetGroupRatedCapAPI</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取实际循环次数</span></span><br><span class="line">u16 <span class="title function_">GetGroupFadeCycleAPI</span><span class="params">(<span class="type">void</span>)</span>;</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-SOE相关接口"><a href="#3-SOE相关接口" class="headerlink" title="3. SOE相关接口"></a>3. SOE相关接口</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 获取当前SOE (单位: 0.1%)</span></span><br><span class="line">u16 <span class="title function_">GetGRealSoeMilliAPI</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取显示SOE (单位: 0.1%)</span></span><br><span class="line">u16 <span class="title function_">GetGBattSoeAPI</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 根据SOE修正当前能量</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">CorrGNowEnerBySoeAPI</span><span class="params">(u16 soe)</span>;</span><br></pre></td></tr></table></figure>
+
+<h3 id="4-电池信息接口"><a href="#4-电池信息接口" class="headerlink" title="4. 电池信息接口"></a>4. 电池信息接口</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 获取电池组总电压 (单位: 0.1V)</span></span><br><span class="line">u16 <span class="title function_">GetGSampSumVoltAPI</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取输出电流 (单位: 0.1A)</span></span><br><span class="line">s16 <span class="title function_">GetGSampOutCurrAPI</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取单体最大电压 (单位: 1mV)</span></span><br><span class="line">u16 <span class="title function_">GetGCellMaxVoltAPI</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取单体最小电压 (单位: 1mV)</span></span><br><span class="line">u16 <span class="title function_">GetGCellMinVoltAPI</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取平均温度 (单位: 1℃)</span></span><br><span class="line">s8 <span class="title function_">GetGCellAvgTempAPI</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取充放电状态</span></span><br><span class="line">u16 <span class="title function_">GetGChgDhgStateAPI</span><span class="params">(<span class="type">void</span>)</span>;  <span class="comment">// eCURR_CHG/eCURR_DHG/eCURR_IDLE</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="5-保护控制接口"><a href="#5-保护控制接口" class="headerlink" title="5. 保护控制接口"></a>5. 保护控制接口</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 获取工作状态</span></span><br><span class="line">u16 <span class="title function_">GetGWorkStateAPI</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取工作模式</span></span><br><span class="line">u16 <span class="title function_">GetGWorkModeAPI</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取安全等级</span></span><br><span class="line">u16 <span class="title function_">GetGSosLevelAPI</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 设置故障状态</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">DiagSetErrNowStateAPI</span><span class="params">(u16 errId, u16 errLevel)</span>;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><h3 id="系统特点"><a href="#系统特点" class="headerlink" title="系统特点"></a>系统特点</h3><ol>
+<li><strong>实时性</strong>: 采用FreeRTOS多任务架构，关键任务5-10ms周期执行</li>
+<li><strong>可靠性</strong>: 多重故障检测与保护机制</li>
+<li><strong>精确性</strong>: SOC&#x2F;SOH算法采用多源融合，提高估算精度</li>
+<li><strong>可扩展性</strong>: 模块化设计，便于功能扩展</li>
+<li><strong>安全性</strong>: 完善的故障诊断与安全保护</li>
+</ol>
+<h3 id="关键技术"><a href="#关键技术" class="headerlink" title="关键技术"></a>关键技术</h3><ol>
+<li><strong>SOC算法</strong>: 安时积分 + 温度修正 + 电压末端修正 + 多源融合</li>
+<li><strong>SOH算法</strong>: 容量法 + 循环次数法融合</li>
+<li><strong>总容量标定</strong>: 自动标定，电流温度修正</li>
+<li><strong>故障诊断</strong>: 多级滤波，分级保护</li>
+<li><strong>均衡控制</strong>: 主动均衡策略</li>
+</ol>
+<h3 id="应用场景"><a href="#应用场景" class="headerlink" title="应用场景"></a>应用场景</h3><ul>
+<li>电动汽车电池管理系统</li>
+<li>储能系统电池管理</li>
+<li>工业电池组管理</li>
+<li>其他需要精确电池管理的应用</li>
+</ul>
+<hr>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://kuangyue111.github.io">kuangyue111</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://kuangyue111.github.io/2026/06/27/2026-06-27-bms-code-analysis-document/">https://kuangyue111.github.io/2026/06/27/2026-06-27-bms-code-analysis-document/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://kuangyue111.github.io" target="_blank">KuangYue's Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E5%B5%8C%E5%85%A5%E5%BC%8F/">嵌入式</a><a class="post-meta__tags" href="/tags/BMS/">BMS</a><a class="post-meta__tags" href="/tags/SOC/">SOC</a><a class="post-meta__tags" href="/tags/SOH/">SOH</a><a class="post-meta__tags" href="/tags/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/">系统架构</a><a class="post-meta__tags" href="/tags/FreeRTOS/">FreeRTOS</a><a class="post-meta__tags" href="/tags/%E4%BB%A3%E7%A0%81%E5%88%86%E6%9E%90/">代码分析</a><a class="post-meta__tags" href="/tags/S32K146/">S32K146</a></div><div class="post-share"><div class="social-share" data-image="/img/butterfly-icon.png" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/2026/06/27/2026-06-27-bms-engineering-evaluation-report/" title="BMS工程专业评价报告"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">BMS工程专业评价报告</div></div><div class="info-2"><div class="info-item-1">BMS工程专业评价报告一、总体评价1.1 专业性评分   评价维度 评分 说明    算法实现 ⭐⭐⭐⭐☆ (4&#x2F;5) SOC&#x2F;SOH算法较为专业，但缺少高级算法   系统架构 ⭐⭐⭐⭐⭐ (5&#x2F;5) 分层清晰，模块化设计优秀   安全保护 ⭐⭐⭐⭐☆ (4&#x2F;5) 保护机制完善，但部分细节可优化   功能完整性 ⭐⭐⭐⭐☆ (4&#x2F;5) 核心功能齐全，部分高级功能缺失   代码质量 ⭐⭐⭐⭐☆ (4&#x2F;5) 代码规范，注释清晰，但部分可优化   实时性 ⭐⭐⭐⭐⭐ (5&#x2F;5) RTOS任务调度合理，实时性良好   综合评分: ⭐⭐⭐⭐☆ (4.2&#x2F;5) - 专业级BMS系统  二、优点分析2.1 系统架构优势 ✅1. 清晰的分层架构1应用层 → 功能层 → BSP层 → RTOS层 → 硬件层  优点: 层次分明，便于维护和扩展 专业评价: 符合嵌入式系统设计最佳实践  2. 模块化设计 各功能模块独立，接口清晰 便于单元测试和功能验证 符合软件工程模块化原则  3. RTOS任务调度合理 10个不同周期...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/06/27/2026-06-27-bms-soc-smooth-display/" title="BMS SOC显示平滑算法：让百分比变化符合用户直觉"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-27</div><div class="info-item-2">BMS SOC显示平滑算法：让百分比变化符合用户直觉</div></div><div class="info-2"><div class="info-item-1">BMS SOC显示平滑算法：让百分比变化符合用户直觉 前言在储能BMS系统里，SOC（State of Charge，荷电状态）是用户最直接感知的核心指标。从EMS大屏到HMI触摸屏，SOC百分比就是电池的”油表”。 然而，算法层计算出来的SOC是一个不断跳变的原始值。把它直接推给显示层，用户看到的将是一个毫无规律、时快时慢、甚至会”倒退”的数字——这在工程上是不可接受的。 这套S32K146 BMS工程实现了一套完整的 SOC显示平滑系统，涉及速度自适应跟踪、端点加速、边界锁定、强制修正四个机制，总代码约350行，集中在 SocDisplay.c 一个文件中。本文将逐层拆解其实现逻辑。  一、为什么需要显示平滑理解”为什么做”比”怎么做”更重要。SOC显示不平滑的根源有三类： 1.1 安时积分的固有噪声安时积分法（Coulomb Counting）是这套工程的核心SOC算法。其原理是对电流采样值持续积分： 1SOC(t) = SOC(t₀) + ∫I·dt / C_total  ADC采样的电流值本身存在噪声，微小的电流偏差经过积分累积后，会在SOC计算值上产生肉眼可见的抖动。...</div></div></div></a><a class="pagination-related" href="/2026/06/27/2026-06-27-bms-engineering-evaluation-report/" title="BMS工程专业评价报告"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-27</div><div class="info-item-2">BMS工程专业评价报告</div></div><div class="info-2"><div class="info-item-1">BMS工程专业评价报告一、总体评价1.1 专业性评分   评价维度 评分 说明    算法实现 ⭐⭐⭐⭐☆ (4&#x2F;5) SOC&#x2F;SOH算法较为专业，但缺少高级算法   系统架构 ⭐⭐⭐⭐⭐ (5&#x2F;5) 分层清晰，模块化设计优秀   安全保护 ⭐⭐⭐⭐☆ (4&#x2F;5) 保护机制完善，但部分细节可优化   功能完整性 ⭐⭐⭐⭐☆ (4&#x2F;5) 核心功能齐全，部分高级功能缺失   代码质量 ⭐⭐⭐⭐☆ (4&#x2F;5) 代码规范，注释清晰，但部分可优化   实时性 ⭐⭐⭐⭐⭐ (5&#x2F;5) RTOS任务调度合理，实时性良好   综合评分: ⭐⭐⭐⭐☆ (4.2&#x2F;5) - 专业级BMS系统  二、优点分析2.1 系统架构优势 ✅1. 清晰的分层架构1应用层 → 功能层 → BSP层 → RTOS层 → 硬件层  优点: 层次分明，便于维护和扩展 专业评价: 符合嵌入式系统设计最佳实践  2. 模块化设计 各功能模块独立，接口清晰 便于单元测试和功能验证 符合软件工程模块化原则  3. RTOS任务调度合理 10个不同周期...</div></div></div></a><a class="pagination-related" href="/2026/05/08/2026-05-08-bms-soc-ampere-hour-integration/" title="安时积分法在车规级 BMS 中的工程实现"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-08</div><div class="info-item-2">安时积分法在车规级 BMS 中的工程实现</div></div><div class="info-2"><div class="info-item-1">安时积分法在车规级 BMS 中的工程实现 123▎ 作者：嵌入式系统开发工程师▎ 日期：2026-05-08▎ 代码基础：车规级 BMS 项目（基于 NXP 芯片）  引言在动力电池管理系统（BMS）中，SOC（State of Charge，荷电状态）估算是最核心的功能之一。它直接关系到电池的使用安全、续航里程预测以及充放电策略的制定。在众多SOC估算算法中，安时积分法（也称库仑计法）因其原理简单、实时性好而成为工程应用中的基础算法。 然而，看似简单的”电流乘以时间”背后，隐藏着大量工程实现细节：如何在没有浮点运算单元的MCU上高效计算？如何设计单位换算避免精度损失？如何处理累积误差？本文将基于一个真实的车规级BMS项目（基于NXP芯片），深入剖析安时积分法的完整工程实现。 一、安时积分法的理论基础1.1 基本原理安时积分法的核心思想源于电荷守恒定律。电池的SOC本质上是当前剩余电量与总容量的比值： 1SOC(t) = SOC(t0) + (1/Crated) × ∫[t0→t] η(I) × I(τ) dτ  其中：  SOC(t0)：初始荷电状态 Crated：电池额定容量...</div></div></div></a><a class="pagination-related" href="/2026/06/08/2026-06-08-eis-deep-analysis/" title="电化学阻抗谱（EIS）深度解析：从物理原理到工程代码实现"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-08</div><div class="info-item-2">电化学阻抗谱（EIS）深度解析：从物理原理到工程代码实现</div></div><div class="info-2"><div class="info-item-1">电化学阻抗谱（EIS）深度解析：从物理原理到工程代码实现  一、为什么EIS是电池诊断的天花板工具  做储能系统的人都知道，判断一块电池的健康状态，常用的手段无非是容量标定、内阻测试、OCV曲线这几招。这些方法能告诉你电池现在的状态，但告诉不了你它为什么衰减，衰减发生在哪个环节，是SEI膜增厚、活性材料失活，还是锂离子扩散通道堵塞。   这就是电化学阻抗谱（Electrochemical Impedance Spectroscopy，EIS）存在的意义。   EIS的核心思想非常直接：在不同频率下向电池施加一个微小的正弦扰动信号（通常是幅值5到10mV的电压信号，或幅值C&#x2F;20以下的电流信号），测量电池的电压和电流响应，计算出各频率下的复数阻抗。不同的内部物理过程在不同频率段留下”指纹”，把这些指纹拼在一起，就能把电池的内部状态解读出来。   一个成熟的EIS测量通常覆盖频率范围从100kHz到1mHz，横跨约8个数量级。高频段揭示欧姆效应，中频段对应SEI膜和电荷传递过程，低频段反映锂离子的扩散行为。这种多频率多维度的信息密度，是任何单点测量方法都无法比拟的。  二、...</div></div></div></a><a class="pagination-related" href="/2026/05/10/2026-05-10-bms-soh-calculation-capacity-and-cycle-methods/" title="锂电池 SOH 计算：容量实测法与循环计数法的双重验证"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-10</div><div class="info-item-2">锂电池 SOH 计算：容量实测法与循环计数法的双重验证</div></div><div class="info-2"><div class="info-item-1">锂电池SOH计算：容量实测法与循环计数法的双重验证引言如果说SOC（荷电状态）是电池的”油表”，那么SOH（健康状态）就是电池的”体检报告”。在动力电池和储能系统中，准确评估SOH不仅关系到续航里程的预测，更直接影响安全性判断、维护决策和资产管理。 一块标称100Ah的电池，使用两年后实际容量可能只剩80Ah。这20%的衰减如何量化？何时该更换电池？这些问题的答案都藏在SOH算法中。 然而，SOH估算远比SOC复杂。电池容量会随温度、倍率、循环次数、存储时间等多种因素变化，单一方法难以准确评估。本文将基于一个真实的车规级BMS项目，深入剖析两种主流SOH计算方法——容量实测法和循环计数法，以及它们的融合策略。 一、SOH的定义与工程意义1.1 SOH的数学定义SOH（State of Health）的标准定义是： $$SOH &#x3D; \frac{当前最大可用容量}{出厂额定容量} \times 100%$$ 这里的”最大可用容量”是指在标准条件下（25℃，0.5C倍率），电池从满电到截止电压能够释放的电量。 在代码中，这个定义被直接实现： 12345678910111213...</div></div></div></a><a class="pagination-related" href="/2026/05/08/2026-05-08-ampere-hour-integration-in-automotive-bms/" title="安时积分法在车规级 BMS 中的完整工程实现——基于 NXP 芯片的 SOC 估算实践"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-08</div><div class="info-item-2">安时积分法在车规级 BMS 中的完整工程实现——基于 NXP 芯片的 SOC 估算实践</div></div><div class="info-2"><div class="info-item-1">引言在动力电池管理系统（BMS）中，SOC（State of Charge，荷电状态）估算是最核心的功能之一。它直接关系到电池的使用安全、续航里程预测以及充放电策略的制定。在众多SOC估算算法中，安时积分法（也称库仑计法）因其原理简单、实时性好而成为工程应用中的基础算法。 然而，看似简单的”电流乘以时间”背后，隐藏着大量工程实现细节：如何在没有浮点运算单元的MCU上高效计算？如何设计单位换算避免精度损失？如何处理累积误差？本文将基于一个真实的车规级BMS项目（基于NXP芯片），深入剖析安时积分法的完整工程实现。 一、安时积分法的理论基础1.1 基本原理安时积分法的核心思想源于电荷守恒定律。电池的SOC本质上是当前剩余电量与总容量的比值： $$SOC(t) &#x3D; SOC(t0) + \frac{1}{C_{rated}} \times \int_{t0}^{t} \eta(I) \times I(\tau) d\tau$$ 其中：  **SOC(t0)**：初始荷电状态 C_rated：电池额定容量 **I(τ)**：τ时刻的电流（充电为负，放电为正） **η(I)**：充...</div></div></div></a></div></div><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="giscus-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/img/butterfly-icon.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">kuangyue111</div><div class="author-info-description">嵌入式开发 | 储能系统 | 工业通信协议</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">26</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">132</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">11</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/kuangyue111"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/kuangyue111" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">专注于嵌入式与储能系统技术分享</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%94%B5%E6%B1%A0%E7%AE%A1%E7%90%86%E7%B3%BB%E7%BB%9F%E5%B7%A5%E7%A8%8B%E4%BB%A3%E7%A0%81%E5%88%86%E6%9E%90%E6%96%87%E6%A1%A3"><span class="toc-number">1.</span> <span class="toc-text">电池管理系统工程代码分析文档</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%AE%E5%BD%95"><span class="toc-number">1.1.</span> <span class="toc-text">目录</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B7%A5%E7%A8%8B%E6%A6%82%E8%BF%B0"><span class="toc-number">1.2.</span> <span class="toc-text">工程概述</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%A1%B9%E7%9B%AE%E4%BF%A1%E6%81%AF"><span class="toc-number">1.2.1.</span> <span class="toc-text">项目信息</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%BB%E8%A6%81%E5%8A%9F%E8%83%BD"><span class="toc-number">1.2.2.</span> <span class="toc-text">主要功能</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84"><span class="toc-number">1.3.</span> <span class="toc-text">系统架构</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84"><span class="toc-number">1.3.1.</span> <span class="toc-text">目录结构</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%B3%BB%E7%BB%9F%E5%88%86%E5%B1%82%E6%9E%B6%E6%9E%84"><span class="toc-number">1.3.2.</span> <span class="toc-text">系统分层架构</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#RTOS%E8%BF%90%E8%A1%8C%E6%9C%BA%E5%88%B6"><span class="toc-number">1.4.</span> <span class="toc-text">RTOS运行机制</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#FreeRTOS%E9%85%8D%E7%BD%AE"><span class="toc-number">1.4.1.</span> <span class="toc-text">FreeRTOS配置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BB%BB%E5%8A%A1%E5%88%9B%E5%BB%BA%E4%B8%8E%E8%B0%83%E5%BA%A6"><span class="toc-number">1.4.2.</span> <span class="toc-text">任务创建与调度</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1-%E8%BD%AF%E4%BB%B6%E5%AE%9A%E6%97%B6%E5%99%A8%E4%BB%BB%E5%8A%A1"><span class="toc-number">1.4.2.1.</span> <span class="toc-text">1. 软件定时器任务</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-%E7%8B%AC%E7%AB%8B%E4%BB%BB%E5%8A%A1"><span class="toc-number">1.4.2.2.</span> <span class="toc-text">2. 独立任务</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BB%BB%E5%8A%A1%E8%B0%83%E5%BA%A6%E6%B5%81%E7%A8%8B"><span class="toc-number">1.4.3.</span> <span class="toc-text">任务调度流程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BB%BB%E5%8A%A1%E6%89%A7%E8%A1%8C%E6%97%B6%E5%BA%8F"><span class="toc-number">1.4.4.</span> <span class="toc-text">任务执行时序</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A0%B8%E5%BF%83%E6%A8%A1%E5%9D%97%E5%88%86%E6%9E%90"><span class="toc-number">1.5.</span> <span class="toc-text">核心模块分析</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-%E6%B5%8B%E9%87%8F%E9%87%87%E6%A0%B7%E6%A8%A1%E5%9D%97-Measurement"><span class="toc-number">1.5.1.</span> <span class="toc-text">1. 测量采样模块 (Measurement)</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1-1-%E7%94%B5%E6%B1%A0%E4%BF%A1%E6%81%AF%E9%87%87%E6%A0%B7-CellAFESamp-c"><span class="toc-number">1.5.1.1.</span> <span class="toc-text">1.1 电池信息采样 (CellAFESamp.c)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#1-2-%E9%AB%98%E5%8E%8B%E9%87%87%E6%A0%B7-HigAFESamp-c"><span class="toc-number">1.5.1.2.</span> <span class="toc-text">1.2 高压采样 (HigAFESamp.c)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#1-3-%E7%94%B5%E6%B5%81%E9%87%87%E6%A0%B7-CurrSample-c"><span class="toc-number">1.5.1.3.</span> <span class="toc-text">1.3 电流采样 (CurrSample.c)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#1-4-%E7%BB%9D%E7%BC%98%E6%A3%80%E6%B5%8B-InsuCheck-c"><span class="toc-number">1.5.1.4.</span> <span class="toc-text">1.4 绝缘检测 (InsuCheck.c)</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-%E6%95%B0%E6%8D%AE%E8%AE%A1%E7%AE%97%E6%A8%A1%E5%9D%97-DataCalc"><span class="toc-number">1.5.2.</span> <span class="toc-text">2. 数据计算模块 (DataCalc)</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#2-1-%E7%94%B5%E6%B5%81%E9%99%90%E5%80%BC%E8%AE%A1%E7%AE%97-CurrLimCalc-c"><span class="toc-number">1.5.2.1.</span> <span class="toc-text">2.1 电流限值计算 (CurrLimCalc.c)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-2-%E7%94%B5%E5%8E%8B%E9%99%90%E5%80%BC%E8%AE%A1%E7%AE%97-VoltLimCalc-c"><span class="toc-number">1.5.2.2.</span> <span class="toc-text">2.2 电压限值计算 (VoltLimCalc.c)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-3-%E7%89%B9%E5%BE%81%E8%AE%A1%E7%AE%97-CharactCalc-c"><span class="toc-number">1.5.2.3.</span> <span class="toc-text">2.3 特征计算 (CharactCalc.c)</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-%E6%95%85%E9%9A%9C%E8%AF%8A%E6%96%AD%E6%A8%A1%E5%9D%97-Diagnosis"><span class="toc-number">1.5.3.</span> <span class="toc-text">3. 故障诊断模块 (Diagnosis)</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#3-1-%E6%95%85%E9%9A%9C%E6%A3%80%E6%B5%8B-DiagCheck-c"><span class="toc-number">1.5.3.1.</span> <span class="toc-text">3.1 故障检测 (DiagCheck.c)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#3-2-%E6%95%85%E9%9A%9C%E6%BB%A4%E6%B3%A2-DiagFilter-c"><span class="toc-number">1.5.3.2.</span> <span class="toc-text">3.2 故障滤波 (DiagFilter.c)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#3-3-%E6%95%85%E9%9A%9C%E7%94%9F%E6%88%90-DiagMaker-c"><span class="toc-number">1.5.3.3.</span> <span class="toc-text">3.3 故障生成 (DiagMaker.c)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#3-4-%E5%AE%89%E5%85%A8%E7%AD%89%E7%BA%A7-DiagSos-c"><span class="toc-number">1.5.3.4.</span> <span class="toc-text">3.4 安全等级 (DiagSos.c)</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-%E9%80%9A%E4%BF%A1%E6%A8%A1%E5%9D%97"><span class="toc-number">1.5.4.</span> <span class="toc-text">4. 通信模块</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#4-1-CAN%E9%80%9A%E4%BF%A1-CanLib"><span class="toc-number">1.5.4.1.</span> <span class="toc-text">4.1 CAN通信 (CanLib&#x2F;)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#4-2-Modbus%E9%80%9A%E4%BF%A1-ModbusLib"><span class="toc-number">1.5.4.2.</span> <span class="toc-text">4.2 Modbus通信 (ModbusLib&#x2F;)</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-%E5%8F%82%E6%95%B0%E7%AE%A1%E7%90%86%E6%A8%A1%E5%9D%97-Parameter"><span class="toc-number">1.5.5.</span> <span class="toc-text">5. 参数管理模块 (Parameter)</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#5-1-%E5%8F%82%E6%95%B0%E5%AD%98%E5%82%A8"><span class="toc-number">1.5.5.1.</span> <span class="toc-text">5.1 参数存储</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#5-2-%E5%8F%82%E6%95%B0%E8%AF%BB%E5%86%99"><span class="toc-number">1.5.5.2.</span> <span class="toc-text">5.2 参数读写</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-%E8%AE%B0%E5%BD%95%E7%BB%9F%E8%AE%A1%E6%A8%A1%E5%9D%97"><span class="toc-number">1.5.6.</span> <span class="toc-text">6. 记录统计模块</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#6-1-%E6%95%B0%E6%8D%AE%E8%AE%B0%E5%BD%95-Recording"><span class="toc-number">1.5.6.1.</span> <span class="toc-text">6.1 数据记录 (Recording&#x2F;)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#6-2-%E7%BB%9F%E8%AE%A1%E5%88%86%E6%9E%90-Statistics"><span class="toc-number">1.5.6.2.</span> <span class="toc-text">6.2 统计分析 (Statistics&#x2F;)</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#SOC%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3"><span class="toc-number">1.6.</span> <span class="toc-text">SOC算法详解</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#SOC-State-of-Charge-%E7%8A%B6%E6%80%81%E4%BC%B0%E7%AE%97"><span class="toc-number">1.6.1.</span> <span class="toc-text">SOC (State of Charge) 状态估算</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-SOC%E8%AE%A1%E7%AE%97%E6%9E%B6%E6%9E%84"><span class="toc-number">1.6.2.</span> <span class="toc-text">1. SOC计算架构</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-%E6%A0%B8%E5%BF%83%E8%AE%A1%E7%AE%97%E6%96%B9%E6%B3%95"><span class="toc-number">1.6.3.</span> <span class="toc-text">2. 核心计算方法</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#2-1-%E5%AE%89%E6%97%B6%E7%A7%AF%E5%88%86%E6%B3%95-Coulomb-Counting"><span class="toc-number">1.6.3.1.</span> <span class="toc-text">2.1 安时积分法 (Coulomb Counting)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-2-%E6%B8%A9%E5%BA%A6%E4%BF%AE%E6%AD%A3"><span class="toc-number">1.6.3.2.</span> <span class="toc-text">2.2 温度修正</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-3-%E7%94%B5%E5%8E%8B%E6%9C%AB%E7%AB%AF%E4%BF%AE%E6%AD%A3"><span class="toc-number">1.6.3.3.</span> <span class="toc-text">2.3 电压末端修正</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-SOC%E4%BF%AE%E6%AD%A3%E7%AD%96%E7%95%A5"><span class="toc-number">1.6.4.</span> <span class="toc-text">3. SOC修正策略</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#3-1-%E5%A4%9A%E6%BA%90%E8%9E%8D%E5%90%88%E4%BF%AE%E6%AD%A3"><span class="toc-number">1.6.4.1.</span> <span class="toc-text">3.1 多源融合修正</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-SOC%E5%B9%B3%E6%BB%91%E6%98%BE%E7%A4%BA"><span class="toc-number">1.6.5.</span> <span class="toc-text">4. SOC平滑显示</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-SOC%E7%AE%97%E6%B3%95%E6%89%A7%E8%A1%8C%E6%B5%81%E7%A8%8B"><span class="toc-number">1.6.6.</span> <span class="toc-text">5. SOC算法执行流程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-%E6%80%BB%E5%AE%B9%E9%87%8F%E8%87%AA%E5%8A%A8%E6%A0%87%E5%AE%9A"><span class="toc-number">1.6.7.</span> <span class="toc-text">6. 总容量自动标定</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#SOH%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3"><span class="toc-number">1.7.</span> <span class="toc-text">SOH算法详解</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#SOH-State-of-Health-%E5%81%A5%E5%BA%B7%E5%BA%A6%E8%AF%84%E4%BC%B0"><span class="toc-number">1.7.1.</span> <span class="toc-text">SOH (State of Health) 健康度评估</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-SOH%E8%AE%A1%E7%AE%97%E6%9E%B6%E6%9E%84"><span class="toc-number">1.7.2.</span> <span class="toc-text">1. SOH计算架构</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-SOH%E8%AE%A1%E7%AE%97%E6%96%B9%E6%B3%95"><span class="toc-number">1.7.3.</span> <span class="toc-text">2. SOH计算方法</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#2-1-%E5%AE%B9%E9%87%8F%E6%B3%95%E8%AE%A1%E7%AE%97SOH"><span class="toc-number">1.7.3.1.</span> <span class="toc-text">2.1 容量法计算SOH</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-2-%E5%BE%AA%E7%8E%AF%E6%AC%A1%E6%95%B0%E6%B3%95%E8%AE%A1%E7%AE%97SOH"><span class="toc-number">1.7.3.2.</span> <span class="toc-text">2.2 循环次数法计算SOH</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-SOH%E8%9E%8D%E5%90%88%E7%AD%96%E7%95%A5"><span class="toc-number">1.7.4.</span> <span class="toc-text">3. SOH融合策略</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-SOH%E8%AE%A1%E7%AE%97%E8%A7%A6%E5%8F%91%E6%9D%A1%E4%BB%B6"><span class="toc-number">1.7.5.</span> <span class="toc-text">4. SOH计算触发条件</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-SOH%E6%98%BE%E7%A4%BA"><span class="toc-number">1.7.6.</span> <span class="toc-text">5. SOH显示</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%B3%BB%E7%BB%9F%E8%BF%90%E8%A1%8C%E6%B5%81%E7%A8%8B"><span class="toc-number">1.8.</span> <span class="toc-text">系统运行流程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-%E7%B3%BB%E7%BB%9F%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B"><span class="toc-number">1.8.1.</span> <span class="toc-text">1. 系统启动流程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-%E6%95%B0%E6%8D%AE%E9%87%87%E9%9B%86%E6%B5%81%E7%A8%8B"><span class="toc-number">1.8.2.</span> <span class="toc-text">2. 数据采集流程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-SOC-SOH%E8%AE%A1%E7%AE%97%E6%B5%81%E7%A8%8B"><span class="toc-number">1.8.3.</span> <span class="toc-text">3. SOC&#x2F;SOH计算流程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-%E4%BF%9D%E6%8A%A4%E6%8E%A7%E5%88%B6%E6%B5%81%E7%A8%8B"><span class="toc-number">1.8.4.</span> <span class="toc-text">4. 保护控制流程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-%E9%80%9A%E4%BF%A1%E6%B5%81%E7%A8%8B"><span class="toc-number">1.8.5.</span> <span class="toc-text">5. 通信流程</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%B3%E9%94%AE%E6%8E%A5%E5%8F%A3%E8%AF%B4%E6%98%8E"><span class="toc-number">1.9.</span> <span class="toc-text">关键接口说明</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-SOC%E7%9B%B8%E5%85%B3%E6%8E%A5%E5%8F%A3"><span class="toc-number">1.9.1.</span> <span class="toc-text">1. SOC相关接口</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-SOH%E7%9B%B8%E5%85%B3%E6%8E%A5%E5%8F%A3"><span class="toc-number">1.9.2.</span> <span class="toc-text">2. SOH相关接口</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-SOE%E7%9B%B8%E5%85%B3%E6%8E%A5%E5%8F%A3"><span class="toc-number">1.9.3.</span> <span class="toc-text">3. SOE相关接口</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-%E7%94%B5%E6%B1%A0%E4%BF%A1%E6%81%AF%E6%8E%A5%E5%8F%A3"><span class="toc-number">1.9.4.</span> <span class="toc-text">4. 电池信息接口</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-%E4%BF%9D%E6%8A%A4%E6%8E%A7%E5%88%B6%E6%8E%A5%E5%8F%A3"><span class="toc-number">1.9.5.</span> <span class="toc-text">5. 保护控制接口</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">1.10.</span> <span class="toc-text">总结</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%B3%BB%E7%BB%9F%E7%89%B9%E7%82%B9"><span class="toc-number">1.10.1.</span> <span class="toc-text">系统特点</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%85%B3%E9%94%AE%E6%8A%80%E6%9C%AF"><span class="toc-number">1.10.2.</span> <span class="toc-text">关键技术</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%BA%94%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="toc-number">1.10.3.</span> <span class="toc-text">应用场景</span></a></li></ol></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/06/27/2026-06-27-bms-code-analysis-document/" title="电池管理系统工程代码分析文档">电池管理系统工程代码分析文档</a><time datetime="2026-06-27T09:00:00.000Z" title="发表于 2026-06-27 17:00:00">2026-06-27</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/06/27/2026-06-27-bms-engineering-evaluation-report/" title="BMS工程专业评价报告">BMS工程专业评价报告</a><time datetime="2026-06-27T08:00:00.000Z" title="发表于 2026-06-27 16:00:00">2026-06-27</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/06/27/2026-06-27-bms-soc-smooth-display/" title="BMS SOC显示平滑算法：让百分比变化符合用户直觉">BMS SOC显示平滑算法：让百分比变化符合用户直觉</a><time datetime="2026-06-27T07:00:00.000Z" title="发表于 2026-06-27 15:00:00">2026-06-27</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/06/25/2026-06-25-ekf-soc-estimation-reading-review/" title="卡尔曼滤波SOC估算技术调研读后感：从理论到工程的完整解读">卡尔曼滤波SOC估算技术调研读后感：从理论到工程的完整解读</a><time datetime="2026-06-25T07:00:00.000Z" title="发表于 2026-06-25 15:00:00">2026-06-25</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/06/22/2026-06-22-kalman-filter-soc-estimation/" title="卡尔曼滤波法估算SOC — 技术调研报告">卡尔曼滤波法估算SOC — 技术调研报告</a><time datetime="2026-06-22T07:00:00.000Z" title="发表于 2026-06-22 15:00:00">2026-06-22</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By kuangyue111</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.4</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="前往评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.4"></script><script src="/js/main.js?v=5.5.4"></script><div class="js-pjax"><script>(() => {
+  const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
+  const option = {"mapping":"url","lang":"zh-CN"}
+
+  const getGiscusTheme = theme => theme === 'dark' ? 'dark' : 'light'
+
+  const createScriptElement = config => {
+    const ele = document.createElement('script')
+    Object.entries(config).forEach(([key, value]) => {
+      ele.setAttribute(key, value)
+    })
+    return ele
+  }
+
+  const loadGiscus = (el = document, key) => {
+    const mappingConfig = isShuoshuo
+      ? { 'data-mapping': 'specific', 'data-term': key }
+      : { 'data-mapping': (option && option['data-mapping']) || 'pathname' }
+
+    const giscusConfig = {
+      src: 'https://giscus.app/client.js',
+      'data-repo': 'kuangyue111/kuangyue111.github.io',
+      'data-repo-id': 'R_kgDOSQde2Q',
+      'data-category-id': 'DIC_kwDOSQde2c4C8CgH',
+      'data-theme': getGiscusTheme(document.documentElement.getAttribute('data-theme')),
+      'data-reactions-enabled': '1',
+      crossorigin: 'anonymous',
+      async: true,
+      ...option,
+      ...mappingConfig
+    }
+
+    const scriptElement = createScriptElement(giscusConfig)
+
+    el.querySelector('#giscus-wrap').appendChild(scriptElement)
+
+    if (isShuoshuo) {
+      window.shuoshuoComment.destroyGiscus = () => {
+        if (el.children.length) {
+          el.innerHTML = ''
+          el.classList.add('no-comment')
+        }
+      }
+    }
+  }
+
+  const changeGiscusTheme = theme => {
+    const iframe = document.querySelector('#giscus-wrap iframe')
+    if (iframe) {
+      const message = {
+        giscus: {
+          setConfig: {
+            theme: getGiscusTheme(theme)
+          }
+        }
+      }
+      iframe.contentWindow.postMessage(message, 'https://giscus.app')
+    }
+  }
+
+  btf.addGlobalFn('themeChange', changeGiscusTheme, 'giscus')
+
+  if (isShuoshuo) {
+    'Giscus' === 'Giscus'
+      ? window.shuoshuoComment = { loadComment: loadGiscus }
+      : window.loadOtherComment = loadGiscus
+    return
+  }
+
+  if ('Giscus' === 'Giscus' || !false) {
+    if (false) btf.loadComment(document.getElementById('giscus-wrap'), loadGiscus)
+    else loadGiscus()
+  } else {
+    window.loadOtherComment = loadGiscus
+  }
+})()</script></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

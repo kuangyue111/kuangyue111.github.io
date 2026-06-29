@@ -1,0 +1,275 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>30分钟给你的Agent搭好永久记忆：能cat能git能直接编辑，保姆级教程零门槛上手 | KuangYue's Blog</title><meta name="author" content="kuangyue111"><meta name="copyright" content="kuangyue111"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="我最近搭Agent工作流有一个很大的感受，就是Openclaw、Hermes、以及Claude code、Codex等这些 Agent ，是不需要更大的上下文窗口的，它需要更好的记忆能力。我花了 30 分钟给常用的编码 Agent 接上持久记忆 —— 没开 Docker，没搭向量库集群，而且这次，它的大脑就是一堆我能直接打开、直接编辑的 Markdown 文件。 一、你的 Agent，每天醒来都失">
+<meta property="og:type" content="article">
+<meta property="og:title" content="30分钟给你的Agent搭好永久记忆：能cat能git能直接编辑，保姆级教程零门槛上手">
+<meta property="og:url" content="https://kuangyue111.github.io/2026/06/29/2026-06-29-agent-everos-persistent-memory/index.html">
+<meta property="og:site_name" content="KuangYue&#39;s Blog">
+<meta property="og:description" content="我最近搭Agent工作流有一个很大的感受，就是Openclaw、Hermes、以及Claude code、Codex等这些 Agent ，是不需要更大的上下文窗口的，它需要更好的记忆能力。我花了 30 分钟给常用的编码 Agent 接上持久记忆 —— 没开 Docker，没搭向量库集群，而且这次，它的大脑就是一堆我能直接打开、直接编辑的 Markdown 文件。 一、你的 Agent，每天醒来都失">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://kuangyue111.github.io/img/butterfly-icon.png">
+<meta property="article:published_time" content="2026-06-29T04:00:00.000Z">
+<meta property="article:modified_time" content="2026-06-29T09:29:06.449Z">
+<meta property="article:author" content="kuangyue111">
+<meta property="article:tag" content="教程">
+<meta property="article:tag" content="Agent">
+<meta property="article:tag" content="EverOS">
+<meta property="article:tag" content="AI记忆">
+<meta property="article:tag" content="LLM">
+<meta property="article:tag" content="持久记忆">
+<meta property="article:tag" content="开源">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://kuangyue111.github.io/img/butterfly-icon.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "30分钟给你的Agent搭好永久记忆：能cat能git能直接编辑，保姆级教程零门槛上手",
+  "url": "https://kuangyue111.github.io/2026/06/29/2026-06-29-agent-everos-persistent-memory/",
+  "image": "https://kuangyue111.github.io/img/butterfly-icon.png",
+  "datePublished": "2026-06-29T04:00:00.000Z",
+  "dateModified": "2026-06-29T09:29:06.449Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "kuangyue111",
+      "url": "https://kuangyue111.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://kuangyue111.github.io/2026/06/29/2026-06-29-agent-everos-persistent-memory/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.5.4"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.13.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '30分钟给你的Agent搭好永久记忆：能cat能git能直接编辑，保姆级教程零门槛上手',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/butterfly-icon.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">27</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">138</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">13</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">KuangYue's Blog</span></a><a class="nav-page-title" href="/"><span class="site-name">30分钟给你的Agent搭好永久记忆：能cat能git能直接编辑，保姆级教程零门槛上手</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">30分钟给你的Agent搭好永久记忆：能cat能git能直接编辑，保姆级教程零门槛上手</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-06-29T04:00:00.000Z" title="发表于 2026-06-29 12:00:00">2026-06-29</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-06-29T09:29:06.449Z" title="更新于 2026-06-29 17:29:06">2026-06-29</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E6%95%99%E7%A8%8B/">技术教程</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E6%95%99%E7%A8%8B/AI%E5%B7%A5%E5%85%B7/">AI工具</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><p>我最近搭Agent工作流有一个很大的感受，就是Openclaw、Hermes、以及Claude code、Codex等这些 Agent ，是不需要更大的上下文窗口的，它需要更好的记忆能力。我花了 30 分钟给常用的编码 Agent 接上持久记忆 —— 没开 Docker，没搭向量库集群，而且这次，它的大脑就是一堆我能直接打开、直接编辑的 Markdown 文件。</p>
+<h1 id="一、你的-Agent，每天醒来都失忆"><a href="#一、你的-Agent，每天醒来都失忆" class="headerlink" title="一、你的 Agent，每天醒来都失忆"></a>一、你的 Agent，每天醒来都失忆</h1><p>做过 Agent 的人，大概都受过这个委屈：昨天它刚陪你定位完一个磨人的 bug，今天开个新会话，它对昨天发生的一切一无所知。<br>你那些决策、工作流、好不容易踩明白的坑，没有一样跟着它走。上下文被锁在上一段对话里，关掉就蒸发了。<br>我们的第一反应，通常是把 prompt 塞得更满。把历史记录、用户偏好、项目背景一股脑灌进上下文窗口，然后祈祷模型别忘。<br>但这条路很快撞墙。窗口有上限，token 要花钱，更要命的是——你塞进去的那点”记忆”是一次性的，关掉窗口就没了。<br>说到底，你缺的不是更大的 prompt，是一层持久记忆。<br>这篇我会带你用大约半小时，给一个 Agent 接上 EverOS，一个开源、本地优先的记忆操作系统。<br>不用搭 MongoDB，不用 Elasticsearch，也不用一整套向量数据库集群。<br>最妙的一点是，它把记忆存成你能直接打开、阅读、甚至手动改的 Markdown 文件。跟着走完，你的 Agent 就有了跨会话的长期记忆，而这份记忆是透明的，是你的。<br>那话不多说，咱们开始。</p>
+<h1 id="二、为什么是-EverOS，而不是再自己搓一个向量库"><a href="#二、为什么是-EverOS，而不是再自己搓一个向量库" class="headerlink" title="二、为什么是 EverOS，而不是再自己搓一个向量库"></a>二、为什么是 EverOS，而不是再自己搓一个向量库</h1><p>动手前，先花一分钟说清它跟”再写一个向量库”差在哪，因为这决定了这半小时值不值。<br>大多数记忆方案是个黑箱，你把文本喂进去，它吐一串向量存进数据库，检索时再还你一堆相似度分数。<br>那么问题来了：出错的时候，你根本不知道它到底”记住”了什么、为什么这么记，调试基本靠猜😂<br>EverOS 走的是另一条路，<br>它的存储是一套本地三件套：Markdown 当唯一可信来源，SQLite 管状态和处理队列，LanceDB 管向量、BM25 全文索引和标量过滤。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">组件                                    干的活</span><br><span class="line">Markdown        唯一可信来源，所有记忆落成可读、可 grep、可 Git 版本化、可 Obsidian 打开的 .md</span><br><span class="line">SQLite                              管理状态和处理队列</span><br><span class="line">LanceDB                     管理向量、BM25 全文索引、标量过滤</span><br></pre></td></tr></table></figure>
+<p>关键在第一件，你想知道 Agent 记住了什么？cat 一下就行，想改掉一条记错的？编辑器打开删掉就行，这种可检视性，是黑箱向量库怎么都给不了的。<br>顺一句佐证，官方那几个跑分也不难看：LoCoMo 93.05%、LongMemEval(-S) 83.00%、HaluMem 大约 90%+，都是官方口径，你自己掂量，但真正打动我的肯定不只是分数。<br>说白了，我们的Agent 的大脑，就是一堆能打开的文件。<br>好，理念讲完，咱直接上手操作。</p>
+<h2 id="第一步：环境准备（约-5-分钟）"><a href="#第一步：环境准备（约-5-分钟）" class="headerlink" title="第一步：环境准备（约 5 分钟）"></a>第一步：环境准备（约 5 分钟）</h2><p>一共三样东西。<br>Python 3.10 以上，官方推荐 3.12+，一个叫 uv 的高性能包管理器，EverOS 用它管依赖和虚拟环境。<br>还有两个 API key——默认配置下，一个 OpenRouter 管 LLM 和多模态，一个 DeepInfra 管向量化和重排。<br>uv 没装的话，一行搞定：<br>Bash</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># macOS / Linux</span><br><span class="line">curl -LsSf https://astral.sh/uv/install.sh | sh</span><br></pre></td></tr></table></figure>
+<p>key 这块先交个底：EverOS 兼容所有走 OpenAI 协议的端点。<br>所以你手上要是已经有 OpenAI、自建 vLLM 或者本地 Ollama，完全可以换掉默认那两家，下一步配置我会讲怎么改。</p>
+<h2 id="第二步：安装与初始化（约-5-分钟）"><a href="#第二步：安装与初始化（约-5-分钟）" class="headerlink" title="第二步：安装与初始化（约 5 分钟）"></a>第二步：安装与初始化（约 5 分钟）</h2><p>两种装法，按目的二选一：<br>想顺手读读代码、做点改造，从源码装：<br>Bash</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">git clone https://github.com/EverMind-AI/EverOS.git</span><br><span class="line">cd EverOS</span><br><span class="line">uv sync                      # 创建 ./.venv 并装依赖</span><br><span class="line">source .venv/bin/activate    # 或者给每条命令加 `uv run` 前缀</span><br></pre></td></tr></table></figure>
+<p>只想把它接进自己项目，直接装包：<br>Bash</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uv pip install everos        # 或者 pip install everos</span><br></pre></td></tr></table></figure>
+<p>两种方式装完，用同一条命令初始化：<br>Bash</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">everos init</span><br></pre></td></tr></table></figure>
+<p>它会生成一个起始 .env。打开，填进你那两个 key：<br>Bash</p>
+<h1 id="默认提供商："><a href="#默认提供商：" class="headerlink" title="默认提供商："></a>默认提供商：</h1><h1 id="OpenRouter-→-LLM-多模态"><a href="#OpenRouter-→-LLM-多模态" class="headerlink" title="OpenRouter → LLM &#x2F; 多模态"></a>OpenRouter → LLM &#x2F; 多模态</h1><h1 id="DeepInfra-→-Embedding-Rerank"><a href="#DeepInfra-→-Embedding-Rerank" class="headerlink" title="DeepInfra  → Embedding &#x2F; Rerank"></a>DeepInfra  → Embedding &#x2F; Rerank</h1><h1 id=""><a href="#" class="headerlink" title=""></a></h1><h1 id="想换别的-OpenAI-兼容服务（OpenAI-vLLM-Ollama-等），"><a href="#想换别的-OpenAI-兼容服务（OpenAI-vLLM-Ollama-等），" class="headerlink" title="想换别的 OpenAI 兼容服务（OpenAI &#x2F; vLLM &#x2F; Ollama 等），"></a>想换别的 OpenAI 兼容服务（OpenAI &#x2F; vLLM &#x2F; Ollama 等），</h1><h1 id="把对应的-BASE-URL-字段指过去就行。"><a href="#把对应的-BASE-URL-字段指过去就行。" class="headerlink" title="把对应的 *__BASE_URL 字段指过去就行。"></a>把对应的 *__BASE_URL 字段指过去就行。</h1><p>这里插一句，别手滑：.env 里装着你的 key，记得先把它加进 .gitignore。<br>提交进仓库这种事，翻一次车够你后悔半天。<br>填完跑这两条确认没问题：<br>Bash</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">everos --help     # 能看到命令列表，说明 CLI 装好了</span><br><span class="line">make test         # 源码安装方式下可跑测试套件</span><br></pre></td></tr></table></figure>
+<h2 id="第三步：启动服务并验证（约-3-分钟）"><a href="#第三步：启动服务并验证（约-3-分钟）" class="headerlink" title="第三步：启动服务并验证（约 3 分钟）"></a>第三步：启动服务并验证（约 3 分钟）</h2><p>起服务：<br>Bash</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">everos server start</span><br></pre></td></tr></table></figure>
+<p>让它在这个终端保持运行。新开一个终端，做次健康检查：<br>Bash</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl http://127.0.0.1:8000/health</span><br></pre></td></tr></table></figure>
+<p>一切正常的话，你会看到：<br>JSON</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;&quot;status&quot;:&quot;ok&quot;&#125;</span><br></pre></td></tr></table></figure>
+<p>看到这行 ok，你的本地记忆服务就活了。<br>小提醒：文档写的默认端口是 8000，但你本地起来后亲眼确认一下，别想当然。接下来是这篇的核心。</p>
+<h2 id="第四步：第一条记忆——写进去，再搜回来（约-8-分钟）⭐"><a href="#第四步：第一条记忆——写进去，再搜回来（约-8-分钟）⭐" class="headerlink" title="第四步：第一条记忆——写进去，再搜回来（约 8 分钟）⭐"></a>第四步：第一条记忆——写进去，再搜回来（约 8 分钟）⭐</h2><p>EverOS 最值钱的就一件事，我给它起了个名，叫核心循环：写入一条事实 → 落盘成持久的 Markdown → 通过本地索引搜回来。咱完整跑一遍。<br>先写一条关于用户的事实。注意带上 user_id，它决定这条记忆归谁——这也是 EverOS 能在多用户、多 Agent 场景下不串味的关键。<br>这里我得说句实在话。1.0.0 本地版写入&#x2F;检索的确切调用方式（是 CLI 子命令还是 REST 请求体），请你一定以仓库根目录的 QUICKSTART.md 为准，README 自己也把权威示例指到了那儿。我不照搬旧版的接口字段，免得你跟着翻车。下面这条是示意，跑通后请换成你本地真实的命令：<br>Bash<br>示意，确切写法以 QUICKSTART.md 为准<br>everos memory add –user-id alice “Alice 偏好用 TypeScript，讨厌 any 类型”<br>写完这一下，EverOS 在后台做了三件事：把这句话抽取成结构化记忆，落盘成 Markdown，同步进 SQLite 和 LanceDB 的本地索引。<br>现在换个会话，假装是”第二天”，用大白话把它搜回来：<br>Bash<br>同样以 QUICKSTART.md 为准</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">everos memory search --user-id alice &quot;Alice 写代码有什么偏好？&quot;</span><br></pre></td></tr></table></figure>
+<p>跑通后，把你本地真实搜回来的那条结果贴在这——它该命中刚才那条偏好，还带着相关度。<br>这背后是一套混合检索：BM25 抓关键词，向量 ANN 抓语义，标量过滤按 user_id 这类维度精确切片，三路由 LanceDB 统一撑着。所以你哪怕换个问法，它照样能搜回来。<br>跑到这，你的 Agent 已经有跨会话记忆了。但 EverOS 最让我上头的，是下一步。</p>
+<h2 id="第五步：掀开黑箱，看看记忆长啥样（约-5-分钟）⭐"><a href="#第五步：掀开黑箱，看看记忆长啥样（约-5-分钟）⭐" class="headerlink" title="第五步：掀开黑箱，看看记忆长啥样（约 5 分钟）⭐"></a>第五步：掀开黑箱，看看记忆长啥样（约 5 分钟）⭐</h2><p>还记得开头那句”大脑就是一堆文件”吗？现在咱去把这堆文件翻出来。<br>打开 ~&#x2F;.everos：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">Plain Text</span><br><span class="line">~/.everos/</span><br><span class="line">└── default_app/                    # app_id</span><br><span class="line">    └── default_project/            # project_id</span><br><span class="line">        ├── users/alice/</span><br><span class="line">        │   ├── user.md             # Alice 的画像（看得见）</span><br><span class="line">        │   ├── episodes/           # 按天记的情景日志（看得见）</span><br><span class="line">        │   ├── .atomic_facts/      # 原子事实（点文件，默认隐藏）</span><br><span class="line">        │   └── .foresights/        # 预测性记忆（点文件，默认隐藏）</span><br><span class="line">        └── agents/&lt;agent_id&gt;/</span><br><span class="line">            ├── agent.md</span><br><span class="line">            └── .cases/             # Agent 的案例库</span><br></pre></td></tr></table></figure>
+<p>cat 一下 users&#x2F;alice&#x2F;user.md。你会发现刚才那条偏好，已经被结构化地写进了 Alice 的画像里，人能读，你也能直接改。<br>对，就是字面意思——你的 Agent 的记忆，是一份你随手能打开的笔记。<br>这就是”Markdown 作为唯一可信来源”的真正含义。<br>更带感的是，你可以直接拿 Obsidian 打开整个 ~&#x2F;.everos 目录，把 Agent 的记忆当成一座可视化知识库来逛。<br>这个画面，强烈建议你截张图，它比任何一句文案都更能说明”透明记忆”是什么。<br>你大概也注意到目录里有两条线，users&#x2F; 和 agents&#x2F;，<br>这正是 EverOS 的双轨记忆：用户轨记情景和画像（用户是谁、有啥偏好），Agent 轨记案例和技能（Agent 干过啥、学会了啥）。两条线分开抽取，互不污染。</p>
+<h1 id="三、再往前一步，它还能玩什么"><a href="#三、再往前一步，它还能玩什么" class="headerlink" title="三、再往前一步，它还能玩什么"></a>三、再往前一步，它还能玩什么</h1><p>这半小时咱只跑通了最核心那一圈，但 EverOS 能干的远不止这些，简单点几个方向，留给你接着探。<br>多模态摄取——一次 API 调用，就能把 PDF、图片、文档、表格、网页 URL 吃进记忆。<br>这里有个坑提前说：Office 文档的解析依赖系统装了 LibreOffice，没装的话 .docx&#x2F;.pptx&#x2F;.xlsx 会失败，但 PDF、图片、音频不受影响。<br>自我演化——每个完成的任务被记成一个 Case，那些反复成功的模式会自我提升成可复用的 Skill，在整个 Agent 团队间共享，不用你手动整理。<br>路线图上还有 Knowledge Wiki（把碎片记忆整理成可版本化的 wiki 页）和 Reflection（系统空闲时连接弱信号、压缩历史、改进画像）。<br>方向我挺期待，但毕竟还在路上，这里只当个预告。</p>
+<h1 id="四、几个容易翻车的点"><a href="#四、几个容易翻车的点" class="headerlink" title="四、几个容易翻车的点"></a>四、几个容易翻车的点</h1><p>最大的一个坑，必须单拎出来说。<br>网上很多”EverOS 教程”，其实讲的是它早期那个重型版本，要 docker-compose up 拉起 MongoDB、Elasticsearch、Redis 一整套。<br>你要是照着抄，从第一步就翻车。本文这个 1.0.0 轻量版的全部价值，恰恰就是不需要这些——命令认准 everos init &#x2F; everos server start 这套 CLI 就对了。<br>剩下两个一句话带过：Office 文档解析记得装 LibreOffice；.env 一定进 .gitignore。<br>收尾：记忆这件事，值得你认真对待<br>半小时前，你的 Agent 每开一个会话都从零开始。<br>现在，它有了一层跨会话的持久记忆——而且这份记忆不是黑箱里一串你看不懂的向量，是你能打开、能读、能改、能用 Git 版本化的文件。<br>这正是我觉得它值得收藏的原因，它没把”记忆”做成一个玄乎的概念，而是给了开发者一套能跑、能看、能改的具体东西。<br>如果你手上正有需要长期记忆的 Agent、LLM 应用或者编程助手，现在就把这个仓库收藏了，下次开新项目你会想起它：<br>👉 <a target="_blank" rel="noopener" href="https://github.com/EverMind-AI/EverOS">https://github.com/EverMind-AI/EverOS</a><br>本文基于 EverOS 1.0.0 轻量本地版整理，跑分均为官方口径。仓库更新较快，发布前请核对最新版本号、默认端口，以及 QUICKSTART.md 里写入&#x2F;检索的权威示例，并把你本地真实跑出的命令和返回替换进正文。</p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://kuangyue111.github.io">kuangyue111</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://kuangyue111.github.io/2026/06/29/2026-06-29-agent-everos-persistent-memory/">https://kuangyue111.github.io/2026/06/29/2026-06-29-agent-everos-persistent-memory/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://kuangyue111.github.io" target="_blank">KuangYue's Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E6%95%99%E7%A8%8B/">教程</a><a class="post-meta__tags" href="/tags/Agent/">Agent</a><a class="post-meta__tags" href="/tags/EverOS/">EverOS</a><a class="post-meta__tags" href="/tags/AI%E8%AE%B0%E5%BF%86/">AI记忆</a><a class="post-meta__tags" href="/tags/LLM/">LLM</a><a class="post-meta__tags" href="/tags/%E6%8C%81%E4%B9%85%E8%AE%B0%E5%BF%86/">持久记忆</a><a class="post-meta__tags" href="/tags/%E5%BC%80%E6%BA%90/">开源</a></div><div class="post-share"><div class="social-share" data-image="/img/butterfly-icon.png" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/2026/06/27/2026-06-27-bms-code-analysis-document/" title="电池管理系统工程代码分析文档"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">电池管理系统工程代码分析文档</div></div><div class="info-2"><div class="info-item-1">电池管理系统工程代码分析文档目录 工程概述 系统架构 RTOS运行机制 核心模块分析 SOC算法详解 SOH算法详解 系统运行流程 关键接口说明   工程概述项目信息 项目名称: BMS 处理器: NXP S32K146 RTOS: FreeRTOS 功能: 电池管理系统(BMS - Battery Management System)  主要功能 电池组电压、电流、温度监测 SOC(State of Charge)状态估算 SOH(State of Health)健康度评估 SOE(State of Energy)能量状态计算 电池保护与故障诊断 CAN&#x2F;Modbus通信 均衡控制 绝缘检测 数据记录与统计   系统架构目录结构1234567891011121314151617181920212223242526272829303132S32K146OFBMU_B/├── Sources/                    # 源代码目录│   ├── main.c                 # 主程序入口│   ├── OSUser/           ...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/05/05/2026-05-05-hermes-agent-practical-guide/" title="Hermes 智能体完全实战指南"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-05</div><div class="info-item-2">Hermes 智能体完全实战指南</div></div><div class="info-2"><div class="info-item-1">Hermes 智能体完全实战指南今天聊一款改变游戏规则的工具——Hermes。简单说，它就是龙虾的进化版本，但性能更稳定、成本更低、功能还能自动升级。有人靠着部署和出售龙虾服务赚了一笔，现在轮到你用 Hermes 来抓住这个风口。 这篇文章会从零开始，带你走完整个学习和变现路径。  第一部分：从零到一·新手上路你需要知道的核心概念在正式动手前，先理解三个关键词： 🧠 记忆系统Hermes 能跨越不同的对话会话记住你的习惯、项目细节和工作环境。相当于它有了”长期记忆”。 ⚡ 技能自进化每当你完成一个复杂任务，Hermes 会自动学习并沉淀成可复用的技能模块。用得越多越聪明。 🌐 多渠道网关一套系统能同时连接 15+ 个通讯平台（Telegram、飞书、钉钉等），让 AI 随时随地可用。 安装环节（真的很简单）Mac &#x2F; Linux &#x2F; WSL2 用户 打开终端，一行命令搞定： 1curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install...</div></div></div></a></div></div><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="giscus-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/img/butterfly-icon.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">kuangyue111</div><div class="author-info-description">嵌入式开发 | 储能系统 | 工业通信协议</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">27</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">138</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">13</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/kuangyue111"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/kuangyue111" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">专注于嵌入式与储能系统技术分享</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E4%BD%A0%E7%9A%84-Agent%EF%BC%8C%E6%AF%8F%E5%A4%A9%E9%86%92%E6%9D%A5%E9%83%BD%E5%A4%B1%E5%BF%86"><span class="toc-number">1.</span> <span class="toc-text">一、你的 Agent，每天醒来都失忆</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E4%B8%BA%E4%BB%80%E4%B9%88%E6%98%AF-EverOS%EF%BC%8C%E8%80%8C%E4%B8%8D%E6%98%AF%E5%86%8D%E8%87%AA%E5%B7%B1%E6%90%93%E4%B8%80%E4%B8%AA%E5%90%91%E9%87%8F%E5%BA%93"><span class="toc-number">2.</span> <span class="toc-text">二、为什么是 EverOS，而不是再自己搓一个向量库</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AC%AC%E4%B8%80%E6%AD%A5%EF%BC%9A%E7%8E%AF%E5%A2%83%E5%87%86%E5%A4%87%EF%BC%88%E7%BA%A6-5-%E5%88%86%E9%92%9F%EF%BC%89"><span class="toc-number">2.1.</span> <span class="toc-text">第一步：环境准备（约 5 分钟）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AC%AC%E4%BA%8C%E6%AD%A5%EF%BC%9A%E5%AE%89%E8%A3%85%E4%B8%8E%E5%88%9D%E5%A7%8B%E5%8C%96%EF%BC%88%E7%BA%A6-5-%E5%88%86%E9%92%9F%EF%BC%89"><span class="toc-number">2.2.</span> <span class="toc-text">第二步：安装与初始化（约 5 分钟）</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E9%BB%98%E8%AE%A4%E6%8F%90%E4%BE%9B%E5%95%86%EF%BC%9A"><span class="toc-number">3.</span> <span class="toc-text">默认提供商：</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#OpenRouter-%E2%86%92-LLM-%E5%A4%9A%E6%A8%A1%E6%80%81"><span class="toc-number">4.</span> <span class="toc-text">OpenRouter → LLM &#x2F; 多模态</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#DeepInfra-%E2%86%92-Embedding-Rerank"><span class="toc-number">5.</span> <span class="toc-text">DeepInfra  → Embedding &#x2F; Rerank</span></a></li><li class="toc-item toc-level-1"><a class="toc-link"><span class="toc-number">6.</span> <span class="toc-text"></span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%83%B3%E6%8D%A2%E5%88%AB%E7%9A%84-OpenAI-%E5%85%BC%E5%AE%B9%E6%9C%8D%E5%8A%A1%EF%BC%88OpenAI-vLLM-Ollama-%E7%AD%89%EF%BC%89%EF%BC%8C"><span class="toc-number">7.</span> <span class="toc-text">想换别的 OpenAI 兼容服务（OpenAI &#x2F; vLLM &#x2F; Ollama 等），</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%8A%8A%E5%AF%B9%E5%BA%94%E7%9A%84-BASE-URL-%E5%AD%97%E6%AE%B5%E6%8C%87%E8%BF%87%E5%8E%BB%E5%B0%B1%E8%A1%8C%E3%80%82"><span class="toc-number">8.</span> <span class="toc-text">把对应的 *__BASE_URL 字段指过去就行。</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AC%AC%E4%B8%89%E6%AD%A5%EF%BC%9A%E5%90%AF%E5%8A%A8%E6%9C%8D%E5%8A%A1%E5%B9%B6%E9%AA%8C%E8%AF%81%EF%BC%88%E7%BA%A6-3-%E5%88%86%E9%92%9F%EF%BC%89"><span class="toc-number">8.1.</span> <span class="toc-text">第三步：启动服务并验证（约 3 分钟）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AC%AC%E5%9B%9B%E6%AD%A5%EF%BC%9A%E7%AC%AC%E4%B8%80%E6%9D%A1%E8%AE%B0%E5%BF%86%E2%80%94%E2%80%94%E5%86%99%E8%BF%9B%E5%8E%BB%EF%BC%8C%E5%86%8D%E6%90%9C%E5%9B%9E%E6%9D%A5%EF%BC%88%E7%BA%A6-8-%E5%88%86%E9%92%9F%EF%BC%89%E2%AD%90"><span class="toc-number">8.2.</span> <span class="toc-text">第四步：第一条记忆——写进去，再搜回来（约 8 分钟）⭐</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AC%AC%E4%BA%94%E6%AD%A5%EF%BC%9A%E6%8E%80%E5%BC%80%E9%BB%91%E7%AE%B1%EF%BC%8C%E7%9C%8B%E7%9C%8B%E8%AE%B0%E5%BF%86%E9%95%BF%E5%95%A5%E6%A0%B7%EF%BC%88%E7%BA%A6-5-%E5%88%86%E9%92%9F%EF%BC%89%E2%AD%90"><span class="toc-number">8.3.</span> <span class="toc-text">第五步：掀开黑箱，看看记忆长啥样（约 5 分钟）⭐</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E5%86%8D%E5%BE%80%E5%89%8D%E4%B8%80%E6%AD%A5%EF%BC%8C%E5%AE%83%E8%BF%98%E8%83%BD%E7%8E%A9%E4%BB%80%E4%B9%88"><span class="toc-number">9.</span> <span class="toc-text">三、再往前一步，它还能玩什么</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E5%87%A0%E4%B8%AA%E5%AE%B9%E6%98%93%E7%BF%BB%E8%BD%A6%E7%9A%84%E7%82%B9"><span class="toc-number">10.</span> <span class="toc-text">四、几个容易翻车的点</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/06/29/2026-06-29-agent-everos-persistent-memory/" title="30分钟给你的Agent搭好永久记忆：能cat能git能直接编辑，保姆级教程零门槛上手">30分钟给你的Agent搭好永久记忆：能cat能git能直接编辑，保姆级教程零门槛上手</a><time datetime="2026-06-29T04:00:00.000Z" title="发表于 2026-06-29 12:00:00">2026-06-29</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/06/27/2026-06-27-bms-code-analysis-document/" title="电池管理系统工程代码分析文档">电池管理系统工程代码分析文档</a><time datetime="2026-06-27T09:00:00.000Z" title="发表于 2026-06-27 17:00:00">2026-06-27</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/06/27/2026-06-27-bms-engineering-evaluation-report/" title="BMS工程专业评价报告">BMS工程专业评价报告</a><time datetime="2026-06-27T08:00:00.000Z" title="发表于 2026-06-27 16:00:00">2026-06-27</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/06/27/2026-06-27-bms-soc-smooth-display/" title="BMS SOC显示平滑算法：让百分比变化符合用户直觉">BMS SOC显示平滑算法：让百分比变化符合用户直觉</a><time datetime="2026-06-27T07:00:00.000Z" title="发表于 2026-06-27 15:00:00">2026-06-27</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/06/25/2026-06-25-ekf-soc-estimation-reading-review/" title="卡尔曼滤波SOC估算技术调研读后感：从理论到工程的完整解读">卡尔曼滤波SOC估算技术调研读后感：从理论到工程的完整解读</a><time datetime="2026-06-25T07:00:00.000Z" title="发表于 2026-06-25 15:00:00">2026-06-25</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By kuangyue111</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.4</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="前往评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.4"></script><script src="/js/main.js?v=5.5.4"></script><div class="js-pjax"><script>(() => {
+  const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
+  const option = {"mapping":"url","lang":"zh-CN"}
+
+  const getGiscusTheme = theme => theme === 'dark' ? 'dark' : 'light'
+
+  const createScriptElement = config => {
+    const ele = document.createElement('script')
+    Object.entries(config).forEach(([key, value]) => {
+      ele.setAttribute(key, value)
+    })
+    return ele
+  }
+
+  const loadGiscus = (el = document, key) => {
+    const mappingConfig = isShuoshuo
+      ? { 'data-mapping': 'specific', 'data-term': key }
+      : { 'data-mapping': (option && option['data-mapping']) || 'pathname' }
+
+    const giscusConfig = {
+      src: 'https://giscus.app/client.js',
+      'data-repo': 'kuangyue111/kuangyue111.github.io',
+      'data-repo-id': 'R_kgDOSQde2Q',
+      'data-category-id': 'DIC_kwDOSQde2c4C8CgH',
+      'data-theme': getGiscusTheme(document.documentElement.getAttribute('data-theme')),
+      'data-reactions-enabled': '1',
+      crossorigin: 'anonymous',
+      async: true,
+      ...option,
+      ...mappingConfig
+    }
+
+    const scriptElement = createScriptElement(giscusConfig)
+
+    el.querySelector('#giscus-wrap').appendChild(scriptElement)
+
+    if (isShuoshuo) {
+      window.shuoshuoComment.destroyGiscus = () => {
+        if (el.children.length) {
+          el.innerHTML = ''
+          el.classList.add('no-comment')
+        }
+      }
+    }
+  }
+
+  const changeGiscusTheme = theme => {
+    const iframe = document.querySelector('#giscus-wrap iframe')
+    if (iframe) {
+      const message = {
+        giscus: {
+          setConfig: {
+            theme: getGiscusTheme(theme)
+          }
+        }
+      }
+      iframe.contentWindow.postMessage(message, 'https://giscus.app')
+    }
+  }
+
+  btf.addGlobalFn('themeChange', changeGiscusTheme, 'giscus')
+
+  if (isShuoshuo) {
+    'Giscus' === 'Giscus'
+      ? window.shuoshuoComment = { loadComment: loadGiscus }
+      : window.loadOtherComment = loadGiscus
+    return
+  }
+
+  if ('Giscus' === 'Giscus' || !false) {
+    if (false) btf.loadComment(document.getElementById('giscus-wrap'), loadGiscus)
+    else loadGiscus()
+  } else {
+    window.loadOtherComment = loadGiscus
+  }
+})()</script></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

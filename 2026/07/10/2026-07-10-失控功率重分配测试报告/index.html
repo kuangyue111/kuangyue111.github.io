@@ -1,0 +1,851 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>站级EMS失控功率上报与功率重分配功能开发与测试 | KuangYue's Blog</title><meta name="author" content="kuangyue111"><meta name="copyright" content="kuangyue111"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="版本：V1.0日期：2026-07-10    一、测试背景在多从机储能系统（SEMS架构）中，当某台从控EMS因内部设备通信异常或进入非自动控制模式时，该从机的PCS可能仍在按最后一次指令持续充放电，而站级EMS无法对其实施有效控制，即进入”失控”状态。 若站级EMS不感知该失控功率，仍将总功率按原比例分配给其他正常从机，将导致：  总实际功率 &#x3D; 正常从机分配功率 + 失控从机实际功">
+<meta property="og:type" content="article">
+<meta property="og:title" content="站级EMS失控功率上报与功率重分配功能开发与测试">
+<meta property="og:url" content="https://kuangyue111.github.io/2026/07/10/2026-07-10-%E5%A4%B1%E6%8E%A7%E5%8A%9F%E7%8E%87%E9%87%8D%E5%88%86%E9%85%8D%E6%B5%8B%E8%AF%95%E6%8A%A5%E5%91%8A/index.html">
+<meta property="og:site_name" content="KuangYue&#39;s Blog">
+<meta property="og:description" content="版本：V1.0日期：2026-07-10    一、测试背景在多从机储能系统（SEMS架构）中，当某台从控EMS因内部设备通信异常或进入非自动控制模式时，该从机的PCS可能仍在按最后一次指令持续充放电，而站级EMS无法对其实施有效控制，即进入”失控”状态。 若站级EMS不感知该失控功率，仍将总功率按原比例分配给其他正常从机，将导致：  总实际功率 &#x3D; 正常从机分配功率 + 失控从机实际功">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://kuangyue111.github.io/img/butterfly-icon.png">
+<meta property="article:published_time" content="2026-07-10T04:00:00.000Z">
+<meta property="article:modified_time" content="2026-07-10T06:43:01.020Z">
+<meta property="article:author" content="kuangyue111">
+<meta property="article:tag" content="储能">
+<meta property="article:tag" content="EMS">
+<meta property="article:tag" content="SEMS">
+<meta property="article:tag" content="Energy Storage">
+<meta property="article:tag" content="Power Allocation">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://kuangyue111.github.io/img/butterfly-icon.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "站级EMS失控功率上报与功率重分配功能开发与测试",
+  "url": "https://kuangyue111.github.io/2026/07/10/2026-07-10-%E5%A4%B1%E6%8E%A7%E5%8A%9F%E7%8E%87%E9%87%8D%E5%88%86%E9%85%8D%E6%B5%8B%E8%AF%95%E6%8A%A5%E5%91%8A/",
+  "image": "https://kuangyue111.github.io/img/butterfly-icon.png",
+  "datePublished": "2026-07-10T04:00:00.000Z",
+  "dateModified": "2026-07-10T06:43:01.020Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "kuangyue111",
+      "url": "https://kuangyue111.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://kuangyue111.github.io/2026/07/10/2026-07-10-%E5%A4%B1%E6%8E%A7%E5%8A%9F%E7%8E%87%E9%87%8D%E5%88%86%E9%85%8D%E6%B5%8B%E8%AF%95%E6%8A%A5%E5%91%8A/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.5.4"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.13.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '站级EMS失控功率上报与功率重分配功能开发与测试',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/butterfly-icon.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">31</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">154</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">16</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">KuangYue's Blog</span></a><a class="nav-page-title" href="/"><span class="site-name">站级EMS失控功率上报与功率重分配功能开发与测试</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">站级EMS失控功率上报与功率重分配功能开发与测试</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-07-10T04:00:00.000Z" title="发表于 2026-07-10 12:00:00">2026-07-10</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-07-10T06:43:01.020Z" title="更新于 2026-07-10 14:43:01">2026-07-10</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E6%8A%A5%E5%91%8A/">技术报告</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><p><strong>版本</strong>：V1.0<br><strong>日期</strong>：2026-07-10  </p>
+<hr>
+<h2 id="一、测试背景"><a href="#一、测试背景" class="headerlink" title="一、测试背景"></a>一、测试背景</h2><p>在多从机储能系统（SEMS架构）中，当某台从控EMS因内部设备通信异常或进入非自动控制模式时，该从机的PCS可能仍在按最后一次指令持续充放电，而站级EMS无法对其实施有效控制，即进入”失控”状态。</p>
+<p>若站级EMS不感知该失控功率，仍将总功率按原比例分配给其他正常从机，将导致：</p>
+<blockquote>
+<p><strong>总实际功率 &#x3D; 正常从机分配功率 + 失控从机实际功率 &gt; 系统限制</strong></p>
+</blockquote>
+<p>从而引发过载、反送电网或跳闸事故。</p>
+<p>本次测试验证新增的<strong>失控功率上报与动态重分配</strong>功能，确认站级EMS能够在感知失控功率后，自动扣减对其他正常从机的分配额度，保持系统总功率在限制范围以内。</p>
+<hr>
+<h2 id="二、测试目的"><a href="#二、测试目的" class="headerlink" title="二、测试目的"></a>二、测试目的</h2><ol>
+<li><strong>失控功率识别准确性</strong>：验证从控EMS在满足失控判定条件时，能够准确向站级EMS上报当前实际运行功率作为失控功率值（充电为正值、放电为负值）；</li>
+<li><strong>剩余功率补偿计算正确性</strong>：验证站级EMS在收到失控功率后，能正确从总可分配功率中扣除失控量，充放电模式下均计算准确；</li>
+<li><strong>功率重分配合理性</strong>：验证剩余正常从机的功率分配额度随失控扣减同步调整，无过载或突变；</li>
+<li><strong>系统总功率守恒性</strong>：验证正常从机实际分配功率与失控从机实际功率之和，始终不超过系统设定限制；</li>
+<li><strong>功能覆盖性</strong>：充电工况与放电工况均完成验证，功能全面覆盖。</li>
+</ol>
+<hr>
+<h2 id="三、测试依据"><a href="#三、测试依据" class="headerlink" title="三、测试依据"></a>三、测试依据</h2><ul>
+<li>项目功能需求：SEMS失控功率上报与重分配功能（LJH260612）</li>
+<li>系统通信协议：站级EMS与从控EMS之间B6_LSYS数据帧规范（含失控功率字段）</li>
+<li>验收标准：总功率守恒等式成立误差 ≤ ±2%，无过载越限</li>
+</ul>
+<hr>
+<h2 id="四、测试设备与工具"><a href="#四、测试设备与工具" class="headerlink" title="四、测试设备与工具"></a>四、测试设备与工具</h2><table>
+<thead>
+<tr>
+<th>编号</th>
+<th>设备</th>
+<th>数量</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>站级EMS样机</td>
+<td>1台</td>
+<td>被测主控，运行SEMS程序，执行失控功率补偿与重分配</td>
+</tr>
+<tr>
+<td>2</td>
+<td>从控EMS样机</td>
+<td>2台</td>
+<td>模拟正常从机（#1）和失控从机（#2）</td>
+</tr>
+<tr>
+<td>3</td>
+<td>PCS储能变流器</td>
+<td>2台</td>
+<td>与从控EMS配对，执行功率指令，提供实际功率反馈</td>
+</tr>
+<tr>
+<td>4</td>
+<td>储能电池组</td>
+<td>2组</td>
+<td>与PCS配套，充放电负载</td>
+</tr>
+<tr>
+<td>5</td>
+<td>上位机（ModbusTCP调试软件）</td>
+<td>1台</td>
+<td>下发控制模式、运行模式、功率目标值</td>
+</tr>
+<tr>
+<td>6</td>
+<td>日志采集终端</td>
+<td>1台</td>
+<td>连接站级EMS串口，实时采集功率分配监控数据</td>
+</tr>
+<tr>
+<td>7</td>
+<td>交流电流钳</td>
+<td>2套</td>
+<td>实测PCS实际输出电流，验证功率变化</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="五、测试接线方案"><a href="#五、测试接线方案" class="headerlink" title="五、测试接线方案"></a>五、测试接线方案</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">上位机 ──网线── 交换机 ──网线── 站级EMS（ModbusTCP，端口502）</span><br><span class="line">                           ├──网线── 从控EMS#1（正常从机，心跳通讯）</span><br><span class="line">                           └──网线── 从控EMS#2（被测失控从机）</span><br><span class="line"></span><br><span class="line">站级EMS 串口 ──串口线── 日志采集终端（实时打印监控数据）</span><br><span class="line">电流钳#1 ──夹持── 从控EMS#1对应PCS输出线缆</span><br><span class="line">电流钳#2 ──夹持── 从控EMS#2对应PCS输出线缆</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="六、测试前置准备"><a href="#六、测试前置准备" class="headerlink" title="六、测试前置准备"></a>六、测试前置准备</h2><h3 id="6-1-设备上电与初始化"><a href="#6-1-设备上电与初始化" class="headerlink" title="6.1 设备上电与初始化"></a>6.1 设备上电与初始化</h3><ul>
+<li>依次启动储能电池组、PCS（2台）、从控EMS（2台）、站级EMS；</li>
+<li>确认所有设备运行正常、无故障告警；</li>
+<li>确认从控EMS与站级EMS心跳通讯正常，两台从机均处于自动控制模式；</li>
+<li>日志采集终端已连接并开始实时记录。</li>
+</ul>
+<h3 id="6-2-站级EMS参数设置"><a href="#6-2-站级EMS参数设置" class="headerlink" title="6.2 站级EMS参数设置"></a>6.2 站级EMS参数设置</h3><table>
+<thead>
+<tr>
+<th>参数</th>
+<th>设置值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>控制模式</td>
+<td>自动模式</td>
+<td>启用自动充放电控制</td>
+</tr>
+<tr>
+<td>节点数量</td>
+<td>2</td>
+<td>配置2个从控节点</td>
+</tr>
+<tr>
+<td>总功率限制</td>
+<td>40kW</td>
+<td>系统额定总功率</td>
+</tr>
+<tr>
+<td>单节点功率</td>
+<td>20kW</td>
+<td>每台从机额定功率</td>
+</tr>
+<tr>
+<td>SOC保护</td>
+<td>按实际配置</td>
+<td>确保测试期间不触发SOC保护停机</td>
+</tr>
+</tbody></table>
+<h3 id="6-3-监控数据配置"><a href="#6-3-监控数据配置" class="headerlink" title="6.3 监控数据配置"></a>6.3 监控数据配置</h3><p>测试过程中通过串口实时采集以下监控帧，作为测试依据：</p>
+<table>
+<thead>
+<tr>
+<th>监控标签</th>
+<th>关键数据</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>EMS_METER_SUM</code></td>
+<td>失控功率值</td>
+<td>验证失控功率是否被正确感知和上报</td>
+</tr>
+<tr>
+<td><code>EMS_PID_OUT</code></td>
+<td>补偿后剩余充放电需求</td>
+<td>验证扣减计算是否正确</td>
+</tr>
+<tr>
+<td><code>CHRG_ALLOC</code> &#x2F; <code>DISC_ALLOC</code></td>
+<td>各节点通信状态+分配值+总限额</td>
+<td>验证功率重分配结果</td>
+</tr>
+<tr>
+<td><code>CHRG_DISTRI</code> &#x2F; <code>DISC_DISTRI</code></td>
+<td>各节点实际分配功率</td>
+<td>与ALLOC交叉核对</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="六附、监控数据参数说明"><a href="#六附、监控数据参数说明" class="headerlink" title="六附、监控数据参数说明"></a>六附、监控数据参数说明</h2><blockquote>
+<p>本节说明测试过程中各串口监控帧的字段含义，供客户理解测试数据。</p>
+</blockquote>
+<hr>
+<h3 id="DISC-ALLOC-—-放电功率分配全景帧"><a href="#DISC-ALLOC-—-放电功率分配全景帧" class="headerlink" title="DISC_ALLOC — 放电功率分配全景帧"></a>DISC_ALLOC — 放电功率分配全景帧</h3><p><strong>格式：</strong> <code>DISC_ALLOC, 时间戳, cf0, cf1, cf2, cf3, d0, d1, d2, d3, totalReq, totalAbility</code></p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>名称</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>时间戳</code></td>
+<td>数据时刻</td>
+<td>本帧数据采集的系统时间（秒，小数3位）</td>
+</tr>
+<tr>
+<td><code>cf0 ~ cf3</code></td>
+<td>节点通信状态</td>
+<td>各从控EMS节点的通信故障标志（<strong>0&#x3D;正常通信，1&#x3D;通信中断</strong>）。该字段用于判断失控场景与SEMS通信断链场景的区别</td>
+</tr>
+<tr>
+<td><code>d0 ~ d3</code></td>
+<td>各节点分配放电功率（kW）</td>
+<td>站级EMS本轮分配给每台从控的放电指令功率。正常在线节点有值，离线或失控节点为0</td>
+</tr>
+<tr>
+<td><code>totalReq</code></td>
+<td>总放电剩余需求（kW）</td>
+<td>补偿失控功率后，分配给所有在线节点的放电需求总量。<strong>该值&#x3D; PID输出 − 失控功率（放电为负，等效于减小）</strong>，体现了失控补偿的效果</td>
+</tr>
+<tr>
+<td><code>totalAbility</code></td>
+<td>在线节点总放电能力（kW）</td>
+<td>当前所有可调度在线节点的最大放电能力之和。节点失控或离线后，该值随之减小</td>
+</tr>
+</tbody></table>
+<hr>
+<h3 id="CHRG-ALLOC-—-充电功率分配全景帧"><a href="#CHRG-ALLOC-—-充电功率分配全景帧" class="headerlink" title="CHRG_ALLOC — 充电功率分配全景帧"></a>CHRG_ALLOC — 充电功率分配全景帧</h3><p><strong>格式：</strong> <code>CHRG_ALLOC, 时间戳, cf0, cf1, cf2, cf3, d0, d1, d2, d3, totalLmt, totalAbility</code></p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>名称</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>时间戳</code></td>
+<td>数据时刻</td>
+<td>同上</td>
+</tr>
+<tr>
+<td><code>cf0 ~ cf3</code></td>
+<td>节点通信状态</td>
+<td>同DISC_ALLOC，0&#x3D;正常，1&#x3D;中断</td>
+</tr>
+<tr>
+<td><code>d0 ~ d3</code></td>
+<td>各节点分配充电功率（kW）</td>
+<td>站级EMS本轮分配给每台从控的充电指令功率</td>
+</tr>
+<tr>
+<td><code>totalLmt</code></td>
+<td>总充电剩余限额（kW）</td>
+<td>补偿失控充电功率后，可分配给在线节点的充电总量。<strong>该值&#x3D; PID输出 − 失控充电功率</strong>。当某节点失控充电时，该值减小，避免在线节点继续叠加导致过充</td>
+</tr>
+<tr>
+<td><code>totalAbility</code></td>
+<td>在线节点总充电能力（kW）</td>
+<td>当前所有可调度在线节点的最大充电能力之和</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>关键规律</strong>：失控功率越大，<code>totalLmt</code>（或<code>totalReq</code>）越小，在线节点合计分配越少，从而保证总功率不越限。</p>
+</blockquote>
+<hr>
+<h3 id="EMS-METER-SUM-—-功率计量汇总帧"><a href="#EMS-METER-SUM-—-功率计量汇总帧" class="headerlink" title="EMS_METER_SUM — 功率计量汇总帧"></a>EMS_METER_SUM — 功率计量汇总帧</h3><p><strong>格式：</strong> <code>EMS_METER_SUM, 时间戳, Pgrid, Pcab, PwrBMS, PwrOut, PwrUct</code></p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>名称</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>时间戳</code></td>
+<td>数据时刻</td>
+<td>同上</td>
+</tr>
+<tr>
+<td><code>Pgrid</code>（f_PgridMeterSum）</td>
+<td>电网侧功率（kW）</td>
+<td>电网表测量值，正值&#x3D;系统向电网输出（放电&#x2F;反送），负值&#x3D;系统从电网取电（充电）。用于监测是否发生反送或过载</td>
+</tr>
+<tr>
+<td><code>Pcab</code>（f_PcabMeterSum）</td>
+<td>储能柜总功率（kW）</td>
+<td>各从控储能柜功率之和（由柜表采集）。正值&#x3D;充电，负值&#x3D;放电。反映系统实际运行总功率</td>
+</tr>
+<tr>
+<td><code>PwrBMS</code>（fPwrBMS_SignedSum）</td>
+<td>BMS实测电池功率（kW）</td>
+<td>各从控BMS上报的电池侧实测功率汇总。正&#x3D;充电，负&#x3D;放电。与Pcab对比可判断PCS变换器损耗</td>
+</tr>
+<tr>
+<td><code>PwrOut</code>（fPwrOut_SignedSum）</td>
+<td>实际对外输出功率（kW）</td>
+<td>有柜表则取柜表，无柜表则取BMS功率。是系统对外交换功率的最优估计值</td>
+</tr>
+<tr>
+<td><code>PwrUct</code>（fPwrUct_SignedSum）</td>
+<td><strong>失控功率（kW）</strong></td>
+<td><strong>本帧最关键字段</strong>。各从控上报的失控功率总量（正&#x3D;充电失控，负&#x3D;放电失控）。<strong>正常运行时为0，触发失控后变为非0值，直接反映有多少功率处于不可控状态</strong></td>
+</tr>
+</tbody></table>
+<hr>
+<h3 id="EMS-PID-OUT-—-PID控制输出帧"><a href="#EMS-PID-OUT-—-PID控制输出帧" class="headerlink" title="EMS_PID_OUT — PID控制输出帧"></a>EMS_PID_OUT — PID控制输出帧</h3><p><strong>格式：</strong> <code>EMS_PID_OUT, 时间戳, PidChrg, PidDisc, RemainChrg_All, RemainDisc_All, Comp, AvgChrg</code></p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>名称</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>时间戳</code></td>
+<td>数据时刻</td>
+<td>同上</td>
+</tr>
+<tr>
+<td><code>PidChrg</code>（fTotal_PessChg_PidOut）</td>
+<td>PID充电总需求（kW）</td>
+<td>PID控制器根据电网误差计算的”当前系统需要充多少电”。这是补偿计算的基准输入值</td>
+</tr>
+<tr>
+<td><code>PidDisc</code>（fTotal_PessDischg_PidOut）</td>
+<td>PID放电总需求（kW）</td>
+<td>PID控制器计算的”当前系统需要放多少电”。同上，放电场景的基准输入</td>
+</tr>
+<tr>
+<td><code>RemainChrg_All</code>（fRemain_ACChrgingPwr_Lmt_All）</td>
+<td><strong>补偿后充电剩余限额（含负值）（kW）</strong></td>
+<td>等于 PidChrg − PwrUct，<strong>截断为0之前的原始值</strong>。若为负数，说明失控充电功率已超过总需求，在线节点将被分配0kW。该字段直接体现补偿计算是否生效</td>
+</tr>
+<tr>
+<td><code>RemainDisc_All</code>（fRemain_ACLoad_DisChrgPwr_Req_All）</td>
+<td><strong>补偿后放电剩余需求（含负值）（kW）</strong></td>
+<td>等于 PidDisc + PwrUct（放电PwrUct为负），截断前原始值。含义与充电侧对称</td>
+</tr>
+<tr>
+<td><code>Comp</code>（fCompensation）</td>
+<td>PID积分补偿量（kW）</td>
+<td>PID控制器的积分项输出，用于消除长期稳态误差。非功率分配核心参数，供调试参考</td>
+</tr>
+<tr>
+<td><code>AvgChrg</code>（fAvg_Remain_ChrgingPwr_Lmt）</td>
+<td>均值滤波后充电限额（kW）</td>
+<td>对PID输出进行均值滤波后的结果，防止功率指令突变。是计算<code>RemainChrg_All</code>的中间值</td>
+</tr>
+</tbody></table>
+<hr>
+<h3 id="四帧数据联合验证逻辑"><a href="#四帧数据联合验证逻辑" class="headerlink" title="四帧数据联合验证逻辑"></a>四帧数据联合验证逻辑</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">EMS_METER_SUM.PwrUct ≠ 0          → 失控功率被感知（第一层）</span><br><span class="line">       ↓</span><br><span class="line">EMS_PID_OUT.RemainChrg_All = PidChrg - PwrUct</span><br><span class="line">                                   → 补偿计算正确（第二层）</span><br><span class="line">       ↓</span><br><span class="line">CHRG_ALLOC.totalLmt = MAX(RemainChrg_All, 0)</span><br><span class="line">                                   → 分配限额正确（第三层）</span><br><span class="line">       ↓</span><br><span class="line">CHRG_ALLOC.d0 + PwrUct ≈ PidChrg  → 功率守恒，无过载（第四层）</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="七、详细测试步骤与结果"><a href="#七、详细测试步骤与结果" class="headerlink" title="七、详细测试步骤与结果"></a>七、详细测试步骤与结果</h2><blockquote>
+<p>本次测试采用2台从控EMS，系统总功率20kW，每台额定功率10kW。</p>
+</blockquote>
+<hr>
+<h3 id="7-1-充电工况-—-失控功率上报与重分配"><a href="#7-1-充电工况-—-失控功率上报与重分配" class="headerlink" title="7.1 充电工况 — 失控功率上报与重分配"></a>7.1 充电工况 — 失控功率上报与重分配</h3><h4 id="测试步骤"><a href="#测试步骤" class="headerlink" title="测试步骤"></a>测试步骤</h4><ol>
+<li>上位机下发充电指令，目标功率20kW（两从机各10kW）；</li>
+<li>确认系统稳定充电，#1、#2从机各按10kW正常充电；</li>
+<li>记录初始稳定状态数据（失控前基准值）；</li>
+<li>将从控EMS#2切换为非自动控制模式，触发失控判定条件，同时确认#2 PCS仍在持续充电（保持10kW）；</li>
+<li>持续采集监控数据，观察站级EMS失控感知与功率重分配响应；</li>
+<li>待#2 PCS停止充电后，继续采集功率恢复数据。</li>
+</ol>
+<h4 id="阶段一：失控前基准状态"><a href="#阶段一：失控前基准状态" class="headerlink" title="阶段一：失控前基准状态"></a>阶段一：失控前基准状态</h4><p>两台从机均处于正常自动充电模式，功率平衡，无失控上报。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">EMS_METER_SUM:  f_PcabMeterSum=20.0kW  fPwrOut=20.0kW  fPwrUct=0.0kW</span><br><span class="line">EMS_PID_OUT:    RemainChrg_All=20.0kW</span><br><span class="line">CHRG_ALLOC:     cf=[0,0,0,0]  d0=10.0kW  d1=10.0kW  totalLmt=20.0kW  totalAbility=20.0kW</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>失控功率 fPwrUct&#x3D;0，系统处于正常可控状态，总充电功率20kW。</p>
+</blockquote>
+<h4 id="阶段二：从机-2触发失控（仍以10kW充电）"><a href="#阶段二：从机-2触发失控（仍以10kW充电）" class="headerlink" title="阶段二：从机#2触发失控（仍以10kW充电）"></a>阶段二：从机#2触发失控（仍以10kW充电）</h4><p>从机#2进入失控状态后，仍持续以10kW充电，站级EMS检测到失控功率并自动补偿，降低对从机#1的分配额度。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">EMS_METER_SUM:  fPwrOut=20.0kW  fPwrUct=+10.0kW  ← 失控功率10kW被感知</span><br><span class="line">EMS_PID_OUT:    RemainChrg_All=10.0kW             ← 补偿后剩余：20-10=10kW</span><br><span class="line">CHRG_ALLOC:     cf=[0,0,0,0]  d0=10.0kW  d1=0.0kW  totalLmt=10.0kW  totalAbility=10.0kW</span><br></pre></td></tr></table></figure>
+
+<p><strong>功率守恒验证：</strong></p>
+<table>
+<thead>
+<tr>
+<th>验证项</th>
+<th>计算公式</th>
+<th>理论值</th>
+<th>实测值</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>补偿后充电剩余限额</td>
+<td>RemainChrg &#x3D; 20.0 − 10.0</td>
+<td>10.0kW</td>
+<td>10.0kW</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>从机#1不过载</td>
+<td>d0 ≤ 额定10kW</td>
+<td>≤10.0kW</td>
+<td>10.0kW</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>系统总充电功率守恒</td>
+<td>d0 + fPwrUct &#x3D; 10.0 + 10.0</td>
+<td>20.0kW</td>
+<td>20.0kW</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>未超过系统总限制</td>
+<td>总功率 ≤ 20kW</td>
+<td>≤20.0kW</td>
+<td>20.0kW</td>
+<td>✅ 无过载</td>
+</tr>
+</tbody></table>
+<h4 id="阶段三：从机-2停止充电后功率恢复"><a href="#阶段三：从机-2停止充电后功率恢复" class="headerlink" title="阶段三：从机#2停止充电后功率恢复"></a>阶段三：从机#2停止充电后功率恢复</h4><p>从机#2停止充电，失控功率消失，站级EMS恢复对从机#1的正常分配额度。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">EMS_METER_SUM:  fPwrOut=10.0kW  fPwrUct=0.0kW    ← 失控消除</span><br><span class="line">EMS_PID_OUT:    RemainChrg_All=20.0kW             ← 需求恢复至20kW</span><br><span class="line">CHRG_ALLOC:     d0=10.0kW  d1=0.0kW  totalLmt=20.0kW</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>系统实际输出降至10kW（仅从机#1在线充电），功率分配恢复正常，EMS自动完成全流程闭环管理。</p>
+</blockquote>
+<p><strong>充电工况结论：</strong> 站级EMS在从机#2失控期间，准确感知10kW失控充电功率，自动将从机#1的分配额度维持在10kW，系统总充电功率始终保持20kW，无过载越限，功能验证通过。✅</p>
+<hr>
+<h3 id="7-2-放电工况-—-失控功率上报与重分配"><a href="#7-2-放电工况-—-失控功率上报与重分配" class="headerlink" title="7.2 放电工况 — 失控功率上报与重分配"></a>7.2 放电工况 — 失控功率上报与重分配</h3><h4 id="测试步骤-1"><a href="#测试步骤-1" class="headerlink" title="测试步骤"></a>测试步骤</h4><ol>
+<li>上位机下发放电指令，目标功率20kW（两从机各10kW）；</li>
+<li>确认系统稳定放电，#1、#2从机各按10kW正常放电；</li>
+<li>记录初始稳定状态数据（失控前基准值）；</li>
+<li>将从控EMS#2切换为失控状态，确认#2 PCS仍持续以10kW放电；</li>
+<li>持续采集监控数据，观察站级EMS失控感知与功率重分配响应；</li>
+<li>待#2 PCS停止放电后，继续采集功率恢复数据。</li>
+</ol>
+<h4 id="阶段一：失控前基准状态-1"><a href="#阶段一：失控前基准状态-1" class="headerlink" title="阶段一：失控前基准状态"></a>阶段一：失控前基准状态</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">EMS_METER_SUM:  fPwrOut=20.0kW  fPwrUct=0.0kW</span><br><span class="line">EMS_PID_OUT:    RemainDisc_All=20.0kW</span><br><span class="line">DISC_ALLOC:     cf=[0,0,0,0]  d0=10.0kW  d1=10.0kW  totalReq=20.0kW  totalAbility=20.0kW</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>两台从机均正常放电，失控功率为0，系统总放电20kW。</p>
+</blockquote>
+<h4 id="阶段二：从机-2触发失控（仍以10kW放电）"><a href="#阶段二：从机-2触发失控（仍以10kW放电）" class="headerlink" title="阶段二：从机#2触发失控（仍以10kW放电）"></a>阶段二：从机#2触发失控（仍以10kW放电）</h4><p>从机#2进入失控状态后，仍持续以10kW放电。站级EMS检测到失控放电功率（负值），自动降低对从机#1的放电需求分配，防止总功率超出电网限制。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">EMS_METER_SUM:  fPwrOut=20.0kW  fPwrUct=−10.0kW  ← 失控放电10kW被感知（负值）</span><br><span class="line">EMS_PID_OUT:    RemainDisc_All=10.0kW             ← 补偿后剩余：20+(−10)=10kW</span><br><span class="line">DISC_ALLOC:     cf=[0,0,0,0]  d0=10.0kW  d1=0.0kW  totalReq=10.0kW  totalAbility=10.0kW</span><br></pre></td></tr></table></figure>
+
+<p><strong>功率守恒验证：</strong></p>
+<table>
+<thead>
+<tr>
+<th>验证项</th>
+<th>计算公式</th>
+<th>理论值</th>
+<th>实测值</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>补偿后放电剩余需求</td>
+<td>RemainDisc &#x3D; 20.0 + (−10.0)</td>
+<td>10.0kW</td>
+<td>10.0kW</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>从机#1不超限</td>
+<td>d0 ≤ 额定10kW</td>
+<td>≤10.0kW</td>
+<td>10.0kW</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>系统总放电功率守恒</td>
+<td>d0 + |fPwrUct| &#x3D; 10.0 + 10.0</td>
+<td>20.0kW</td>
+<td>20.0kW</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>未超过电网限制</td>
+<td>总功率 ≤ 20kW</td>
+<td>≤20.0kW</td>
+<td>20.0kW</td>
+<td>✅ 无逆流</td>
+</tr>
+</tbody></table>
+<h4 id="阶段三：从机-2停止放电后功率恢复"><a href="#阶段三：从机-2停止放电后功率恢复" class="headerlink" title="阶段三：从机#2停止放电后功率恢复"></a>阶段三：从机#2停止放电后功率恢复</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">EMS_METER_SUM:  fPwrOut=10.0kW  fPwrUct=0.0kW    ← 失控消除</span><br><span class="line">EMS_PID_OUT:    RemainDisc_All=20.0kW             ← 需求恢复至20kW</span><br><span class="line">DISC_ALLOC:     d0=10.0kW  d1=0.0kW  totalReq=20.0kW</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>从机#2停止后，系统输出降至10kW（仅从机#1放电），EMS功率分配恢复正常。</p>
+</blockquote>
+<p><strong>放电工况结论：</strong> 站级EMS在从机#2失控放电期间，准确感知−10kW失控功率，自动收窄从机#1的放电需求至10kW，系统总放电始终保持20kW，无逆流越限，功能验证通过。✅</p>
+<hr>
+<h2 id="八、数据汇总与统计"><a href="#八、数据汇总与统计" class="headerlink" title="八、数据汇总与统计"></a>八、数据汇总与统计</h2><h3 id="8-1-充电工况三阶段数据汇总"><a href="#8-1-充电工况三阶段数据汇总" class="headerlink" title="8.1 充电工况三阶段数据汇总"></a>8.1 充电工况三阶段数据汇总</h3><table>
+<thead>
+<tr>
+<th>测试阶段</th>
+<th>fPwrUct（kW）</th>
+<th>RemainChrg_All（kW）</th>
+<th>从机#1分配（kW）</th>
+<th>系统总功率（kW）</th>
+<th>越限</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>失控前（正常）</td>
+<td>0.0</td>
+<td>20.0</td>
+<td>10.0</td>
+<td>20.0</td>
+<td>否</td>
+</tr>
+<tr>
+<td><strong>失控中（#2仍充10kW）</strong></td>
+<td><strong>+10.0</strong></td>
+<td><strong>10.0</strong></td>
+<td><strong>10.0</strong></td>
+<td><strong>20.0</strong></td>
+<td><strong>否</strong></td>
+</tr>
+<tr>
+<td>失控后（#2停止）</td>
+<td>0.0</td>
+<td>20.0</td>
+<td>10.0</td>
+<td>10.0</td>
+<td>否</td>
+</tr>
+</tbody></table>
+<h3 id="8-2-放电工况三阶段数据汇总"><a href="#8-2-放电工况三阶段数据汇总" class="headerlink" title="8.2 放电工况三阶段数据汇总"></a>8.2 放电工况三阶段数据汇总</h3><table>
+<thead>
+<tr>
+<th>测试阶段</th>
+<th>fPwrUct（kW）</th>
+<th>RemainDisc_All（kW）</th>
+<th>从机#1分配（kW）</th>
+<th>系统总功率（kW）</th>
+<th>越限</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>失控前（正常）</td>
+<td>0.0</td>
+<td>20.0</td>
+<td>10.0</td>
+<td>20.0</td>
+<td>否</td>
+</tr>
+<tr>
+<td><strong>失控中（#2仍放10kW）</strong></td>
+<td><strong>−10.0</strong></td>
+<td><strong>10.0</strong></td>
+<td><strong>10.0</strong></td>
+<td><strong>20.0</strong></td>
+<td><strong>否</strong></td>
+</tr>
+<tr>
+<td>失控后（#2停止）</td>
+<td>0.0</td>
+<td>20.0</td>
+<td>10.0</td>
+<td>10.0</td>
+<td>否</td>
+</tr>
+</tbody></table>
+<h3 id="8-3-功率守恒误差统计"><a href="#8-3-功率守恒误差统计" class="headerlink" title="8.3 功率守恒误差统计"></a>8.3 功率守恒误差统计</h3><table>
+<thead>
+<tr>
+<th>工况</th>
+<th>系统限制（kW）</th>
+<th>失控期间实测总功率（kW）</th>
+<th>误差</th>
+<th>是否满足≤2%</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>充电</td>
+<td>20.0</td>
+<td>20.0</td>
+<td>0%</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>放电</td>
+<td>20.0</td>
+<td>20.0</td>
+<td>0%</td>
+<td>✅</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="九、测试注意事项"><a href="#九、测试注意事项" class="headerlink" title="九、测试注意事项"></a>九、测试注意事项</h2><ol>
+<li>触发失控条件时需确认从控PCS<strong>仍处于运行状态</strong>，若PCS随故障同步停机则无法产生失控功率，测试无效；</li>
+<li>失控功率的上报依赖从控EMS与站级EMS之间的通信链路正常；若该链路中断，失控功率将无法传递至站级EMS（此为已知设计边界，与本功能场景不同）；</li>
+<li>测试期间SOC需处于正常范围，避免因SOC保护提前终止充放电，影响测试结果；</li>
+<li>每轮测试后需恢复从控EMS至自动控制模式，确认系统恢复正常后再进行下一轮。</li>
+</ol>
+<hr>
+<h2 id="十、测试结论"><a href="#十、测试结论" class="headerlink" title="十、测试结论"></a>十、测试结论</h2><table>
+<thead>
+<tr>
+<th>验证项目</th>
+<th>充电工况</th>
+<th>放电工况</th>
+<th>结论</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>失控功率识别准确性</td>
+<td>✅ fPwrUct&#x3D;+10kW，准确反映#2实际充电功率</td>
+<td>✅ fPwrUct&#x3D;−10kW，符号与方向正确</td>
+<td><strong>通过</strong></td>
+</tr>
+<tr>
+<td>剩余功率补偿计算</td>
+<td>✅ 20−10&#x3D;10kW，误差0%</td>
+<td>✅ 20+(−10)&#x3D;10kW，误差0%</td>
+<td><strong>通过</strong></td>
+</tr>
+<tr>
+<td>功率重分配合理性</td>
+<td>✅ 从机#1额度自动维持10kW，无突变</td>
+<td>✅ 从机#1维持10kW放电，分配合理</td>
+<td><strong>通过</strong></td>
+</tr>
+<tr>
+<td>系统总功率守恒</td>
+<td>✅ 10+10&#x3D;20kW，误差0%，未超限</td>
+<td>✅ 10+10&#x3D;20kW，误差0%，未超限</td>
+<td><strong>通过</strong></td>
+</tr>
+<tr>
+<td>失控消除后功率恢复</td>
+<td>✅ #2停止后需求恢复20kW，分配自动更新</td>
+<td>✅ #2停止后需求恢复20kW，分配自动更新</td>
+<td><strong>通过</strong></td>
+</tr>
+<tr>
+<td>无过载&#x2F;无逆流跳闸</td>
+<td>✅</td>
+<td>✅</td>
+<td><strong>通过</strong></td>
+</tr>
+</tbody></table>
+<p><strong>最终结论：失控功率上报与功率重分配功能，充电、放电工况均完成全阶段（失控前→失控中→失控恢复）验证，系统在单从机失控场景下能准确感知失控功率、自动调整在线从机分配额度，总功率守恒误差0%，无过载越限。功能验收通过。</strong></p>
+<hr>
+<h2 id="十一、测试总结"><a href="#十一、测试总结" class="headerlink" title="十一、测试总结"></a>十一、测试总结</h2><p>本次测试针对站级储能EMS（SEMS）在多从机系统中的失控功率上报与动态重分配功能开展了全面验证。测试覆盖充电和放电两种工况，每种工况均按”失控前—失控中—失控消除后”三个阶段进行完整观测，完整还原了功率失控事件的发生、处置和恢复全过程。</p>
+<p>测试结果表明，当某台从控EMS因内部设备通信异常或进入非自动控制模式而进入失控状态时，该从控能够实时向站级EMS上报当前的实际运行功率作为失控功率值，充电场景上报正值、放电场景上报负值，方向正确，数值准确。站级EMS在收到失控功率上报后，立即从总可分配功率中扣除该失控量，并将经补偿后的剩余功率重新分配给其他处于正常自动控制状态的从机设备，确保正常从机的分配功率加上失控从机的实际运行功率始终等于系统总限制功率，充放电工况下功率守恒误差均为0%，无过载越限，防止了因功率叠加引发的过充、逆流或跳闸风险。待失控设备停止运行后，站级EMS能够及时感知失控功率归零，自动恢复对在线从机的正常满额分配，整个过程无需人工干预，系统自主完成闭环管理。</p>
+<p>综上，本功能的失控感知、补偿计算、功率重分配及恢复四个核心环节均经过实测验证，逻辑正确，响应及时，满足多从机储能系统在单台从机失控场景下的安全运行要求，测试验收通过。</p>
+<hr>
+<p><em>报告完成时间：2026-07-10</em><br><em>测试人：KuangYue</em></p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://kuangyue111.github.io">kuangyue111</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://kuangyue111.github.io/2026/07/10/2026-07-10-%E5%A4%B1%E6%8E%A7%E5%8A%9F%E7%8E%87%E9%87%8D%E5%88%86%E9%85%8D%E6%B5%8B%E8%AF%95%E6%8A%A5%E5%91%8A/">https://kuangyue111.github.io/2026/07/10/2026-07-10-%E5%A4%B1%E6%8E%A7%E5%8A%9F%E7%8E%87%E9%87%8D%E5%88%86%E9%85%8D%E6%B5%8B%E8%AF%95%E6%8A%A5%E5%91%8A/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://kuangyue111.github.io" target="_blank">KuangYue's Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E5%82%A8%E8%83%BD/">储能</a><a class="post-meta__tags" href="/tags/EMS/">EMS</a><a class="post-meta__tags" href="/tags/SEMS/">SEMS</a><a class="post-meta__tags" href="/tags/Energy-Storage/">Energy Storage</a><a class="post-meta__tags" href="/tags/Power-Allocation/">Power Allocation</a></div><div class="post-share"><div class="social-share" data-image="/img/butterfly-icon.png" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/2026/07/07/2026-07-07-ltc6813-bms-afe-daisy-chain-analysis/" title="LTC6813菊花链采样方案深度分析：从驱动到状态机的完整工程实践"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">LTC6813菊花链采样方案深度分析：从驱动到状态机的完整工程实践</div></div><div class="info-2"><div class="info-item-1">一、引言  在动力电池管理系统（BMS）中，单体电压采集是整个系统的核心基础功能。精确、可靠的电压采集不仅关系到SOC估算的准确性，更直  接影响到电池的安全保护和使用寿命。本文将深入剖析基于LTC6813的菊花链（Daisy-chain）采样方案，该方案支持最多32个从控芯片  串联，实现最多576节（32×18S）单体电池的同步采集。   本文分析的工程代码来自某动力储能BMS项目（S32K146OFBMU_B），主要文件包括：  LTC6813驱动层 采样状态机 常量定义   二、LTC6813芯片架构2.1 核心特性  LTC6813是ADI（原Linear Technology）第三代多节电池监控芯片，从代码中可以提取其关键参数： 12345// LTC6813-1.h#define LTC6813_NUM_CELLV_ADC    18// 18路差分电压测量通道#define LTC6813_NUM_GPIO9// 9个GPIO（用于温度采集）#define LTC6813_VOLTAGE_RESOLUTION100  // 电压分辨率：100μV/bit (0.1...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/05/25/2026-05-25-sems-rems-demand-response-architecture/" title="电力需求响应——SEMS&#x2F;REMS 层级架构下的多站协调控制"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-25</div><div class="info-item-2">电力需求响应——SEMS&#x2F;REMS 层级架构下的多站协调控制</div></div><div class="info-2"><div class="info-item-1"> 作者：储能系统固件开发工程师日期：2026-04-14项目背景：工商业储能管理系统（BESS），支持川崎项目多站联合需求响应，SEMS为站级本地EMS，REMS为上级远程EMS  一、为什么需要两级EMS？最初，项目只有一个站级EMS（站级能量管理系统，SEMS）。SEMS负责控制本站的PCS充放电，执行时段计划、防逆流、防过载，运行得还算平稳。 然而，当客户在川崎项目提出”多个储能站联合响应电网调峰指令”的需求时，问题来了：  电网调度中心下发一条指令：整个工业园区在未来30分钟内需放电500kW 园区内有4个储能站，每站容量不同，当前SOC不同，部分站在检修 谁来决定每个站放多少？ 如果某站BMS故障，其他站如何自动补偿？  这就是 REMS（Remote Energy Management System，远程EMS） 存在的根本原因。REMS是站上的站——它管理多个SEMS，协调整体功率分配，对接电网调度。 头文件里这行注释写得很清楚： 12// LJH250205 REMS 川崎项目增加上级EMS// SEMS:本地EMS  REMS:上级EMS   二、系统架构：三层...</div></div></div></a><a class="pagination-related" href="/2026/06/01/2026-06-01-grid-frequency-regulation-200ms-en/" title="Building a 200ms Grid Frequency Regulation Path in a Battery Storage System"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-01</div><div class="info-item-2">Building a 200ms Grid Frequency Regulation Path in a Battery Storage System</div></div><div class="info-2"><div class="info-item-1">Building a 200ms Grid Frequency Regulation Path in a Battery Storage System Author: KuangYueDate: 2026-06-01Project: Solaris Battery Energy Storage Management System (ILC-A2415)   1. Why 200ms?Grid frequency is the heartbeat of a power system. In China, the nominal frequency is 50Hz with a tolerance of ±0.2Hz. When frequency drops, generation is falling behind load — you need to inject active power fast. When it rises, the opposite. Traditional frequency regulation relies on thermal plant gov...</div></div></div></a><a class="pagination-related" href="/2026/06/01/2026-06-01-grid-frequency-regulation-200ms/" title="从一次需求落地看储能系统的200ms电网调频实现"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-01</div><div class="info-item-2">从一次需求落地看储能系统的200ms电网调频实现</div></div><div class="info-2"><div class="info-item-1">从一次需求落地看储能系统的200ms电网调频实现 作者：KuangYue日期：2026-06-01项目：Solaris储能管理系统（ILC-A2415）   一、背景：为什么电网调频需要200ms响应？在做储能系统的这几年里，我接触过各种各样的调度需求，但电网调频（Grid Frequency Regulation，简称GridSvc）这个需求是让我印象最深的一个。它不像普通的充放电控制那样”慢条斯理”，而是对时间有着近乎苛刻的要求。 电网频率是衡量电力系统健康状态的核心指标。在中国，电网标准频率为50Hz，允许偏差范围是±0.2Hz。一旦频率偏低，说明系统发电量不足，需要快速补充有功功率；频率偏高则相反。传统的调频手段依赖火电机组的调速器，响应时间在秒级甚至分钟级。而储能系统，尤其是锂电池储能，其功率响应时间可以做到毫秒级，这是它在调频市场上的核心竞争力。 国家能源局和各地电网公司对储能参与调频的技术规范中，明确要求储能系统在接收到调度指令后，有功功率响应时间不超过200ms。这个200ms，就是这次需求的核心约束。 在我们的系统里，原有的控制链路是这样的： 1上级EMS（Mo...</div></div></div></a><a class="pagination-related" href="/2026/05/25/2026-05-25-ai-energy-storage-codebase-predictive-maintenance/" title="从被动告警到预测性维护——将 AI 引入真实储能系统代码库的工程实践"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-25</div><div class="info-item-2">从被动告警到预测性维护——将 AI 引入真实储能系统代码库的工程实践</div></div><div class="info-2"><div class="info-item-1"> From Reactive Alarms to Predictive Insight: Bringing AI into a Real-World Energy Storage Codebase  一、写在前面：为什么我要写这篇文章我所在的项目是一套分布式储能管理系统（Energy Storage Management System, ESMS），主控板基于 ARM-Linux，外围挂着 BMS（电池管理系统）、PCS（储能变流器）、电表、温控、消防、光伏逆变器、CCU（电池簇控制器）等十几类设备。整个项目有上百个 sampler 和 reporter 模块，核心数据流是： 1设备 → sampler（CAN/RS485/Modbus 采集） → DPR（数据处理中心） → reporter（MQTT/IEC104/Modbus 上报）  最近半年我在维护这套代码时，反复被一个问题困扰：**告警机制本质上是”事后响应”**。 举个真实例子。System.sql 里注册了上千条告警，比如： 123INSERT INTO Charger_DeviceModel_Alarms ......</div></div></div></a><a class="pagination-related" href="/2026/06/09/2026-06-09-pv-storage-load-joint-forecasting-ems/" title="光伏-储能-负荷联合预测：给 EMS 装上&quot;预知能力&quot;"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-09</div><div class="info-item-2">光伏-储能-负荷联合预测：给 EMS 装上&quot;预知能力&quot;</div></div><div class="info-2"><div class="info-item-1">光伏-储能-负荷联合预测：给 EMS 装上”预知能力” 本文结合我正在维护的一套工业储能管理系统的真实工程实践，聊聊如何把预测能力嵌入 EMS 决策链路。代码片段均来自项目实际文件，不是伪代码。   一、为什么 EMS 需要预测？我在调试这套系统的 MQTT 指令链路时，发现一个有意思的现象：EMS 的充放电决策完全依赖当前时刻的 SOC 和预设的时段计划表。翻开 ems_management.c，核心逻辑大概是这样的： 123456BOOL IsBatt_Plan2_StartChrg(...) &#123;    if (pEMS-&gt;nTMSector &lt; 0) return FALSE;    if (pPlanSectorNow-&gt;emBatt_WorkMode != BATT_WORKMODE_FIRST_CHRGING) return FALSE;    if (nBattSOC &gt;= pPlanSectorNow-&gt;nStopSOC) return FALSE;    return TRUE;&#125;  逻辑很清晰：查当前时段（nT...</div></div></div></a><a class="pagination-related" href="/2026/06/16/2026-06-16-iec61850-in-energy-storage/" title="IEC 61850 在储能系统中的深度解析：从标准架构到工程代码实现"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-16</div><div class="info-item-2">IEC 61850 在储能系统中的深度解析：从标准架构到工程代码实现</div></div><div class="info-2"><div class="info-item-1"> 一、为什么储能系统需要IEC 61850  在储能行业快速发展之前，IEC61850是一个主要活跃在变电站自动化领域的标准。电网调度中心、继电保护装置、测控单元之间的通信，大量依赖这套体系。   但随着大规模储能接入电网，一个让所有系统集成商头疼的问题浮出水面：每个BMS厂商、每个PCS厂商、每个EMS厂商都有自己的私有协议，Modbus RTU、CAN、自定义TCP协议各行其是。一个100MWh的储能电站，可能同时运行着十几种不同的通信协议，集成联调的工作量占据了整个项目工期的30%以上，而且一旦某个设备升级固件，接口就可能失效。   IEC 61850从根本上解决的是这个问题——它定义了一套统一的数据模型、通信服务和配置语言，让不同厂商的设备能够在标准层面互操作，而不依赖私有协议约定。  二、IEC 61850标准体系的完整架构  IEC 61850不是一个单一文件，而是由IEC TC57工作组制定的一组相互关联的系列标准。理解它的结构，是正确使用它的前提。   与储能系统最直接相关的子标准： 1234567891011121314151617┌──────────────...</div></div></div></a></div></div><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="giscus-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/img/butterfly-icon.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">kuangyue111</div><div class="author-info-description">嵌入式开发 | 储能系统 | 工业通信协议</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">31</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">154</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">16</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/kuangyue111"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/kuangyue111" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">专注于嵌入式与储能系统技术分享</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E6%B5%8B%E8%AF%95%E8%83%8C%E6%99%AF"><span class="toc-number">1.</span> <span class="toc-text">一、测试背景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E6%B5%8B%E8%AF%95%E7%9B%AE%E7%9A%84"><span class="toc-number">2.</span> <span class="toc-text">二、测试目的</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E6%B5%8B%E8%AF%95%E4%BE%9D%E6%8D%AE"><span class="toc-number">3.</span> <span class="toc-text">三、测试依据</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E6%B5%8B%E8%AF%95%E8%AE%BE%E5%A4%87%E4%B8%8E%E5%B7%A5%E5%85%B7"><span class="toc-number">4.</span> <span class="toc-text">四、测试设备与工具</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E6%B5%8B%E8%AF%95%E6%8E%A5%E7%BA%BF%E6%96%B9%E6%A1%88"><span class="toc-number">5.</span> <span class="toc-text">五、测试接线方案</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E6%B5%8B%E8%AF%95%E5%89%8D%E7%BD%AE%E5%87%86%E5%A4%87"><span class="toc-number">6.</span> <span class="toc-text">六、测试前置准备</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#6-1-%E8%AE%BE%E5%A4%87%E4%B8%8A%E7%94%B5%E4%B8%8E%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="toc-number">6.1.</span> <span class="toc-text">6.1 设备上电与初始化</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-2-%E7%AB%99%E7%BA%A7EMS%E5%8F%82%E6%95%B0%E8%AE%BE%E7%BD%AE"><span class="toc-number">6.2.</span> <span class="toc-text">6.2 站级EMS参数设置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-3-%E7%9B%91%E6%8E%A7%E6%95%B0%E6%8D%AE%E9%85%8D%E7%BD%AE"><span class="toc-number">6.3.</span> <span class="toc-text">6.3 监控数据配置</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E9%99%84%E3%80%81%E7%9B%91%E6%8E%A7%E6%95%B0%E6%8D%AE%E5%8F%82%E6%95%B0%E8%AF%B4%E6%98%8E"><span class="toc-number">7.</span> <span class="toc-text">六附、监控数据参数说明</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#DISC-ALLOC-%E2%80%94-%E6%94%BE%E7%94%B5%E5%8A%9F%E7%8E%87%E5%88%86%E9%85%8D%E5%85%A8%E6%99%AF%E5%B8%A7"><span class="toc-number">7.1.</span> <span class="toc-text">DISC_ALLOC — 放电功率分配全景帧</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#CHRG-ALLOC-%E2%80%94-%E5%85%85%E7%94%B5%E5%8A%9F%E7%8E%87%E5%88%86%E9%85%8D%E5%85%A8%E6%99%AF%E5%B8%A7"><span class="toc-number">7.2.</span> <span class="toc-text">CHRG_ALLOC — 充电功率分配全景帧</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#EMS-METER-SUM-%E2%80%94-%E5%8A%9F%E7%8E%87%E8%AE%A1%E9%87%8F%E6%B1%87%E6%80%BB%E5%B8%A7"><span class="toc-number">7.3.</span> <span class="toc-text">EMS_METER_SUM — 功率计量汇总帧</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#EMS-PID-OUT-%E2%80%94-PID%E6%8E%A7%E5%88%B6%E8%BE%93%E5%87%BA%E5%B8%A7"><span class="toc-number">7.4.</span> <span class="toc-text">EMS_PID_OUT — PID控制输出帧</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%9B%9B%E5%B8%A7%E6%95%B0%E6%8D%AE%E8%81%94%E5%90%88%E9%AA%8C%E8%AF%81%E9%80%BB%E8%BE%91"><span class="toc-number">7.5.</span> <span class="toc-text">四帧数据联合验证逻辑</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E8%AF%A6%E7%BB%86%E6%B5%8B%E8%AF%95%E6%AD%A5%E9%AA%A4%E4%B8%8E%E7%BB%93%E6%9E%9C"><span class="toc-number">8.</span> <span class="toc-text">七、详细测试步骤与结果</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#7-1-%E5%85%85%E7%94%B5%E5%B7%A5%E5%86%B5-%E2%80%94-%E5%A4%B1%E6%8E%A7%E5%8A%9F%E7%8E%87%E4%B8%8A%E6%8A%A5%E4%B8%8E%E9%87%8D%E5%88%86%E9%85%8D"><span class="toc-number">8.1.</span> <span class="toc-text">7.1 充电工况 — 失控功率上报与重分配</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%B5%8B%E8%AF%95%E6%AD%A5%E9%AA%A4"><span class="toc-number">8.1.1.</span> <span class="toc-text">测试步骤</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%98%B6%E6%AE%B5%E4%B8%80%EF%BC%9A%E5%A4%B1%E6%8E%A7%E5%89%8D%E5%9F%BA%E5%87%86%E7%8A%B6%E6%80%81"><span class="toc-number">8.1.2.</span> <span class="toc-text">阶段一：失控前基准状态</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%98%B6%E6%AE%B5%E4%BA%8C%EF%BC%9A%E4%BB%8E%E6%9C%BA-2%E8%A7%A6%E5%8F%91%E5%A4%B1%E6%8E%A7%EF%BC%88%E4%BB%8D%E4%BB%A510kW%E5%85%85%E7%94%B5%EF%BC%89"><span class="toc-number">8.1.3.</span> <span class="toc-text">阶段二：从机#2触发失控（仍以10kW充电）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%98%B6%E6%AE%B5%E4%B8%89%EF%BC%9A%E4%BB%8E%E6%9C%BA-2%E5%81%9C%E6%AD%A2%E5%85%85%E7%94%B5%E5%90%8E%E5%8A%9F%E7%8E%87%E6%81%A2%E5%A4%8D"><span class="toc-number">8.1.4.</span> <span class="toc-text">阶段三：从机#2停止充电后功率恢复</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-2-%E6%94%BE%E7%94%B5%E5%B7%A5%E5%86%B5-%E2%80%94-%E5%A4%B1%E6%8E%A7%E5%8A%9F%E7%8E%87%E4%B8%8A%E6%8A%A5%E4%B8%8E%E9%87%8D%E5%88%86%E9%85%8D"><span class="toc-number">8.2.</span> <span class="toc-text">7.2 放电工况 — 失控功率上报与重分配</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%B5%8B%E8%AF%95%E6%AD%A5%E9%AA%A4-1"><span class="toc-number">8.2.1.</span> <span class="toc-text">测试步骤</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%98%B6%E6%AE%B5%E4%B8%80%EF%BC%9A%E5%A4%B1%E6%8E%A7%E5%89%8D%E5%9F%BA%E5%87%86%E7%8A%B6%E6%80%81-1"><span class="toc-number">8.2.2.</span> <span class="toc-text">阶段一：失控前基准状态</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%98%B6%E6%AE%B5%E4%BA%8C%EF%BC%9A%E4%BB%8E%E6%9C%BA-2%E8%A7%A6%E5%8F%91%E5%A4%B1%E6%8E%A7%EF%BC%88%E4%BB%8D%E4%BB%A510kW%E6%94%BE%E7%94%B5%EF%BC%89"><span class="toc-number">8.2.3.</span> <span class="toc-text">阶段二：从机#2触发失控（仍以10kW放电）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%98%B6%E6%AE%B5%E4%B8%89%EF%BC%9A%E4%BB%8E%E6%9C%BA-2%E5%81%9C%E6%AD%A2%E6%94%BE%E7%94%B5%E5%90%8E%E5%8A%9F%E7%8E%87%E6%81%A2%E5%A4%8D"><span class="toc-number">8.2.4.</span> <span class="toc-text">阶段三：从机#2停止放电后功率恢复</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E6%95%B0%E6%8D%AE%E6%B1%87%E6%80%BB%E4%B8%8E%E7%BB%9F%E8%AE%A1"><span class="toc-number">9.</span> <span class="toc-text">八、数据汇总与统计</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#8-1-%E5%85%85%E7%94%B5%E5%B7%A5%E5%86%B5%E4%B8%89%E9%98%B6%E6%AE%B5%E6%95%B0%E6%8D%AE%E6%B1%87%E6%80%BB"><span class="toc-number">9.1.</span> <span class="toc-text">8.1 充电工况三阶段数据汇总</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-2-%E6%94%BE%E7%94%B5%E5%B7%A5%E5%86%B5%E4%B8%89%E9%98%B6%E6%AE%B5%E6%95%B0%E6%8D%AE%E6%B1%87%E6%80%BB"><span class="toc-number">9.2.</span> <span class="toc-text">8.2 放电工况三阶段数据汇总</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-3-%E5%8A%9F%E7%8E%87%E5%AE%88%E6%81%92%E8%AF%AF%E5%B7%AE%E7%BB%9F%E8%AE%A1"><span class="toc-number">9.3.</span> <span class="toc-text">8.3 功率守恒误差统计</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B9%9D%E3%80%81%E6%B5%8B%E8%AF%95%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9"><span class="toc-number">10.</span> <span class="toc-text">九、测试注意事项</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E3%80%81%E6%B5%8B%E8%AF%95%E7%BB%93%E8%AE%BA"><span class="toc-number">11.</span> <span class="toc-text">十、测试结论</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E4%B8%80%E3%80%81%E6%B5%8B%E8%AF%95%E6%80%BB%E7%BB%93"><span class="toc-number">12.</span> <span class="toc-text">十一、测试总结</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/07/10/2026-07-10-%E5%A4%B1%E6%8E%A7%E5%8A%9F%E7%8E%87%E9%87%8D%E5%88%86%E9%85%8D%E6%B5%8B%E8%AF%95%E6%8A%A5%E5%91%8A/" title="站级EMS失控功率上报与功率重分配功能开发与测试">站级EMS失控功率上报与功率重分配功能开发与测试</a><time datetime="2026-07-10T04:00:00.000Z" title="发表于 2026-07-10 12:00:00">2026-07-10</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/07/07/2026-07-07-ltc6813-bms-afe-daisy-chain-analysis/" title="LTC6813菊花链采样方案深度分析：从驱动到状态机的完整工程实践">LTC6813菊花链采样方案深度分析：从驱动到状态机的完整工程实践</a><time datetime="2026-07-07T06:00:00.000Z" title="发表于 2026-07-07 14:00:00">2026-07-07</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/07/07/2026-07-07-bringing-ai-into-real-world-energy-storage-codebase/" title="From Reactive Alarms to Predictive Insight: Bringing AI into a Real-World Energy Storage Codebase">From Reactive Alarms to Predictive Insight: Bringing AI into a Real-World Energy Storage Codebase</a><time datetime="2026-07-07T04:00:00.000Z" title="发表于 2026-07-07 12:00:00">2026-07-07</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/07/02/2026-07-02-ai-agent-deep-analysis/" title="AI Agent 深度解析：从聊天到全自动，差在哪里">AI Agent 深度解析：从聊天到全自动，差在哪里</a><time datetime="2026-07-02T07:00:00.000Z" title="发表于 2026-07-02 15:00:00">2026-07-02</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/06/29/2026-06-29-agent-everos-persistent-memory/" title="30分钟给你的Agent搭好永久记忆：能cat能git能直接编辑，保姆级教程零门槛上手">30分钟给你的Agent搭好永久记忆：能cat能git能直接编辑，保姆级教程零门槛上手</a><time datetime="2026-06-29T04:00:00.000Z" title="发表于 2026-06-29 12:00:00">2026-06-29</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By kuangyue111</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.4</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="前往评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.4"></script><script src="/js/main.js?v=5.5.4"></script><div class="js-pjax"><script>(() => {
+  const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
+  const option = {"mapping":"url","lang":"zh-CN"}
+
+  const getGiscusTheme = theme => theme === 'dark' ? 'dark' : 'light'
+
+  const createScriptElement = config => {
+    const ele = document.createElement('script')
+    Object.entries(config).forEach(([key, value]) => {
+      ele.setAttribute(key, value)
+    })
+    return ele
+  }
+
+  const loadGiscus = (el = document, key) => {
+    const mappingConfig = isShuoshuo
+      ? { 'data-mapping': 'specific', 'data-term': key }
+      : { 'data-mapping': (option && option['data-mapping']) || 'pathname' }
+
+    const giscusConfig = {
+      src: 'https://giscus.app/client.js',
+      'data-repo': 'kuangyue111/kuangyue111.github.io',
+      'data-repo-id': 'R_kgDOSQde2Q',
+      'data-category-id': 'DIC_kwDOSQde2c4C8CgH',
+      'data-theme': getGiscusTheme(document.documentElement.getAttribute('data-theme')),
+      'data-reactions-enabled': '1',
+      crossorigin: 'anonymous',
+      async: true,
+      ...option,
+      ...mappingConfig
+    }
+
+    const scriptElement = createScriptElement(giscusConfig)
+
+    el.querySelector('#giscus-wrap').appendChild(scriptElement)
+
+    if (isShuoshuo) {
+      window.shuoshuoComment.destroyGiscus = () => {
+        if (el.children.length) {
+          el.innerHTML = ''
+          el.classList.add('no-comment')
+        }
+      }
+    }
+  }
+
+  const changeGiscusTheme = theme => {
+    const iframe = document.querySelector('#giscus-wrap iframe')
+    if (iframe) {
+      const message = {
+        giscus: {
+          setConfig: {
+            theme: getGiscusTheme(theme)
+          }
+        }
+      }
+      iframe.contentWindow.postMessage(message, 'https://giscus.app')
+    }
+  }
+
+  btf.addGlobalFn('themeChange', changeGiscusTheme, 'giscus')
+
+  if (isShuoshuo) {
+    'Giscus' === 'Giscus'
+      ? window.shuoshuoComment = { loadComment: loadGiscus }
+      : window.loadOtherComment = loadGiscus
+    return
+  }
+
+  if ('Giscus' === 'Giscus' || !false) {
+    if (false) btf.loadComment(document.getElementById('giscus-wrap'), loadGiscus)
+    else loadGiscus()
+  } else {
+    window.loadOtherComment = loadGiscus
+  }
+})()</script></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

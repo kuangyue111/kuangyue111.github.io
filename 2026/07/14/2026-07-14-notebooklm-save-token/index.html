@@ -1,0 +1,409 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>用好NotebookLM立省80%Token | KuangYue's Blog</title><meta name="author" content="kuangyue111"><meta name="copyright" content="kuangyue111"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="用好NotebookLM立省80%Token用好NotebookLM立省80%Token  上个月我把 Claude 从 Pro 升到 Max，$200 一个月，心想这下总该用够用了吧。 第五天：本周额度已耗尽。 翻使用日志我才看清楚钱花在哪。一次调研 47 篇论文的下午会话，单次就吃掉一周 10% 的额度。这种会话一周跑两三次，额度自然撑不住。 ·问题在我一直让 Claude 干它不擅长的事——">
+<meta property="og:type" content="article">
+<meta property="og:title" content="用好NotebookLM立省80%Token">
+<meta property="og:url" content="https://kuangyue111.github.io/2026/07/14/2026-07-14-notebooklm-save-token/index.html">
+<meta property="og:site_name" content="KuangYue&#39;s Blog">
+<meta property="og:description" content="用好NotebookLM立省80%Token用好NotebookLM立省80%Token  上个月我把 Claude 从 Pro 升到 Max，$200 一个月，心想这下总该用够用了吧。 第五天：本周额度已耗尽。 翻使用日志我才看清楚钱花在哪。一次调研 47 篇论文的下午会话，单次就吃掉一周 10% 的额度。这种会话一周跑两三次，额度自然撑不住。 ·问题在我一直让 Claude 干它不擅长的事——">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://kuangyue111.github.io/img/butterfly-icon.png">
+<meta property="article:published_time" content="2026-07-14T12:00:00.000Z">
+<meta property="article:modified_time" content="2026-07-14T11:31:29.360Z">
+<meta property="article:author" content="kuangyue111">
+<meta property="article:tag" content="Claude">
+<meta property="article:tag" content="NotebookLM">
+<meta property="article:tag" content="省钱">
+<meta property="article:tag" content="效率工具">
+<meta property="article:tag" content="AI工具">
+<meta property="article:tag" content="Google">
+<meta property="article:tag" content="AI工作流">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://kuangyue111.github.io/img/butterfly-icon.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "用好NotebookLM立省80%Token",
+  "url": "https://kuangyue111.github.io/2026/07/14/2026-07-14-notebooklm-save-token/",
+  "image": "https://kuangyue111.github.io/img/butterfly-icon.png",
+  "datePublished": "2026-07-14T12:00:00.000Z",
+  "dateModified": "2026-07-14T11:31:29.360Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "kuangyue111",
+      "url": "https://kuangyue111.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://kuangyue111.github.io/2026/07/14/2026-07-14-notebooklm-save-token/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.5.4"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.13.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '用好NotebookLM立省80%Token',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/butterfly-icon.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">36</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">165</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">16</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">KuangYue's Blog</span></a><a class="nav-page-title" href="/"><span class="site-name">用好NotebookLM立省80%Token</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">用好NotebookLM立省80%Token</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-07-14T12:00:00.000Z" title="发表于 2026-07-14 20:00:00">2026-07-14</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-07-14T11:31:29.360Z" title="更新于 2026-07-14 19:31:29">2026-07-14</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/">技术分享</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/AI%E5%B7%A5%E5%85%B7/">AI工具</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="用好NotebookLM立省80-Token"><a href="#用好NotebookLM立省80-Token" class="headerlink" title="用好NotebookLM立省80%Token"></a>用好NotebookLM立省80%Token</h1><p>用好NotebookLM立省80%Token</p>
+<hr>
+<p>上个月我把 Claude 从 Pro 升到 Max，$200 一个月，心想这下总该用够用了吧。</p>
+<p>第五天：本周额度已耗尽。</p>
+<p>翻使用日志我才看清楚钱花在哪。一次调研 47 篇论文的下午会话，单次就吃掉一周 10% 的额度。这种会话一周跑两三次，额度自然撑不住。</p>
+<p>·问题在我一直让 Claude 干它不擅长的事——当全文检索引擎。</p>
+<p>一坨 50k 字符的日志塞进对话，问一个问题，日志全文就要被算一次 input token；再问个，就算命中了 prompt cache（单价只剩 1&#x2F;10），主会话也会随轮次缓慢累加。更糟的是 cache 有 1h TTL，间隔久了就得重写一次全价。这就好比每次问律师问题，都让他把你 50 页的合同先朗读一遍再开口。</p>
+<p>Claude Code 擅长推理、编排、写代码。读原始语料这件事该让别的工具干，Claude 只看结论。顺着这个思路找下去，我想到了 NotebookLM。</p>
+<p>跟着这篇配置一遍，你 $20 的账号能干出 $200 的活。</p>
+<p>导读</p>
+<p>长文，按兴趣挑着看：</p>
+<p>• 一：NotebookLM 是什么 + 能干什么</p>
+<p>• 二：为什么要再套一层 Claude</p>
+<p>• 三：装 skill，10 分钟动手</p>
+<p>• 四：实测 token 账 + 原理拆解</p>
+<p>• 五：学者 &#x2F; 学生工作流</p>
+<p>• 六：打新股 &#x2F; 读招股书 工作流</p>
+<p>• 七：个人知识库工作流</p>
+<p>• 总结</p>
+<p>想先看工作流，直接跳到第五部分——找到你那一类看就行。</p>
+<p>一句话论点</p>
+<p>真正省 Claude token 的办法不是开 cache，是让重数据一开始就不进 Claude。</p>
+<p>具体做法：让 NotebookLM 存储语料和检索，Claude 只做推理和编排。两者分工清晰，用一个比喻概括——</p>
+<p>NotebookLM 是老师：你亲自采集进去的论文、财报、笔记形成它的知识库。你问它，它答经验，答案带引用，边界在源内，不乱外推。Claude 是助手：负责写代码、跑脚本、整理结果、编排工具。不懂就去问老师，拿到答案继续干活。你是课题负责人：只在关键决策点介入。</p>
+<p>关键原理，为什么这样分工省钱</p>
+<p>一、RAG vs 塞 context 是两种不同的成本模型。 把 50k 字符日志塞进 Claude 对话，这坨数据就被算进 input token。每问一次就要被”看”一次，成本随语料大小线性涨。走 RAG 则是 NotebookLM 内部用向量检索命中相关片段，Claude 只看到几百字的蒸馏答案，成本近乎常数。</p>
+<p>二、prompt cache 有 1h TTL，研究场景命中率很低。 很多人以为开了 cache 就万事大吉。实际 Anthropic 的 prompt cache 默认只存 1 小时，超时就自动失效；你思考几分钟、切去做别的、或者开新 session，下一次调用就得按全价把语料重写一次 cache_creation。研究性会话恰好是”问一下、想一会、再问一下”的节奏，命中率常常惨不忍睹。这是账单暴涨的真正原因。</p>
+<p>三、基于事实输出会更有效 NotebookLM 的答案被约束在你上传的源里，每句话带 [1][2] 引用，点回原文。不会胡编。Claude 拿这种答案做决策，不用反复让它”再确认一下”，省下的是更难量化的那部分时间成本。</p>
+<p>谁不用看下面了</p>
+<p>• 语料 &lt; 5k tokens、只查一两次——直接问 Claude，别折腾</p>
+<p>• 需求是纯 Q&amp;A、不嵌工作流——打开 notebooklm 网页用就够了</p>
+<p>• 在乎响应速度超过账单——慢 3 倍受不了</p>
+<p>• 要理解代码结构 &#x2F; 跳定义——NotebookLM 更加适合文本 RAG</p>
+<p>谁继续往下读</p>
+<p>• 想要具体的安装步骤和避坑</p>
+<p>• 想看几个场景怎么落地到指令层</p>
+<p>• 在用 Claude Code 想把 NotebookLM 变成一个 skill</p>
+<p>第一部分：先认识 NotebookLM</p>
+<p>第一次打开 NotebookLM 是因为一位朋友安利。她写论文的 reading list 有 60 多篇，以前在 PDF 阅读器里挨个 Ctrl-F，现在把全部论文丢进一个 notebook，问”谁支持 X 观点、谁反对、分歧集中在哪几个变量”——答案带 [1][2][3] 引用直接甩过来，点一下就跳回原文对应段落。</p>
+<p>她说一周能省十几个小时。</p>
+<p>我抱着怀疑态度试了一周，最后上瘾了。下面是这一周攒下的经验，下面是 NotebookLM 使用的优点：</p>
+<p>支持免费档 50 个源 &#x2F; Pro 档 300 个</p>
+<p>处理能力不要钱，上传、索引、生成、对话——全走 Google 的算力</p>
+<p>除了问答，它能把一整个 notebook 直接自动生成音频播客（通勤听最舒服）、思维导图、PPT、闪卡等等。</p>
+<p>播客尤其惊艳——你自己的资料，被两个陌生 AI 用你没想过的角度讲一遍，常常能听出新东西。</p>
+<p>格式从来不是问题：PDF、网页 URL、YouTube 字幕、Google Docs、纯文本粘贴、图片 OCR、音频转写——都能当源。</p>
+<p>光上面这些，NotebookLM 已经是一个非常强的独立工具。如果你的需求就是”坐下来问几个问题”，这篇文章到这里就够了，下面的都不用看。</p>
+<p>但我用着用着发现它卡在2个地方：</p>
+<p>一、心流被切 tab 切烂 调研一个课题：问一个问题 → 得到答案 → 点引用跳原文 → 读完一段 → 回 notebook 复制答案 → 切到 Claude Code 消费→ 做完实验 → 发现少一篇资料 → 切到 Google 搜 → 切到下载 → 切回 notebook 加源 → 继续问……一下午切 200 次 tab。</p>
+<p>二、跟本地工具是两个世界 我排查线上事故时把日志灌进 notebook 后能查。但我还要同时在终端 grep 本地配置、看 k8s events、起 pod 复现——网页不能帮我跑任何本地命令，每次都是”在网页看完 → 手动敲一遍 → 再切回网页”。</p>
+<p>NotebookLM 网页把自己定位成终点——你问它，它答你，结束。但我想让它成为流水线上的一环——被调度、被批处理、输出能流到下一步。</p>
+<p>这是 Claude 登场的地方。</p>
+<p>第二部分：再把 Claude 套上去</p>
+<p>把 NotebookLM 变成 Claude 的一个工具。一件事就够了——Claude 需要领域知识时，自己去问老师。</p>
+<p>流程的形状</p>
+<p>老师（NotebookLM）是只读的咨询台：你一次性把 47 篇论文灌进去就不用再管了，它就在那儿待着等你问。不用回灌、不用喂新笔记——论文本身的观点已经足够撑起所有查询。</p>
+<p>下面这个 prompt 把流程图的六步、工作纪律、具体 notebook ID 全编码进去了，贴进 Claude Code 就能跑（注意替换id）：</p>
+<p>几条线索</p>
+<p>• 47 篇论文原文一次都没进 Claude 对话——主会话 token 只花在推理和代码</p>
+<p>• 老师只被咨询、不参与执行——它的长处是带引用的领域检索</p>
+<p>• 你只在 ① 介入——中间要不要再问一次老师，Claude 自己判断</p>
+<p>• 老师知识库静止不变——47 篇论文就是 47 篇，够用了</p>
+<p>这是”串起来”比”单独用”强的根本原因：省掉的 tab 切换、省下的 token，都是附赠福利。下面讲福利有多大。</p>
+<p>第三部分：安装 NotebookLM Client &amp; skill，让 Claude 认识这个老师</p>
+<p>Google 官方没有提供 NotebookLM client，不过 @icebear0828 已经写了第三方 client 可以连接 NotebookLM，安装后，Agent可以通过命令行或者自然语言访问 NotebookLM。</p>
+<p><a target="_blank" rel="noopener" href="https://github.com/icebear0828/notebooklm-client">https://github.com/icebear0828/notebooklm-client</a> 。</p>
+<p>基础安装：</p>
+<p>装完之后在对话里说”查一下那个 notebook 里 X 的部分”，Claude 会自动调——不用每次解释语法。</p>
+<p>第四部分：实测——到底省多少钱（Opus 4.7）</p>
+<p>下面这组数不是模拟的，是真实一轮研究会话，从 Claude Code 的 session log 里扒出来的。</p>
+<p>NotebookLM 侧那部分 token 上传、检索、生成——Google 全部免费，不进你的账单。下面所有数字只算 Opus 这边。</p>
+<p>测试设置</p>
+<p>• 语料：47 篇图像 + LiDAR SLAM 相关论文，一次性灌进同一个 NotebookLM notebook</p>
+<p>• 模型：Claude Opus 4.7</p>
+<p>• 轮数：5 轮深度问答（从”最适合做 SLAM 重建的方法”一路问到”3DGS vs NeRF 接 SLAM 后端的坑”）</p>
+<p>• 方式：Claude Code 里正常对话，每轮助手自己调 &#x2F;notecraft chat 去问老师</p>
+<p>实测结果（本文做法）</p>
+<p>真正决定账单的是 token input + cache_creation（往缓存写新内容）和 output（生成）。便宜档（cache_read + input）单价不到它们的 1&#x2F;10，这里忽略，只算贵档：</p>
+<p>5 轮贵档合计 $0.55，平均每轮约 $0.11。</p>
+<p>关键数字：cache_creation 只有 17,379</p>
+<p>cache_creation 是每次”往缓存写新内容”的 token，贵档里最容易爆的一档。这次 5 轮里写进缓存的只有每轮老师答案（~3-6k token）+ 少量系统增量——合计 1.7 万。</p>
+<p>47 篇论文的原文一个字都没进 Claude 的 cache_creation——这就是省钱的全部秘密。</p>
+<p>对比：如果把 47 篇论文直接塞 prompt</p>
+<p>47 篇论文实测 38.4 万 words ≈ 50 万 token（从 NotebookLM 官方统计字数算出来）。塞 prompt 的传统做法分两种场景：</p>
+<p>最公平的对比是和”单 session 多轮对话”第二行，——同一研究会话里首轮建 cache、后续复用，是传统做法的最优情况。即使这样，5 轮问答贵档差出 17 倍（$9.59 vs $0.55）。跨 session 场景只会更惨（86 倍）。</p>
+<p>为什么 cache 帮不了传统做法？很多人以为”开了 cache 就万事大吉”。实际 Anthropic 的 prompt cache 默认只有付费档 1 小时），超时就自动失效；加上每次 claude -p 新起 session、思考停顿、切换别的窗口，都会把上一轮 cache 挤出窗口。</p>
+<p>本文做法里论文压根不进 Claude，cache 命不命中都无所谓。</p>
+<p>语料再翻倍（100 篇、200 篇）差距继续线性拉开——传统做法 cache_creation 随论文数线性涨，本文做法基本不变（只随老师答案长度微涨）。</p>
+<p>用 Opus 跑研究的人：200 次研究会话一年就是小两千刀的差距——光”论文不进 Claude”这一个动作，一年省下的够再升一次 Max。</p>
+<p>代价：慢 3 倍</p>
+<p>操作 实测中位耗时     建 notebook + 加一个源 10-15 秒   NotebookLM chat 一次 16-48 秒（中位约 45 秒）   Claude Opus 单问（不过 NotebookLM） 20-35 秒</p>
+<p>如果你在乎每秒响应不是每月账单，这套不适合你。</p>
+<p>接下来的几个部分，作为抛砖引玉，写了三个适合NotbookLM的工作流</p>
+<p>五：学者 &#x2F; 学生工作流</p>
+<p>六：打新股 &#x2F; 读招股书 工作流</p>
+<p>七：个人知识库工作流</p>
+<p>第五部分：研究者 &#x2F; 学生工作流</p>
+<p>reading list 是天然的知识边界。</p>
+<p>痛点：一学期几十篇论文，同一批 PDF 要反复查几十次。以前 Ctrl-F 翻到眼花，问 ChatGPT 又怕它瞎编不带引用。</p>
+<p>语料配方（灌一次用一学期）：</p>
+<p>• 20-50 篇课题相关论文 PDF</p>
+<p>• 课程大纲、讲座字幕</p>
+<p>• 导师邮件、自己的章节草稿、读书笔记</p>
+<p>老师能回答的杀手问题：</p>
+<p>• “哪两篇结论互相冲突，冲突在哪一层假设？”</p>
+<p>• “X 方法在这个语料里出现过几次，各自怎么用的？”</p>
+<p>• “A 论文的公式 3 和 B 论文的公式 7 实际等价吗？”</p>
+<p>Claude 在链路里干嘛：按课题推进——问老师拿概念&#x2F;公式 → 写代码复现 → 跑实验 → 整理笔记。论文原文一次都不进 Claude 会话。</p>
+<p>第六部分：打新股 &#x2F; 读招股书工作流</p>
+<p>一本招股书 300-600 页，打新窗口就三天。靠人读完再决策根本来不及。</p>
+<p>痛点：港股&#x2F;A 股打新节奏快，新股上市前只有聆讯后资料集（港股）或招股意向书（A 股）能看，文档动辄 500 页+，里面有公司介绍、历史沿革、业务模式、财务数据、募资用途、风险因素、基石投资者等 20+ 章节。靠人读：</p>
+<p>• 一家看完至少 4 小时</p>
+<p>• 一周 5-8 家新股，根本来不及</p>
+<p>• 决策窗口就 72 小时，错过就只能下期再打</p>
+<p>而且招股书最有信息量的不是”公司怎么夸自己”，是藏在风险因素、关联交易、历次融资估值里的那些红旗。这部分人眼最容易漏。</p>
+<p>语料配方（一家公司一个 notebook）：</p>
+<p>• 招股书全本（聆讯后资料集 &#x2F; 招股意向书）——必灌，最核心</p>
+<p>• 基石投资者披露表——看谁背书、锁定期多久</p>
+<p>• 同行可比公司最新财报——估值对标的锚</p>
+<p>• 保荐人&#x2F;承销商研报（能搞到的话）——官方定价逻辑</p>
+<p>• 管理层过往访谈、公司过去融资轮估值表——看估值跳涨节奏</p>
+<p>• 行业监管政策文件（如医药的 NMPA、科技的相关新规）——决定行业天花板的外部变量</p>
+<p>老师能回答的杀手问题：</p>
+<p>判断要不要打，通常就问这 8 个——每个都是 200 页招股书里找半天的那种：</p>
+<p>“核心产品&#x2F;业务是什么？近 3 年收入结构变化如何？客户集中度？”</p>
+<p>“这家和同行（A、B、C）在毛利率、营收增速、研发占比上的差异在哪？”</p>
+<p>“基石投资者是谁、认购金额、锁定期？基石里有没有知名产业资本？”</p>
+<p>“此次募资用途按比例拆，哪部分最大？募资完成后控股股东持股稀释到多少？”</p>
+<p>“风险因素里，哪些是行业共性（可以对照同行打折看），哪些是公司特有（必须警惕）？”</p>
+<p>“过往融资估值：上一轮估值 &#x2F; IPO 估值的跳涨倍数？上轮投资人锁定期多久？”</p>
+<p>“历史财务有没有一次性收益把利润做高的痕迹？过去 3 年经营现金流和净利润是否匹配？”</p>
+<p>“关联交易占营收比多少？前五大客户里有没有关联方？”</p>
+<p>每个问题都带 [页码] 引用——老师会直接把招股书里对应的那段甩给你，不用再翻 PDF。</p>
+<p>Claude 在链路里干嘛：</p>
+<p>批处理就是这个工作流的灵魂:</p>
+<p>一周打新池 &#x3D; [新股A, 新股B, 新股C, …]</p>
+<p>最后 Claude 把 8 家的一页汇总成一张 markdown 决策表 → 你 15 分钟扫完下单。</p>
+<p>一周打新池 5-8 家 &#x3D; 40-64 次查询，全程论文（这里是招股书）不进 Claude 对话——单本招股书 150-250k token，5 家就是 100 万 token 的语料量，传统做法光这一项一周就能烧掉 $50+。走本文做法 $2 以内。</p>
+<p>真实打新场景的增量价值：</p>
+<p>• 压缩决策时长：4 小时&#x2F;家 → 20 分钟&#x2F;家</p>
+<p>• 红旗不会漏：8 个问题里第 5、7、8 项（风险、财务调整、关联交易）是散户最常忽略的，老师会逐条抠</p>
+<p>• 跨家对比：港股同一周常有 3 家同行业公司同时招股，用同一套模板跑完直接能排序</p>
+<p>第七部分：个人知识库工作流</p>
+<p>给自己建”第二大脑”。</p>
+<p>痛点：Obsidian 搜索只认关键词，答不出”我对 X 的看法这三年变过没”。所有笔记都是自己写的，合规上没顾虑，但体量散、格式杂，本地没工具能跨文件做语义检索。</p>
+<p>语料配方（一股脑全灌，之后增量补）：</p>
+<p>• Obsidian &#x2F; Notion 全量导出</p>
+<p>• Kindle 高亮、Readwise 剪藏</p>
+<p>• 工作日记、会议纪要、复盘文档</p>
+<p>老师能回答的杀手问题：</p>
+<p>• “我这三年对’专注力’写过什么？观点变了吗？”</p>
+<p>• “《原则》和《思考快与慢》对认知偏差的说法，哪里重叠哪里冲突？”</p>
+<p>• “过去一个月所有会议纪要里，X 项目各人的态度分别是什么？”</p>
+<p>Claude 在链路里干嘛：主题演进类问题本来就需要对话式 AI + 全量语料。Claude 负责把老师的多轮答案合成结构化总结（时间轴、观点对比表、待跟进清单）。</p>
+<p>三个工作流的共同点：反复查、跨文档、私有边界——占任何一条，建库 15 秒成本一周内摊平。</p>
+<p>最后</p>
+<p>有一些值得注意的：</p>
+<p>storage_state.json 里面是你 Google 的活 session。注意保管。</p>
+<p>notebooklm-client 是逆向 NotebookLM 内部协议做出来的。Google 不认账，随时可能改后端让你的命令突然报错。</p>
+<p>这套东西的核心就一句话——分工：</p>
+<p>• NotebookLM 当老师：答领域知识，带引用，不乱外推</p>
+<p>• Claude 当助手：编排工具、写代码、整理结果，不懂就问老师</p>
+<p>• 你当课题负责人：只在关键决策点介入</p>
+<p>我用了一个月，省下来的钱够再吃好几顿大餐。但更重要的是，调研十几篇论文不再让我心疼额度了——这种”不用算账”的爽，比省钱本身还上瘾。</p>
+<hr>
+<p>Source added by Web Clipper for NotebookLM Chrome Extension</p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://kuangyue111.github.io">kuangyue111</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://kuangyue111.github.io/2026/07/14/2026-07-14-notebooklm-save-token/">https://kuangyue111.github.io/2026/07/14/2026-07-14-notebooklm-save-token/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://kuangyue111.github.io" target="_blank">KuangYue's Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Claude/">Claude</a><a class="post-meta__tags" href="/tags/NotebookLM/">NotebookLM</a><a class="post-meta__tags" href="/tags/%E7%9C%81%E9%92%B1/">省钱</a><a class="post-meta__tags" href="/tags/%E6%95%88%E7%8E%87%E5%B7%A5%E5%85%B7/">效率工具</a><a class="post-meta__tags" href="/tags/AI%E5%B7%A5%E5%85%B7/">AI工具</a><a class="post-meta__tags" href="/tags/Google/">Google</a><a class="post-meta__tags" href="/tags/AI%E5%B7%A5%E4%BD%9C%E6%B5%81/">AI工作流</a></div><div class="post-share"><div class="social-share" data-image="/img/butterfly-icon.png" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/2026/07/14/2026-07-14-peak-valley-economic-model/" title="工商储能峰谷套利的经济模型与工程实现——从 EMS 代码看储能收益"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">工商储能峰谷套利的经济模型与工程实现——从 EMS 代码看储能收益</div></div><div class="info-2"><div class="info-item-1">  写工商储能控制代码的时候，最常被问到的一个问题不是”算法对不对”，而是”这台柜子今天到底能赚多少钱”。这两个问题其实是同一个问题——调度算法决定了储能资产的现金流模型，而 EMS 里那几个不起眼的工作模式切换、SOC  阈值判断、功率限值计算，背后对应的是一套相当严谨的经济学决策链。   下面结合手头这套主控代码（ems_management.c），把峰谷套利这件事掰开讲一讲。 一、调度的最小单元：管理计划时段  打开 GetCurrentTimeSector 这个函数，看里面的 EMS_LIMIT_SECTOR 结构体： 1234567pPlanSectorNow-&gt;tmStart =        pEMS-&gt;tmStart0sec;pPlanSectorNow-&gt;nInterval =      86400;pPlanSectorNow-&gt;emBatt_WorkMode = BATT_WORKMODE_IDLE;pPlanSectorNow-&gt;nStopSOC =       0;pPlanSectorNow-&gt;nActvPwrLmt...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/06/13/2026-06-13-reduce-ai-cost-200-to-20/" title="我是怎么把每月200刀省到20的"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-13</div><div class="info-item-2">我是怎么把每月200刀省到20的</div></div><div class="info-2"><div class="info-item-1">我是怎么把每月200刀省到20的 上个月我把Claude升级到Max版本，$200一个月。 第五天，额度没了。 打开使用记录一看，好家伙——一个下午调研47篇论文，一口气吃掉一周10%的额度。这种会话一周跑两三回，额度跟流水一样哗哗就没了。 我肉疼啊。 后来想明白了——问题不在Claude本身，而在于我一直让它干一件它根本不该干的事：当全文检索引擎用。 你往对话框里塞50k字符的日志，问一个问题，日志就被算一次input token。再问一个，好，命中了prompt cache，单价变成1&#x2F;10了，但主会话还是会随轮次缓慢累加。更坑的是cache只有1小时TTL，间隔久了就得重来一次全价。 这感觉就像——每次问律师问题，都得先让他把你50页合同朗读一遍。 Claude Code最擅长的是推理、编排、写代码。读原始语料这种脏活累活，干嘛不让别的工具干？ 顺着这个思路，我找到了NotebookLM。  一、NotebookLM到底香在哪先说说我怎么被朋友安利的。 她写论文，reading list有60多篇。以前在PDF里Ctrl-F找半天，现在直接把全部论文丢进一个not...</div></div></div></a><a class="pagination-related" href="/2026/07/14/2026-07-14-workbuddy-skills-review/" title="WorkBuddy Skills 工程师实用评测：7 个真正值得集成到工作流的扩展能力"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-07-14</div><div class="info-item-2">WorkBuddy Skills 工程师实用评测：7 个真正值得集成到工作流的扩展能力</div></div><div class="info-2"><div class="info-item-1">WorkBuddy Skills 工程师实用评测：7 个真正值得集成到工作流的扩展能力用了一段时间 WorkBuddy 之后，有个感受越来越明显——默认的 AI 对话能力只是个底层运行时，真正的生产力来自 Skills 层的能力扩展。这篇文章不是功能介绍，是基于实际使用场景做的一轮技术评估，重点关注每个 Skill 的适用边界、组合方式和潜在风险点。  1. agent-browser：给 AI 加一个受控的浏览器执行环境从功能定位来看，agent-browser 解决的核心问题是：把 AI 的能力从”文本生成”扩展到”信息获取+动作执行”。 它的实现逻辑大致是：在沙箱或受控环境中启动一个浏览器实例，AI 可以驱动它打开 URL、执行搜索、提取 DOM 内容、截图，部分场景下还能辅助完成表单操作。 典型使用场景： 信息密集型的研究任务是它的强项。比如竞品监控、行业动态汇总这类工作，原本需要人工打开十几个页面再手动整理，现在可以把意图描述清楚，让它做信息搜集的第一遍过滤。一个可用的 Prompt 示例： 123请访问以下三个网站，提取最近两周内关于大模型应用层产品的重要更新：[网站...</div></div></div></a><a class="pagination-related" href="/2026/07/02/2026-07-02-ai-agent-deep-analysis/" title="AI Agent 深度解析：从聊天到全自动，差在哪里"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-07-02</div><div class="info-item-2">AI Agent 深度解析：从聊天到全自动，差在哪里</div></div><div class="info-2"><div class="info-item-1"> 一、先说清楚：你以为的 Agent 和真正的 Agent  我是一名储能算法工程师。   最近这段时间，”AI Agent”这个词已经泛滥到了某种程度。朋友圈里、技术论坛上、各种产品发布会的PPT里，这个词满天飞。但你要是认真问一圈，大多数人说不出个所以然来——顶多是”哦，就是那种能自己做事的 AI嘛”。   这个回答没错，但太粗了。   作为储能领域的工程师，近一年来一直接触AI，同时也研究把AI Agent引入工作流程中，我见过太多人把概念搞混。有人把带了个搜索插件的 ChatGPT 叫 Agent，有人把自动回复邮件的脚本叫Agent，也有人把真正能自主规划、执行、反馈的系统叫 Agent。这三个东西，底层差了不止一个量级。   所以我想从工程师的角度，给你捋清楚几件事：   第一，Agent 不是一个非此即彼的概念，它是一条连续的谱系，不同系统落在这条谱系的不同位置。   第二，从普通问答到真正的自动化Agent，中间差的那层东西，跟模型本身没太大关系，关键在模型外面怎么搭。   第三，搭一个能用的 Agent 并不难，工具链现在已经很成熟了，一个下午就能跑起来一个能用...</div></div></div></a></div></div><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="giscus-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/img/butterfly-icon.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">kuangyue111</div><div class="author-info-description">嵌入式开发 | 储能系统 | 工业通信协议</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">36</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">165</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">16</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/kuangyue111"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/kuangyue111" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">专注于嵌入式与储能系统技术分享</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%94%A8%E5%A5%BDNotebookLM%E7%AB%8B%E7%9C%8180-Token"><span class="toc-number">1.</span> <span class="toc-text">用好NotebookLM立省80%Token</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/07/14/2026-07-14-notebooklm-save-token/" title="用好NotebookLM立省80%Token">用好NotebookLM立省80%Token</a><time datetime="2026-07-14T12:00:00.000Z" title="发表于 2026-07-14 20:00:00">2026-07-14</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/07/14/2026-07-14-peak-valley-economic-model/" title="工商储能峰谷套利的经济模型与工程实现——从 EMS 代码看储能收益">工商储能峰谷套利的经济模型与工程实现——从 EMS 代码看储能收益</a><time datetime="2026-07-14T11:00:00.000Z" title="发表于 2026-07-14 19:00:00">2026-07-14</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/07/14/2026-07-14-workbuddy-skills-review/" title="WorkBuddy Skills 工程师实用评测：7 个真正值得集成到工作流的扩展能力">WorkBuddy Skills 工程师实用评测：7 个真正值得集成到工作流的扩展能力</a><time datetime="2026-07-14T10:00:00.000Z" title="发表于 2026-07-14 18:00:00">2026-07-14</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/07/14/2026-07-14-bms-fault-detection-state-machine/" title="BMS故障诊断：两态状态机+滤波延迟的可靠故障检测">BMS故障诊断：两态状态机+滤波延迟的可靠故障检测</a><time datetime="2026-07-14T07:00:00.000Z" title="发表于 2026-07-14 15:00:00">2026-07-14</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/07/10/2026-07-10-sems-power-redistribution-test/" title="站级EMS失控功率上报与功率重分配功能开发与测试">站级EMS失控功率上报与功率重分配功能开发与测试</a><time datetime="2026-07-10T07:00:00.000Z" title="发表于 2026-07-10 15:00:00">2026-07-10</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By kuangyue111</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.4</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="前往评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.4"></script><script src="/js/main.js?v=5.5.4"></script><div class="js-pjax"><script>(() => {
+  const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
+  const option = {"mapping":"url","lang":"zh-CN"}
+
+  const getGiscusTheme = theme => theme === 'dark' ? 'dark' : 'light'
+
+  const createScriptElement = config => {
+    const ele = document.createElement('script')
+    Object.entries(config).forEach(([key, value]) => {
+      ele.setAttribute(key, value)
+    })
+    return ele
+  }
+
+  const loadGiscus = (el = document, key) => {
+    const mappingConfig = isShuoshuo
+      ? { 'data-mapping': 'specific', 'data-term': key }
+      : { 'data-mapping': (option && option['data-mapping']) || 'pathname' }
+
+    const giscusConfig = {
+      src: 'https://giscus.app/client.js',
+      'data-repo': 'kuangyue111/kuangyue111.github.io',
+      'data-repo-id': 'R_kgDOSQde2Q',
+      'data-category-id': 'DIC_kwDOSQde2c4C8CgH',
+      'data-theme': getGiscusTheme(document.documentElement.getAttribute('data-theme')),
+      'data-reactions-enabled': '1',
+      crossorigin: 'anonymous',
+      async: true,
+      ...option,
+      ...mappingConfig
+    }
+
+    const scriptElement = createScriptElement(giscusConfig)
+
+    el.querySelector('#giscus-wrap').appendChild(scriptElement)
+
+    if (isShuoshuo) {
+      window.shuoshuoComment.destroyGiscus = () => {
+        if (el.children.length) {
+          el.innerHTML = ''
+          el.classList.add('no-comment')
+        }
+      }
+    }
+  }
+
+  const changeGiscusTheme = theme => {
+    const iframe = document.querySelector('#giscus-wrap iframe')
+    if (iframe) {
+      const message = {
+        giscus: {
+          setConfig: {
+            theme: getGiscusTheme(theme)
+          }
+        }
+      }
+      iframe.contentWindow.postMessage(message, 'https://giscus.app')
+    }
+  }
+
+  btf.addGlobalFn('themeChange', changeGiscusTheme, 'giscus')
+
+  if (isShuoshuo) {
+    'Giscus' === 'Giscus'
+      ? window.shuoshuoComment = { loadComment: loadGiscus }
+      : window.loadOtherComment = loadGiscus
+    return
+  }
+
+  if ('Giscus' === 'Giscus' || !false) {
+    if (false) btf.loadComment(document.getElementById('giscus-wrap'), loadGiscus)
+    else loadGiscus()
+  } else {
+    window.loadOtherComment = loadGiscus
+  }
+})()</script></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

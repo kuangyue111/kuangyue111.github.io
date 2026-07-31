@@ -1,0 +1,349 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>光储系统 AEMS 模块的光伏控制模式设计——从 ctrlPVMode 说起 | KuangYue's Blog</title><meta name="author" content="kuangyue111"><meta name="copyright" content="kuangyue111"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="光储系统 AEMS 模块的光伏控制模式设计——从 ctrlPVMode 说起   一、先说背景   在做这个光储一体化项目的过程中，光伏逆变器的控制策略是反复改动最多的模块之一。不是因为逻辑复杂，而是因为现场情况千变万化——有时候储能满了，有时候储能在放电，有时候电网侧功率已经开始往外倒送，什么情况下该让光伏全力输出，什么情况下该收一收，不同的时间节点答案是不一样的。   最终我们沉淀出了 ctr">
+<meta property="og:type" content="article">
+<meta property="og:title" content="光储系统 AEMS 模块的光伏控制模式设计——从 ctrlPVMode 说起">
+<meta property="og:url" content="https://kuangyue111.github.io/2026/07/31/2026-07-31-ctrl-pv-mode-design/index.html">
+<meta property="og:site_name" content="KuangYue&#39;s Blog">
+<meta property="og:description" content="光储系统 AEMS 模块的光伏控制模式设计——从 ctrlPVMode 说起   一、先说背景   在做这个光储一体化项目的过程中，光伏逆变器的控制策略是反复改动最多的模块之一。不是因为逻辑复杂，而是因为现场情况千变万化——有时候储能满了，有时候储能在放电，有时候电网侧功率已经开始往外倒送，什么情况下该让光伏全力输出，什么情况下该收一收，不同的时间节点答案是不一样的。   最终我们沉淀出了 ctr">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://kuangyue111.github.io/img/butterfly-icon.png">
+<meta property="article:published_time" content="2026-07-31T01:30:00.000Z">
+<meta property="article:modified_time" content="2026-07-31T01:34:13.653Z">
+<meta property="article:author" content="kuangyue111">
+<meta property="article:tag" content="嵌入式">
+<meta property="article:tag" content="储能">
+<meta property="article:tag" content="光伏">
+<meta property="article:tag" content="AEMS">
+<meta property="article:tag" content="逆变器">
+<meta property="article:tag" content="控制策略">
+<meta property="article:tag" content="防逆流">
+<meta property="article:tag" content="BESS">
+<meta property="article:tag" content="能量管理">
+<meta property="article:tag" content="DAQ">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://kuangyue111.github.io/img/butterfly-icon.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "光储系统 AEMS 模块的光伏控制模式设计——从 ctrlPVMode 说起",
+  "url": "https://kuangyue111.github.io/2026/07/31/2026-07-31-ctrl-pv-mode-design/",
+  "image": "https://kuangyue111.github.io/img/butterfly-icon.png",
+  "datePublished": "2026-07-31T01:30:00.000Z",
+  "dateModified": "2026-07-31T01:34:13.653Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "kuangyue111",
+      "url": "https://kuangyue111.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://kuangyue111.github.io/2026/07/31/2026-07-31-ctrl-pv-mode-design/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.5.4"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.13.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '光储系统 AEMS 模块的光伏控制模式设计——从 ctrlPVMode 说起',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/butterfly-icon.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">38</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">178</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">16</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">KuangYue's Blog</span></a><a class="nav-page-title" href="/"><span class="site-name">光储系统 AEMS 模块的光伏控制模式设计——从 ctrlPVMode 说起</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">光储系统 AEMS 模块的光伏控制模式设计——从 ctrlPVMode 说起</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-07-31T01:30:00.000Z" title="发表于 2026-07-31 09:30:00">2026-07-31</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-07-31T01:34:13.653Z" title="更新于 2026-07-31 09:34:13">2026-07-31</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/">技术分享</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/%E5%B5%8C%E5%85%A5%E5%BC%8F%E5%BC%80%E5%8F%91/">嵌入式开发</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><p>光储系统 AEMS 模块的光伏控制模式设计——从 ctrlPVMode 说起</p>
+<p>  一、先说背景</p>
+<p>  在做这个光储一体化项目的过程中，光伏逆变器的控制策略是反复改动最多的模块之一。不是因为逻辑复杂，而是因为现场情况千变万化——有时候储能满了，有时候储能在放电，有时候电网侧功率已经开始往外倒送，什么情况下该让光伏全力输出，什么情况下该收一收，不同的时间节点答案是不一样的。</p>
+<p>  最终我们沉淀出了 ctrlPVMode 这个核心控制模式枚举，用它来统一调度光伏逆变器的出力方式。今天就以这段代码为主线，把整个控制链路的思路说清楚。</p>
+<hr>
+<h1 id="二、三种模式的设计动机"><a href="#二、三种模式的设计动机" class="headerlink" title="二、三种模式的设计动机"></a>二、三种模式的设计动机</h1><p>  代码里枚举的定义非常简洁：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">enum</span> <span class="title">tagCtrlPVMode</span> &#123;</span></span><br><span class="line">    CtrlPVMode_Auto, <span class="comment">// 自动</span></span><br><span class="line">    CtrlPVMode_DAQ,  <span class="comment">// 数采控制</span></span><br><span class="line">    CtrlPVMode_AEMS, <span class="comment">// AEMS控制</span></span><br><span class="line">    CtrlPVMode_MAX</span><br><span class="line">&#125; CtrlPVMode;</span><br></pre></td></tr></table></figure>
+<p>  三个值，但背后对应的是两种截然不同的控制哲学。</p>
+<p>  <strong>DAQ（数采控制）</strong>的本质是”放权”。把逆变器交还给本地数采系统，让它自己维持当前的实际输出功率。这在什么时候有意义？——当储能完全不参与、电网也没有明显的倒送风险时，集中式AEMS的介入反而是多余的。给逆变器下一个和它当前输出一模一样的功率指令，等于告诉它”你现在做的就是对的，继续”。</p>
+<p>  AEMS 控制则是另一个极端。AEMS 要全程接管：根据负载功率、储能SOC、电网表计、逆变器额定功率，实时计算出一个最优目标出力值，通过Modbus&#x2F;内部总线写给逆变器。优点是精确，代价是逻辑复杂、参数多。</p>
+<p>  <strong>Auto（自动）</strong>是工程实践里的折中——让DAQ 先判断是否需要接管，不需要的时候交给 AEMS精细控制。这个思路在代码注释里有一句话可以印证：</p>
+<p>  ▎ 光伏自动控制模式：储能充满了且没有放电计划。上级控制模式：其他：储能未充满或者有放电计划。</p>
+<hr>
+<h1 id="三、初始化与热更新"><a href="#三、初始化与热更新" class="headerlink" title="三、初始化与热更新"></a>三、初始化与热更新</h1><p>  ctrlPVMode 的初始化发生在 Initialize() 函数里：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">err = pDPR-&gt;Get(pAEMS-&gt;hSampler, GETTYPE_ST_VAR, <span class="number">991</span>, <span class="number">990</span>, &amp;varV,<span class="number">4</span>);</span><br><span class="line">pAEMS-&gt;ctrlPVMode = (CtrlPVMode)((err==ERR_DPR_OK) ? varV.emValue : CtrlPVMode_Auto);</span><br></pre></td></tr></table></figure>
+<p>  设备节点 991&#x2F;990 存储的是配置值，读不到就默认Auto。这个设计体现了一个原则：控制策略在运行时可以被上层系统写入覆盖，也就是”热更新”。</p>
+<p>  在 Control() 函数里，case990 对应这个参数的实时更新：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">case</span> <span class="number">990</span>:</span><br><span class="line">    pAEMS-&gt;ctrlPVMode = (CtrlPVMode)pVarVal-&gt;emValue;</span><br><span class="line">    <span class="keyword">break</span>;</span><br></pre></td></tr></table></figure>
+<p>  同一批热更新的参数还包括：</p>
+<ul>
+<li>991&#x2F;992 → fPStep_PV（每次步进功率）</li>
+<li>991&#x2F;993 → uMsStep_PV（步进时间间隔）</li>
+<li>991&#x2F;994 → uMaxPBackflow（允许最大逆流功率）</li>
+<li>991&#x2F;995 → uMaxMsBackflow（允许最长逆流时长）</li>
+</ul>
+<p>  参数全部通过 DPR（数据处理器）下发，前端 Web 界面改一次配置，运行中的 AEMS进程马上生效，不需要重启。这是工程项目里很实用的一点，现场调试时能省不少事。</p>
+<hr>
+<h1 id="四、调度入口：Sample-里的-switch"><a href="#四、调度入口：Sample-里的-switch" class="headerlink" title="四、调度入口：Sample() 里的 switch"></a>四、调度入口：Sample() 里的 switch</h1><p>  每次采样周期，Sample() 函数会先做一批关键变量的预计算：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// BESS 最大可充电能力</span></span><br><span class="line">pAEMS-&gt;fMax_Chrg_PwrAbility_AEMS = (pAEMS-&gt;bAutoChrgEnable? pBessInfo-&gt;fMax_Chrg_PwrAbilitySumA</span><br><span class="line">    : (pBessInfo-&gt;emACDC_WorkStatuSum == STATU_ACDC_RECTIFY ? pBessInfo-&gt;fMax_Chrg_PwrAbilitySum : <span class="number">0</span>));</span><br><span class="line"></span><br><span class="line"><span class="comment">// BESS 还能消纳多少</span></span><br><span class="line">pAEMS-&gt;fRemainChrgAbl_Bess = pAEMS-&gt;fMax_Chrg_PwrAbility_AEMS - pBessInfo-&gt;f_PcabMeterSum;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 负载功率（光伏出力 + 放电侧交流负载）</span></span><br><span class="line">pAEMS-&gt;fPLoad_AC = pPvInfo-&gt;fTotalPVOutputActPower + pBessInfo-&gt;fPacload4DischgSum;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 总消纳能力（负载 + BESS 充电能力）</span></span><br><span class="line">pAEMS-&gt;fPLoad_AndBess = pAEMS-&gt;fPLoad_AC + pAEMS-&gt;fMax_Chrg_PwrAbility_AEMS;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 跟随负载的基准控制功率</span></span><br><span class="line">pAEMS-&gt;fCtrlPV_4PLoad_AC = pAEMS-&gt;fPLoad_AC - pAEMS-&gt;fProtBackflow_PV_AEMS;</span><br></pre></td></tr></table></figure>
+<p>  这几个中间量是后续所有判断的数据基础。注意 fPLoad_AC 的计算方式——它不是直接读电表，而是用”光伏实际出力 + 放电侧负载”来估算，因为这样更能反映系统当前真实的消纳能力。</p>
+<h2 id="预计算完成后，才进入模式调度：-Auto-模式下的这两行是整个设计里我认为最有意思的地方：DAQ-作为安全网，AEMS-作为主控。CtrlByDAQ-返回-TRUE-时，代表-DAQ认为当前情况它来接管更合适，AEMS-就不再介入。只有-DAQ-判断”这不是我该管的场景”（返回-FALSE），AEMS-才出手。"><a href="#预计算完成后，才进入模式调度：-Auto-模式下的这两行是整个设计里我认为最有意思的地方：DAQ-作为安全网，AEMS-作为主控。CtrlByDAQ-返回-TRUE-时，代表-DAQ认为当前情况它来接管更合适，AEMS-就不再介入。只有-DAQ-判断”这不是我该管的场景”（返回-FALSE），AEMS-才出手。" class="headerlink" title="  预计算完成后，才进入模式调度：  Auto 模式下的这两行是整个设计里我认为最有意思的地方：DAQ 作为安全网，AEMS 作为主控。CtrlByDAQ 返回 TRUE 时，代表 DAQ认为当前情况它来接管更合适，AEMS 就不再介入。只有 DAQ 判断”这不是我该管的场景”（返回 FALSE），AEMS 才出手。"></a>  预计算完成后，才进入模式调度：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">switch</span> (pAEMS-&gt;ctrlPVMode)</span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">case</span> CtrlPVMode_DAQ:</span><br><span class="line">    CtrlByDAQ(pAEMS);</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line"><span class="keyword">case</span> CtrlPVMode_AEMS:</span><br><span class="line">    CtrlByAEMS(pAEMS);</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line"><span class="keyword">default</span>: <span class="comment">// Auto</span></span><br><span class="line">    <span class="keyword">if</span> (!CtrlByDAQ(pAEMS)) </span><br><span class="line">    &#123;</span><br><span class="line">        CtrlByAEMS(pAEMS);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>  Auto 模式下的这两行是整个设计里我认为最有意思的地方：DAQ 作为安全网，AEMS 作为主控。CtrlByDAQ 返回 TRUE 时，代表 DAQ认为当前情况它来接管更合适，AEMS 就不再介入。只有 DAQ 判断”这不是我该管的场景”（返回 FALSE），AEMS 才出手。<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">                           │</span><br><span class="line">               ┌───────────┴───────────┐</span><br><span class="line">         ctrlPVMode                = DAQ     </span><br><span class="line">         =   AEMS          │      CtrlByDAQ()CtrlByAEMS()Auto</span><br><span class="line">(default)</span><br><span class="line">                           │</span><br><span class="line">                     CtrlByDAQ() 返回?</span><br><span class="line">                     ┌─────┴─────┐</span><br><span class="line">                   TRUEFALSE</span><br><span class="line">                  (DAQ接管)   CtrlByAEMS()</span><br></pre></td></tr></table></figure></h2><h1 id="五、CtrlByDAQ：什么情况下-DAQ-要接管？"><a href="#五、CtrlByDAQ：什么情况下-DAQ-要接管？" class="headerlink" title="五、CtrlByDAQ：什么情况下 DAQ 要接管？"></a>五、CtrlByDAQ：什么情况下 DAQ 要接管？</h1><p>  函数定义，进入条件有四个，必须同时成立：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (pAEMS-&gt;bAntiBackflow_PV           <span class="comment">// [A] PV 配置了防逆流功能</span></span><br><span class="line">    &amp;&amp; pBessInfo-&gt;emACDC_WorkStatuSum != STATU_ACDC_INVERTER  <span class="comment">// [B] 储能没在放电</span></span><br><span class="line">    &amp;&amp; pBessInfo-&gt;emACDC_WorkStatuSum != STATU_ACDC_RECTIFY   <span class="comment">// [C] 储能没在充电</span></span><br><span class="line">    &amp;&amp; pBessInfo-&gt;fACDC_RealTime_CurrSum &lt; <span class="number">2</span>                  <span class="comment">// [D] 储能实时电流 &lt; 2A（近似空转）</span></span><br><span class="line">    &amp;&amp; pAEMS-&gt;fMax_Chrg_PwrAbility_AEMS &lt; MIN_PWR_CHRG_4START <span class="comment">// [E] 储能没有消纳能力</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>  翻译成人话：储能完全静止、没有任何充放电行为、且没有消纳逆流功率的能力时，DAQ 接管光伏。</p>
+<p>  为什么要这样设计？因为在储能空转的场景下，如果 AEMS 主动推送一个较大的光伏功率指令，多余的功率无处可去，会直接往电网倒送，触发防逆流保护甚至导致并网违规。这时最安全的做法是让逆变器维持当前状态——DAQ读取当前实际输出功率并原样写回：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">pPvCtrl-&gt;fActivePower = pPvInfo-&gt;fTotalPVOutputActPower;</span><br><span class="line">pPvCtrl-&gt;CtrlMode = CTRL_BY_DATA_ACQUISITION;</span><br></pre></td></tr></table></figure>
+<p>  下发之前还有一个死区过滤，只有以下任一条件成立才真正发送 Modbus 帧：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (fCtrlPwr_Diff &gt; MAX_CtrlPwr_Diff || ElapseS(pPV-&gt;tmCtrlPwr_Last) &gt; <span class="number">1</span>)</span><br></pre></td></tr></table></figure>
+<p>  即功率偏差足够大，或者距离上次下发超过 1 秒，才触发写操作。这个防抖逻辑很关键，能有效降低 Modbus 总线的写频率，在多台逆变器并联的场景下尤其重要。</p>
+<hr>
+<h1 id="六、CtrlByAEMS：五个阶段的控制链路"><a href="#六、CtrlByAEMS：五个阶段的控制链路" class="headerlink" title="六、CtrlByAEMS：五个阶段的控制链路"></a>六、CtrlByAEMS：五个阶段的控制链路</h1><p>  这是整个模块里逻辑最密集的部分，我把它分成五个阶段逐一分析。</p>
+<p>  阶段 2.1：关机保护</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (pAEMS-&gt;fPLoad_AndBess &lt; pAEMS-&gt;fProtBackflow_PV_AEMS)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span> (pPvInfo-&gt;fRecvActivePower &gt;<span class="number">0</span> || pPvInfo-&gt;fTotalPVOutputActPower &gt; <span class="number">1</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        pPvCtrl-&gt;fActivePower = <span class="number">0</span>;</span><br><span class="line">        CtrlPV_AEMS(pAEMS, FALSE);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> TRUE;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>  fPLoad_AndBess（负载 + BESS充电能力之和）如果连防逆流保护值都不够，说明光伏出任何功率都会往电网倒送。这时候最正确的选择是关机。</p>
+<p>  注意有个小细节：只有在逆变器当前仍有出力（fRecvActivePower &gt; 0 || fTotalPVOutputActPower &gt; 1）时才下指令，避免重复向已经关机的逆变器写 0 功率。</p>
+<p>  阶段 2.2：防逆流降功率</p>
+<p>  这是代码里最复杂的一段，处理的是电网已经出现逆流但还不需要关机的情况。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 逆流判断</span></span><br><span class="line">pAEMS-&gt;fPBackflow = (pBessInfo-&gt;f_PgridMeterSum &lt; <span class="number">0</span></span><br><span class="line">    ? ABS(pBessInfo-&gt;f_PgridMeterSum) : <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">pAEMS-&gt;bPwrDown_PV = (</span><br><span class="line">    (pAEMS-&gt;msBackflow &gt; MAX_MS_Backflow &amp;&amp; (</span><br><span class="line">        pBessInfo-&gt;emACDC_WorkStatuSum == STATU_ACDC_IDLE<span class="comment">// BESS停止</span></span><br><span class="line">        || !pAEMS-&gt;bChrgAbl_Bess                            <span class="comment">// BESS无法消纳</span></span><br><span class="line">        || (pBessInfo-&gt;f_PcabMeterSum &lt; <span class="number">0</span> &amp;&amp;</span><br><span class="line">            (pAEMS-&gt;fPBackflow + pBessInfo-&gt;f_PcabMeterSum &gt; pAEMS-&gt;uMaxPBackflow))</span><br><span class="line">    ))</span><br><span class="line">    || (pAEMS-&gt;fPBackflow &gt; <span class="number">0</span> &amp;&amp; pAEMS-&gt;msBackflow &gt; pAEMS-&gt;uMaxMsBackflow)</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+<p>  bPwrDown_PV 的触发条件体现了一个分层容忍逻辑：</p>
+<ul>
+<li>短暂逆流（&lt; MAX_MS_Backflow）：允许存在，BESS 有消纳能力时不干预，因为 BESS 本身就能把多余的光伏功率吃掉</li>
+<li>逆流持续超时且BESS 消纳不了：触发降功率</li>
+<li>逆流量超过阈值 uMaxPBackflow 或持续超过 uMaxMsBackflow：无论原因，必须降</li>
+</ul>
+<p>  触发降功率后，功率目标的计算方式：</p>
+<p>  &#x2F;&#x2F; 逆流太大 || 逆流太久：降到”跟随负载+BESS功率”的水平pPvCtrl-&gt;fActivePower &#x3D; pAEMS-&gt;fCtrlPV_4PLoad_AC + pBessInfo-&gt;f_PcabMeterSum- pAEMS-&gt;fProtBackflow_PV_AEMS;</p>
+<p>  这里有个值得关注的设计演进。旧版本（被注释掉的old 代码）直接将功率降到 0，后来改成了”降到负载功率+BESS 当前功率 - 防逆流保护值”。这个改法更合理：与其激进地完全停光伏，不如降到恰好不产生逆流的水平，减少发电量损失。从注释 &#x2F;&#x2F; old pPvCtrl-&gt;fActivePower &#x3D; 0; 可以看出这是一次迭代优化，现场测试后发现直接归零太激进了。</p>
+<p>  阶段 3.1 &#x2F; 3.2：满功率输出</p>
+<p>  通过了防逆流检查之后，进入正向控制阶段。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 3.1 负载功率超过 PV 额定，直接拉满</span></span><br><span class="line"><span class="keyword">if</span> ((<span class="type">float</span>)pPvInfo-&gt;iTotalRatedPower_Set * CTRL_ALLPOWER_ADDED &lt; pAEMS-&gt;fPLoad_AC)</span><br><span class="line">&#123;</span><br><span class="line">    pPvCtrl-&gt;fActivePower = (<span class="type">float</span>)pPvInfo-&gt;iTotalRatedPower_Set * CTRL_ALLPOWER_ADDED;</span><br><span class="line">    <span class="comment">// bRampup = FALSE，不需要斜坡，负载能全消纳</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 3.2 BESS 在运行且负载+BESS总消纳 &gt; PV 额定</span></span><br><span class="line"><span class="keyword">else</span> <span class="keyword">if</span> (pBessInfo-&gt;emACDC_WorkStatuSum != STATU_ACDC_IDLE</span><br><span class="line">    &amp;&amp; (<span class="type">float</span>)pPvInfo-&gt;iTotalRatedPower_Set * CTRL_ALLPOWER_ADDED &lt; pAEMS-&gt;fPLoad_AndBess)</span><br><span class="line">&#123;</span><br><span class="line">    bRampup = pAEMS-&gt;bRampup_PV;</span><br><span class="line">    pPvCtrl-&gt;fActivePower = (<span class="type">float</span>)pPvInfo-&gt;iTotalRatedPower_Set * CTRL_ALLPOWER_ADDED;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>  3.1 和 3.2 的区别：3.1 里负载单独就能消纳全部额定功率，不需要 BESS 协助，所以不开bRampup，可以一步到位。3.2 里需要BESS 来帮忙消纳，因此是否开爬坡由配置项bRampup_PV（参数991&#x2F;987）决定——毕竟 BESS的充电能力也有响应时间，激进爬坡会导致短暂的逆流。</p>
+<p>  阶段 4.1：步进式升功率</p>
+<p>  到了else 分支，说明当前的光伏额定功率超过了负载+BESS 的总消纳能力，需要谨慎一步步往上试：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">pAEMS-&gt;bPwrUpStep_PV = (</span><br><span class="line">    ElapseMS(pPV-&gt;dtmRetry_Last) &gt; pAEMS-&gt;uMsStep_PV        <span class="comment">// 调节时间步长</span></span><br><span class="line">    &amp;&amp; (</span><br><span class="line">        pBessInfo-&gt;f_PgridMeterSum &gt; (pAEMS-&gt;fProtBackflow_PV_AEMS + pAEMS-&gt;fPStep_PV / <span class="number">2</span>)  <span class="comment">// 电网还有裕量</span></span><br><span class="line">        || pAEMS-&gt;fRemainChrgAbl_Bess &gt; (pAEMS-&gt;fProtBackflow_PV_AEMS + pAEMS-&gt;fPStep_PV / <span class="number">2</span>) <span class="comment">// 储能还能充</span></span><br><span class="line">    )</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+<p>  时间条件和功率条件都满足，才往上步进一格（fPStep_PV，通过参数 991&#x2F;992 配置）；如果逆变器当前出力已接近额定（超过iTotalRatedPower_Set * MAX_RATIO_RATEDPWR），就直接跳到额定值，不再一步一步爬。</p>
+<p>  这个设计思路的核心是时间节流。每次上调之间必须等待 uMsStep_PV 毫秒（配置参数991&#x2F;993），这样既能防止调节频率太高导致逆变器振荡，也能给电网表计和储能系统留出响应时间。</p>
+<p>  阶段 5.1：SOC 近满限功率</p>
+<p>  在最终调用 CtrlPV_AEMS 下发之前，还有一个特殊处理：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (pBessInfo-&gt;fSOCSum &gt;= (<span class="type">float</span>)pAEMS-&gt;uLmtPwrIfSOCGe_PV)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">float</span> fPbess_Chrg =<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">if</span> (pBessInfo-&gt;emACDC_WorkStatuSum == STATU_ACDC_RECTIFY</span><br><span class="line">        || pBessInfo-&gt;emACDC_WorkStatuSum == STATU_ACDC_STANDBY)</span><br><span class="line">    &#123;</span><br><span class="line">        fPbess_Chrg = MIN((<span class="type">float</span>)pAEMS-&gt;uMaxChrgAbl4BESS_PV,          pAEMS-&gt;fMax_Chrg_PwrAbility_AEMS);</span><br><span class="line">    &#125;</span><br><span class="line">    pPvCtrl-&gt;fActivePower = pAEMS-&gt;fPLoad_AC + fPbess_Chrg;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>  储能 SOC 到达 uLmtPwrIfSOCGe_PV（配置参数 991&#x2F;988，单位 %）时，光伏的目标功率被限制为”负载 +少量充电功率”。如果储能处于充电或待机状态，还会留一点充电余量（上限 uMaxChrgAbl4BESS_PV），否则就只跟随负载。</p>
+<p>  这段代码的注释里有一行储能快充满，跟随负载+Bess，和注释掉的旧逻辑 降光伏功率对比，可以看出旧版本是”强制限功率”，新版本是”智能跟随”。前者会导致储能充满后光伏大幅削减，发电量损失较大；后者则是动态跟随实时负载，最大化利用光伏出力。</p>
+<h2 id="完整的-CtrlByAEMS-执行流程"><a href="#完整的-CtrlByAEMS-执行流程" class="headerlink" title="  完整的 CtrlByAEMS 执行流程"></a>  完整的 CtrlByAEMS 执行流程<br><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">    ┌────────────┴────────────┐</span><br><span class="line">    │  计算 fPBackflow,        │</span><br><span class="line">    │  bChrgAbl_Bess          │</span><br><span class="line">    └────────────┬────────────┘</span><br><span class="line">                 │</span><br><span class="line">         fPLoad_AndBess &lt; fProtBackflow_PV_AEMS?</span><br><span class="line">                YES → 关机，返回│ NOf_PgridMeterSum &lt; fProtBackflow_PV_AEMS (逆流)?</span><br><span class="line">                YES → 计算 msBackflow,判断 bPwrDown_PV│ bPwrDown_PV=TRUE├→</span><br><span class="line">功率=fCtrlPV_4PLoad_AC+f_PcabMeterSum-保护值</span><br><span class="line">                         └→CtrlPV_AEMS(FALSE), 返回</span><br><span class="line">                 │ NO（无逆流）</span><br><span class="line">         ┌───────┴──────────────────────┐</span><br><span class="line">         │  额定 &lt; fPLoad_AC?           │</span><br><span class="line">         YES                NO3.1 满功率，无斜坡            额定 &lt; fPLoad_AndBess?</span><br><span class="line">                               YES                NO3.2 满功率          4.1 步进升功率</span><br><span class="line">                             有斜坡         (条件允许时+fPStep)│┌───────┴──────────────────────┐</span><br><span class="line">         │  fSOCSum &gt;= uLmtPwrIfSOCGe?│</span><br><span class="line">         YES                            NO</span><br><span class="line">    5.1 功率=fPLoad_AC+fPbess_Chrg  维持上面的目标值</span><br><span class="line">                 │</span><br><span class="line">         CtrlPV_AEMS(bRampup)</span><br></pre></td></tr></table></figure></h2><h1 id="七、CtrlPV-AEMS：最后一公里"><a href="#七、CtrlPV-AEMS：最后一公里" class="headerlink" title="七、CtrlPV_AEMS：最后一公里"></a>七、CtrlPV_AEMS：最后一公里</h1><p>  前面所有的计算都是在确定目标功率 pPvCtrl-&gt;fActivePower，真正把指令发出去的是 CtrlPV_AEMS()。</p>
+<p>  这个函数做了三件事：</p>
+<h2 id="1-斜坡限制（Rampup）"><a href="#1-斜坡限制（Rampup）" class="headerlink" title="1. 斜坡限制（Rampup）"></a>1. 斜坡限制（Rampup）</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (bRampup)</span><br><span class="line">&#123;</span><br><span class="line">    pPvCtrl-&gt;fActivePower = MIN(</span><br><span class="line">        pPvInfo-&gt;fRecvActivePower + pAEMS-&gt;fPStep_PV,</span><br><span class="line">        pPvCtrl-&gt;fActivePower</span><br><span class="line">    );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>  bRampup&#x3D;TRUE 时，本次实际下发的功率不能超过”当前反馈功率 + 一个步进量”。即使目标功率是 500kW，当前只有100kW，也只能先发 100+ fPStep_PV。这样做是为了避免逆变器功率突变，特别是 BESS协助消纳的场景里，储能的响应比光伏慢，激进爬坡会短暂超出消纳能力。</p>
+<h2 id="2-负载跟随下界（fCtrlPV-4PLoad-AC）"><a href="#2-负载跟随下界（fCtrlPV-4PLoad-AC）" class="headerlink" title="2. 负载跟随下界（fCtrlPV_4PLoad_AC）"></a>2. 负载跟随下界（fCtrlPV_4PLoad_AC）</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (pPvCtrl-&gt;fActivePower &lt; pAEMS-&gt;fCtrlPV_4PLoad_AC)</span><br><span class="line">&#123;</span><br><span class="line">    pPvCtrl-&gt;fActivePower = MAX(pAEMS-&gt;fCtrlPV_4PLoad_AC, pPvCtrl-&gt;fActivePower);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>  fCtrlPV_4PLoad_AC &#x3D; fPLoad_AC - fProtBackflow_PV_AEMS，是”跟随当前负载的最低出力基准”。如果经过斜坡限制后目标功率低于这个值，说明光伏出力不足以覆盖负载，这时候不应该被斜坡拖着往下走，而是应该立刻拉到基准值——注释写得直白：负载马上到位。注意这个逻辑，旧版本没有这个下界保护，会导致在负载较大时光伏恢复输出的速度过慢，储能要额外放电补缺口。</p>
+<h2 id="3-死区过滤与实际下发"><a href="#3-死区过滤与实际下发" class="headerlink" title="3. 死区过滤与实际下发"></a>3. 死区过滤与实际下发</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">pPvCtrl-&gt;fActivePower = MIN(</span><br><span class="line">    (<span class="type">float</span>)pPvInfo-&gt;iTotalRatedPower_Set * CTRL_ALLPOWER_ADDED,</span><br><span class="line">    pPvCtrl-&gt;fActivePower</span><br><span class="line">);</span><br><span class="line">pPvCtrl-&gt;fActivePower = MAX(<span class="number">0</span>, pPvCtrl-&gt;fActivePower);</span><br><span class="line"></span><br><span class="line"><span class="type">float</span> fCtrlPwr_Diff = ABS(pPvCtrl-&gt;fActivePower - pPvInfo-&gt;fRecvActivePower);</span><br><span class="line"><span class="keyword">if</span> (pPvCtrl-&gt;CtrlMode != CTRL_BY_AEMS</span><br><span class="line">    || pPvInfo-&gt;RecvCtrlMode != CTRL_BY_AEMS</span><br><span class="line">    || fCtrlPwr_Diff &gt; MAX_CtrlPwr_Diff</span><br><span class="line">    || ElapseS(pPV-&gt;tmCtrlPwr_Last) &gt; <span class="number">1</span>)</span><br><span class="line">&#123;</span><br><span class="line">    pPvCtrl-&gt;CtrlMode = CTRL_BY_AEMS;</span><br><span class="line">    pPV-&gt;tmCtrlPwr_Last = _NOW_;Push_BlobValue(SETTYPE_RAW_SP, pAEMS-&gt;hSampler, <span class="number">1050</span>, <span class="number">3752</span>,(<span class="type">void</span>*)pPvCtrl,</span><br><span class="line"><span class="keyword">sizeof</span>(A_BLOB_PV_CTRL_BY_AEMS), BLOB_TYPE_PV_SRTTING_BY_AEMS);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>  先把功率值夹紧在[0, 额定 × CTRL_ALLPOWER_ADDED] 区间内，再判断是否有必要真的发Modbus。有四种情况必须发：控制模式不对、逆变器反馈的控制模式不对、功率偏差超过死区、或者距离上次下发超过 1 秒（心跳保活）。</p>
+<p>  这个1 秒心跳的意义：逆变器本地控制器如果长时间收不到 AEMS 指令，可能会因为通信超时切换回本地模式。每隔 1秒强制重发一次，确保控制权不丢。</p>
+<hr>
+<h1 id="八、Auto模式里的-DAQ-优先级究竟意味着什么"><a href="#八、Auto模式里的-DAQ-优先级究竟意味着什么" class="headerlink" title="八、Auto模式里的 DAQ 优先级究竟意味着什么"></a>八、Auto模式里的 DAQ 优先级究竟意味着什么</h1><p>  回过头来看这段代码，DAQ 模式的触发条件再仔细看一遍：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (pAEMS-&gt;bAntiBackflow_PV</span><br><span class="line">    &amp;&amp; pBessInfo-&gt;emACDC_WorkStatuSum != STATU_ACDC_INVERTER</span><br><span class="line">    &amp;&amp; pBessInfo-&gt;emACDC_WorkStatuSum != STATU_ACDC_RECTIFY</span><br><span class="line">    &amp;&amp; pBessInfo-&gt;fACDC_RealTime_CurrSum&lt; <span class="number">2</span></span><br><span class="line">    &amp;&amp; pAEMS-&gt;fMax_Chrg_PwrAbility_AEMS &lt; MIN_PWR_CHRG_4START)</span><br></pre></td></tr></table></figure>
+<p>  条件 C、D 是判断储能是否真的空转的双重保险——光靠状态机（emACDC_WorkStatuSum）不够可靠，状态切换有滞后，所以再加一个实时电流判断（fACDC_RealTime_CurrSum &lt; 2A）。这是从现场踩坑里来的经验：储能状态刚从放电切到待机，CCU的状态字还没来得及更新，但电流表计已经到0 了，用电流来兜底更实时。</p>
+<p>  在 Auto 模式下，整个逻辑链可以理解成：</p>
+<p>  储能空转 + PV配了防逆流?YES → DAQ接管（维持现状，防止乱发功率）<br>      NO  → AEMS接管（主动优化出力）</p>
+<p>  本质上是把”是否有能力消纳额外的光伏功率”作为模式切换的核心判据。有能力消纳，AEMS来帮你用好每一度电；没能力消纳，让逆变器自己维持，别添乱。</p>
+<hr>
+<h1 id="九、待机控制的联动"><a href="#九、待机控制的联动" class="headerlink" title="九、待机控制的联动"></a>九、待机控制的联动</h1><p>  ctrlPVMode 调度完成后，Sample() 还有一段待机逻辑：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">bNeedStandby = (</span><br><span class="line">    (pPvInfo-&gt;fTotalPVPowerAbility &gt; MIN_PWR_LMT|| pPvInfo-&gt;fTotalPVOutputActPower &gt; MIN_PWR_LMT)</span><br><span class="line">    &amp;&amp; pAEMS-&gt;fMax_Chrg_PwrAbility_AEMS &gt; MIN_PWR_CHRG_4START</span><br><span class="line">    &amp;&amp; (</span><br><span class="line">        pPvCtrl-&gt;fActivePower &lt; pPvInfo-&gt;iTotalRatedPower_Set</span><br><span class="line">        || pPvInfo-&gt;fTotalPVOutputActPower &gt;= pAEMS-&gt;fPLoad_AC</span><br><span class="line">        || pBessInfo-&gt;fPacload4DischgSum&lt; pAEMS-&gt;fLtPwr2Standby_PV</span><br><span class="line">        || pBessInfo-&gt;emACDC_WorkStatuSum == STATU_ACDC_INVERTER</span><br><span class="line">    )</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+<p>  翻译：光伏有出力能力 + BESS 有消纳能力 + （光伏出力未满额定，或光伏出力已超过负载，或负载偏低，或储能在放电）→ 让BESS进入待机模式。</p>
+<p>  待机不是关机，是让 CCU降低自放电损耗、进入浅休眠。这个逻辑是光伏控制策略的”下游”，只有在光伏功率分配确定之后，才能判断是否需要 BESS待机。这也是为什么待机逻辑放在 ctrlPVMode switch 后面而不是前面。</p>
+<p>  停止待机有一个延时保护 uDelayStandby_PV（参数 1001&#x2F;3318），防止待机状态在临界条件附近反复振荡。</p>
+<hr>
+<h1 id="十、整体设计回顾"><a href="#十、整体设计回顾" class="headerlink" title="十、整体设计回顾"></a>十、整体设计回顾</h1><p>  把整个 ctrlPVMode 的链路重新串一遍：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">配置读取（991/990）</span><br><span class="line">        │Initialize()</span><br><span class="line">        │</span><br><span class="line"> ┌──────┴────────────────────────────────────────────┐</span><br><span class="line"> │                Sample() 周期调用                   │</span><br><span class="line"> │                │                                  │</span><br><span class="line"> │  1. 读BESS 状态 (1001/3900)                       │</span><br><span class="line"> │  2. 读 PV 状态  (1050/3697)                       │</span><br><span class="line"> │  3. 预计算 fPLoad_AC / fPLoad_AndBess 等           │</span><br><span class="line"> │  4. ctrlPVMode switch───────────────────────────  │</span><br><span class="line"> │         ├── DAQ  →CtrlByDAQ()                     │</span><br><span class="line"> │         ├── AEMS → CtrlByAEMS()                   │</span><br><span class="line"> │         └── Auto → CtrlByDAQ() || CtrlByAEMS()    │</span><br><span class="line"> │                         │                          │</span><br><span class="line"> │              CtrlPV_AEMS()死区过滤后下发            │</span><br><span class="line"> │                         │                          │</span><br><span class="line"> │  5. BESS 待机联动判断                               │</span><br><span class="line"> │  6. Do_Charger_EM() 充电桩能量管理                  │</span><br><span class="line"> └────────────────────────────────────────────────────┘</span><br><span class="line">         │</span><br><span class="line">   Control() 热更新（任意时刻）</span><br><span class="line">         │</span><br><span class="line">   参数写入 pAEMS-&gt;ctrlPVMode 等</span><br></pre></td></tr></table></figure>
+<p>  几个我认为设计得比较扎实的地方：</p>
+<p>  <strong>分层容忍，而不是硬阈值关机。</strong>逆流从出现到触发降功率，中间有MAX_MS_Backflow 的宽容窗口，BESS有时候能在这个窗口里把逆流吃掉，完全不需要降光伏。只有 BESS真的没能力、或者逆流时间过长，才强制干预。旧版本直接降到0，新版本改成”降到跟随负载的水平”，保留了更多发电量。</p>
+<p>  斜坡与跟随的平衡。 bRampup 只在特定场景开启（3.2 满功率+BESS 协助时），防止爬坡时逆变器和储能之间的响应时差产生逆流。但在纯负载消纳场景（3.1）或主动降功率场景（2.2），不开斜坡，响应更快。同时下界保护 fCtrlPV_4PLoad_AC确保恢复时不会被斜坡拖累太久。</p>
+<p>  热更新全覆盖。 从控制模式到步进量、时间间隔、最大逆流值，所有关键参数都可以在不重启的情况下通过 DPR 下发修改。这对现场调试非常实用——不同项目的变压器容量、储能容量差异很大，参数需要反复调整，热更新能省掉很多重启等待时间。</p>
+<p>  双重防抖。 CtrlByDAQ 里有 5秒的条件防抖，CtrlPV_AEMS 里有 1秒的心跳+死区过滤。两层保护确保既不会因状态短暂抖动频繁切换控制模式，也不会因控制模式频繁切换产生功率振荡。</p>
+<hr>
+<p>  唯一觉得有点绕的地方是 fPLoad_AC 的计算方式——用”光伏实际出力 +放电侧负载”来估算系统负载，而不是直接读一个独立的负载电表。这是受限于硬件配置（部分项目没有单独的负载表），但在光伏出力变化剧烈时，这个估算值会跟着抖，进而影响fPLoad_AndBess 和 fCtrlPV_4PLoad_AC 的稳定性。这是后续可以优化的地方：如果有独立的负载电表数据，优先使用。</p>
+<p>  代码里标注的那些历史改动记录（260416、260518、260605……）说明这套逻辑经历了相当多的现场迭代。能看到它从”粗暴降0”演化到”智能跟随”，从”无斜坡”到”有条件斜坡”，从”固定阈值”到”带滞后的容忍窗口”，每一步改动背后都对应着一类实际踩到的坑。这大概是嵌入式能量管理系统最真实的样子。</p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://kuangyue111.github.io">kuangyue111</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://kuangyue111.github.io/2026/07/31/2026-07-31-ctrl-pv-mode-design/">https://kuangyue111.github.io/2026/07/31/2026-07-31-ctrl-pv-mode-design/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://kuangyue111.github.io" target="_blank">KuangYue's Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E5%B5%8C%E5%85%A5%E5%BC%8F/">嵌入式</a><a class="post-meta__tags" href="/tags/%E5%82%A8%E8%83%BD/">储能</a><a class="post-meta__tags" href="/tags/%E5%85%89%E4%BC%8F/">光伏</a><a class="post-meta__tags" href="/tags/AEMS/">AEMS</a><a class="post-meta__tags" href="/tags/%E9%80%86%E5%8F%98%E5%99%A8/">逆变器</a><a class="post-meta__tags" href="/tags/%E6%8E%A7%E5%88%B6%E7%AD%96%E7%95%A5/">控制策略</a><a class="post-meta__tags" href="/tags/%E9%98%B2%E9%80%86%E6%B5%81/">防逆流</a><a class="post-meta__tags" href="/tags/BESS/">BESS</a><a class="post-meta__tags" href="/tags/%E8%83%BD%E9%87%8F%E7%AE%A1%E7%90%86/">能量管理</a><a class="post-meta__tags" href="/tags/DAQ/">DAQ</a></div><div class="post-share"><div class="social-share" data-image="/img/butterfly-icon.png" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/2026/07/24/2026-07-24-amber-modbus-tcp-charger-troubleshooting/" title="充电桩Modbus TCP采集模块踩坑实录：从Too many data到并发死锁的完整修复"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">充电桩Modbus TCP采集模块踩坑实录：从Too many data到并发死锁的完整修复</div></div><div class="info-2"><div class="info-item-1">一次充电桩 Modbus TCP 采集模块的踩坑实录背景最近在做一个储能+充电管理系统，需要通过 Modbus TCP 采集充电桩的实时运行数据。设备是 Amber协议的分体桩，12个枪头，每把枪都有 DC 电压、电流、SOC、充电状态等一堆寄存器。理论上用libmodbus几十行就能搞定，但实际下来坑一个接一个，前前后后搞了好几天。把这个过程记下来，供后来者参考。  模块架构这个系统采用插件式采样器架构，charger_sampler 是一个独立的 .so 库，暴露 Initialize()、Sample()、Control()三个接口供主框架调用。大概流程是这样： 12345678910111213主框架定时调用 Sample()    ↓锁 Mutex（hSamplerLock）    ↓ChargerModbusTCPSample()    →CtxIsReady()检查并重建连接    → SegmentReadData() 分段读取寄存器    → ParseModbusData() 按地址偏移解析原始值    → ConvertData()     应用缩放系数转换...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/06/16/2026-06-16-iec61850-in-energy-storage/" title="IEC 61850 在储能系统中的深度解析：从标准架构到工程代码实现"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-16</div><div class="info-item-2">IEC 61850 在储能系统中的深度解析：从标准架构到工程代码实现</div></div><div class="info-2"><div class="info-item-1"> 一、为什么储能系统需要IEC 61850  在储能行业快速发展之前，IEC61850是一个主要活跃在变电站自动化领域的标准。电网调度中心、继电保护装置、测控单元之间的通信，大量依赖这套体系。   但随着大规模储能接入电网，一个让所有系统集成商头疼的问题浮出水面：每个BMS厂商、每个PCS厂商、每个EMS厂商都有自己的私有协议，Modbus RTU、CAN、自定义TCP协议各行其是。一个100MWh的储能电站，可能同时运行着十几种不同的通信协议，集成联调的工作量占据了整个项目工期的30%以上，而且一旦某个设备升级固件，接口就可能失效。   IEC 61850从根本上解决的是这个问题——它定义了一套统一的数据模型、通信服务和配置语言，让不同厂商的设备能够在标准层面互操作，而不依赖私有协议约定。  二、IEC 61850标准体系的完整架构  IEC 61850不是一个单一文件，而是由IEC TC57工作组制定的一组相互关联的系列标准。理解它的结构，是正确使用它的前提。   与储能系统最直接相关的子标准： 1234567891011121314151617┌──────────────...</div></div></div></a><a class="pagination-related" href="/2026/05/27/2026-05-27-bms-pcs-can-protocol-deep-analysis/" title="BMS-PCS通信协议深度解析：CAN总线在储能系统中的工程实践"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-27</div><div class="info-item-2">BMS-PCS通信协议深度解析：CAN总线在储能系统中的工程实践</div></div><div class="info-2"><div class="info-item-1">BMS-PCS通信协议深度解析——CAN总线在储能系统中的工程实践 作者：储能系统固件开发工程师日期：2026-04-14项目背景：工商业储能管理系统（BESS），支持多品牌BMS并联接入，通过CAN总线与PCS（Power Conversion System）双向通信   一、为什么是CAN总线？刚加入这个项目时，我问了自己同样的问题。为什么储能系统不用Modbus RTU，不用RS485，而偏偏选择CAN总线？ 原因是多层次的：  实时性：CAN总线的优先级仲裁机制保证了高优先级帧（如保护命令）在总线竞争中必然胜出，最坏情况延迟可以精确计算。 可靠性：CAN协议内置CRC校验、位填充、帧错误检测，单个节点故障不会拉低整条总线。 多主通信：BMS可以主动广播数据，PCS也可以主动发送控制命令，无需轮询。 工业生态：主流BMS厂商（宁德时代、亿纬锂能、鹏辉能源等）均提供CAN接口，协议文档相对规范。  然而，理论是美好的，现实是：每家厂商的CAN协议都不一样。这就是我们项目中出现 can_pl_batt.c、can_nd_batt.c、can_nd_v33_batt.c、can_...</div></div></div></a><a class="pagination-related" href="/2026/06/09/2026-06-09-pv-storage-load-joint-forecasting-ems/" title="光伏-储能-负荷联合预测：给 EMS 装上&quot;预知能力&quot;"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-09</div><div class="info-item-2">光伏-储能-负荷联合预测：给 EMS 装上&quot;预知能力&quot;</div></div><div class="info-2"><div class="info-item-1">光伏-储能-负荷联合预测：给 EMS 装上”预知能力” 本文结合我正在维护的一套工业储能管理系统的真实工程实践，聊聊如何把预测能力嵌入 EMS 决策链路。代码片段均来自项目实际文件，不是伪代码。   一、为什么 EMS 需要预测？我在调试这套系统的 MQTT 指令链路时，发现一个有意思的现象：EMS 的充放电决策完全依赖当前时刻的 SOC 和预设的时段计划表。翻开 ems_management.c，核心逻辑大概是这样的： 123456BOOL IsBatt_Plan2_StartChrg(...) &#123;    if (pEMS-&gt;nTMSector &lt; 0) return FALSE;    if (pPlanSectorNow-&gt;emBatt_WorkMode != BATT_WORKMODE_FIRST_CHRGING) return FALSE;    if (nBattSOC &gt;= pPlanSectorNow-&gt;nStopSOC) return FALSE;    return TRUE;&#125;  逻辑很清晰：查当前时段（nT...</div></div></div></a><a class="pagination-related" href="/2026/07/14/2026-07-14-bms-fault-detection-state-machine/" title="BMS故障诊断：两态状态机+滤波延迟的可靠故障检测"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-07-14</div><div class="info-item-2">BMS故障诊断：两态状态机+滤波延迟的可靠故障检测</div></div><div class="info-2"><div class="info-item-1">BMS故障诊断：两态状态机+滤波延迟的可靠故障检测 前言  电池管理系统（BMS）在储能、电动汽车、UPS等高压直流应用中承担着核心的安全守卫职责。一个错误的故障判断——无论是漏报还是误  报——都可能带来严重后果：漏报导致过充过放损毁电芯甚至起火，误报导致系统频繁保护停机、影响生产和用户体验。   如何在噪声环境下做到”不该报的不报，该报的必须报”？本文基于真实固件代码，深入剖析其故障诊断体系的设计思路与实现细节。  一、两态故障状态机：简单却不简陋1.1 状态定义  打开 DiagInterface.h，最先映入眼帘的是故障滤波状态的枚举定义： 123456789/* DiagInterface.h:33 */typedef enum&#123;    eErr_A= 0,    /* 正常状态 */    eErr_B    = 1,    /* 异常状态 */    eErr_AtoB = 2,    /* 内部使用（A→B 迁移中） */    eErr_BtoA = 3,    /* 内部使用（B→A 迁移中） */    eErr_State&#125; e_Err...</div></div></div></a><a class="pagination-related" href="/2026/05/27/2026-05-27-embedded-multithread-manager-design/" title="嵌入式多线程管理框架设计：从 pthread 到工业级线程管家"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-05-27</div><div class="info-item-2">嵌入式多线程管理框架设计：从 pthread 到工业级线程管家</div></div><div class="info-2"><div class="info-item-1">Topic 2：嵌入式多线程管理框架设计——从 pthread 到工业级线程管家 核心切入点：publib/iThread.c（256线程上限、动态条目池、心跳监控） 本文基于一个实际的储能系统（BMS&#x2F;EMS）嵌入式工程代码，深入剖析一套从裸 pthread 封装而成的工业级线程管理框架。我们将从设计哲学、实现细节、到AI驱动的异常检测，完整还原一个”线程管家”的诞生过程。   一、引言：为什么需要一个”线程管家”？在我参与的这个储能管理系统项目中，系统需要同时运行 IEC-104 通信、MQTT 上报、Modbus 采集、BMS 采样、GUI 显示等数十个功能模块。每个模块都运行在独立的 pthread 中。如果直接使用裸 pthread API，会面临以下问题：  线程失控：没有统一的注册机制，无法知道系统中到底有多少线程在跑 死锁频发：多层嵌套锁、递归锁使用不当导致系统卡死 故障不可恢复：某个线程崩溃后，整个系统可能僵死 调试困难：出了问题不知道哪个线程挂了、为什么挂  正是在这样的背景下，工程中诞生了 iThread.c 这个线程管理框架——它不是线程池，不是...</div></div></div></a><a class="pagination-related" href="/2026/06/08/2026-06-08-eis-deep-analysis/" title="电化学阻抗谱（EIS）深度解析：从物理原理到工程代码实现"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-08</div><div class="info-item-2">电化学阻抗谱（EIS）深度解析：从物理原理到工程代码实现</div></div><div class="info-2"><div class="info-item-1">电化学阻抗谱（EIS）深度解析：从物理原理到工程代码实现  一、为什么EIS是电池诊断的天花板工具  做储能系统的人都知道，判断一块电池的健康状态，常用的手段无非是容量标定、内阻测试、OCV曲线这几招。这些方法能告诉你电池现在的状态，但告诉不了你它为什么衰减，衰减发生在哪个环节，是SEI膜增厚、活性材料失活，还是锂离子扩散通道堵塞。   这就是电化学阻抗谱（Electrochemical Impedance Spectroscopy，EIS）存在的意义。   EIS的核心思想非常直接：在不同频率下向电池施加一个微小的正弦扰动信号（通常是幅值5到10mV的电压信号，或幅值C&#x2F;20以下的电流信号），测量电池的电压和电流响应，计算出各频率下的复数阻抗。不同的内部物理过程在不同频率段留下”指纹”，把这些指纹拼在一起，就能把电池的内部状态解读出来。   一个成熟的EIS测量通常覆盖频率范围从100kHz到1mHz，横跨约8个数量级。高频段揭示欧姆效应，中频段对应SEI膜和电荷传递过程，低频段反映锂离子的扩散行为。这种多频率多维度的信息密度，是任何单点测量方法都无法比拟的。  二、...</div></div></div></a></div></div><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="giscus-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/img/butterfly-icon.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">kuangyue111</div><div class="author-info-description">嵌入式开发 | 储能系统 | 工业通信协议</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">38</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">178</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">16</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/kuangyue111"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/kuangyue111" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">专注于嵌入式与储能系统技术分享</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E4%B8%89%E7%A7%8D%E6%A8%A1%E5%BC%8F%E7%9A%84%E8%AE%BE%E8%AE%A1%E5%8A%A8%E6%9C%BA"><span class="toc-number">1.</span> <span class="toc-text">二、三种模式的设计动机</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B8%8E%E7%83%AD%E6%9B%B4%E6%96%B0"><span class="toc-number">2.</span> <span class="toc-text">三、初始化与热更新</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E8%B0%83%E5%BA%A6%E5%85%A5%E5%8F%A3%EF%BC%9ASample-%E9%87%8C%E7%9A%84-switch"><span class="toc-number">3.</span> <span class="toc-text">四、调度入口：Sample() 里的 switch</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%A2%84%E8%AE%A1%E7%AE%97%E5%AE%8C%E6%88%90%E5%90%8E%EF%BC%8C%E6%89%8D%E8%BF%9B%E5%85%A5%E6%A8%A1%E5%BC%8F%E8%B0%83%E5%BA%A6%EF%BC%9A-Auto-%E6%A8%A1%E5%BC%8F%E4%B8%8B%E7%9A%84%E8%BF%99%E4%B8%A4%E8%A1%8C%E6%98%AF%E6%95%B4%E4%B8%AA%E8%AE%BE%E8%AE%A1%E9%87%8C%E6%88%91%E8%AE%A4%E4%B8%BA%E6%9C%80%E6%9C%89%E6%84%8F%E6%80%9D%E7%9A%84%E5%9C%B0%E6%96%B9%EF%BC%9ADAQ-%E4%BD%9C%E4%B8%BA%E5%AE%89%E5%85%A8%E7%BD%91%EF%BC%8CAEMS-%E4%BD%9C%E4%B8%BA%E4%B8%BB%E6%8E%A7%E3%80%82CtrlByDAQ-%E8%BF%94%E5%9B%9E-TRUE-%E6%97%B6%EF%BC%8C%E4%BB%A3%E8%A1%A8-DAQ%E8%AE%A4%E4%B8%BA%E5%BD%93%E5%89%8D%E6%83%85%E5%86%B5%E5%AE%83%E6%9D%A5%E6%8E%A5%E7%AE%A1%E6%9B%B4%E5%90%88%E9%80%82%EF%BC%8CAEMS-%E5%B0%B1%E4%B8%8D%E5%86%8D%E4%BB%8B%E5%85%A5%E3%80%82%E5%8F%AA%E6%9C%89-DAQ-%E5%88%A4%E6%96%AD%E2%80%9D%E8%BF%99%E4%B8%8D%E6%98%AF%E6%88%91%E8%AF%A5%E7%AE%A1%E7%9A%84%E5%9C%BA%E6%99%AF%E2%80%9D%EF%BC%88%E8%BF%94%E5%9B%9E-FALSE%EF%BC%89%EF%BC%8CAEMS-%E6%89%8D%E5%87%BA%E6%89%8B%E3%80%82"><span class="toc-number">3.1.</span> <span class="toc-text">  预计算完成后，才进入模式调度：123456789101112131415switch (pAEMS-&gt;ctrlPVMode){case CtrlPVMode_DAQ:    CtrlByDAQ(pAEMS);    break;case CtrlPVMode_AEMS:    CtrlByAEMS(pAEMS);    break;default: &#x2F;&#x2F; Auto    if (!CtrlByDAQ(pAEMS))     {        CtrlByAEMS(pAEMS);    }    break;}  Auto 模式下的这两行是整个设计里我认为最有意思的地方：DAQ 作为安全网，AEMS 作为主控。CtrlByDAQ 返回 TRUE 时，代表 DAQ认为当前情况它来接管更合适，AEMS 就不再介入。只有 DAQ 判断”这不是我该管的场景”（返回 FALSE），AEMS 才出手。12345678910                           │               ┌───────────┴───────────┐         ctrlPVMode                &#x3D; DAQ              &#x3D;   AEMS          │      CtrlByDAQ()CtrlByAEMS()Auto(default)                           │                     CtrlByDAQ() 返回?                     ┌─────┴─────┐                   TRUEFALSE                  (DAQ接管)   CtrlByAEMS()</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BA%94%E3%80%81CtrlByDAQ%EF%BC%9A%E4%BB%80%E4%B9%88%E6%83%85%E5%86%B5%E4%B8%8B-DAQ-%E8%A6%81%E6%8E%A5%E7%AE%A1%EF%BC%9F"><span class="toc-number">4.</span> <span class="toc-text">五、CtrlByDAQ：什么情况下 DAQ 要接管？</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%85%AD%E3%80%81CtrlByAEMS%EF%BC%9A%E4%BA%94%E4%B8%AA%E9%98%B6%E6%AE%B5%E7%9A%84%E6%8E%A7%E5%88%B6%E9%93%BE%E8%B7%AF"><span class="toc-number">5.</span> <span class="toc-text">六、CtrlByAEMS：五个阶段的控制链路</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%8C%E6%95%B4%E7%9A%84-CtrlByAEMS-%E6%89%A7%E8%A1%8C%E6%B5%81%E7%A8%8B"><span class="toc-number">5.1.</span> <span class="toc-text">  完整的 CtrlByAEMS 执行流程123456789101112131415161718192021    ┌────────────┴────────────┐    │  计算 fPBackflow,        │    │  bChrgAbl_Bess          │    └────────────┬────────────┘                 │         fPLoad_AndBess &lt; fProtBackflow_PV_AEMS?                YES → 关机，返回│ NOf_PgridMeterSum &lt; fProtBackflow_PV_AEMS (逆流)?                YES → 计算 msBackflow,判断 bPwrDown_PV│ bPwrDown_PV&#x3D;TRUE├→功率&#x3D;fCtrlPV_4PLoad_AC+f_PcabMeterSum-保护值                         └→CtrlPV_AEMS(FALSE), 返回                 │ NO（无逆流）         ┌───────┴──────────────────────┐         │  额定 &lt; fPLoad_AC?           │         YES                NO3.1 满功率，无斜坡            额定 &lt; fPLoad_AndBess?                               YES                NO3.2 满功率          4.1 步进升功率                             有斜坡         (条件允许时+fPStep)│┌───────┴──────────────────────┐         │  fSOCSum &gt;&#x3D; uLmtPwrIfSOCGe?│         YES                            NO    5.1 功率&#x3D;fPLoad_AC+fPbess_Chrg  维持上面的目标值                 │         CtrlPV_AEMS(bRampup)</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%83%E3%80%81CtrlPV-AEMS%EF%BC%9A%E6%9C%80%E5%90%8E%E4%B8%80%E5%85%AC%E9%87%8C"><span class="toc-number">6.</span> <span class="toc-text">七、CtrlPV_AEMS：最后一公里</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-%E6%96%9C%E5%9D%A1%E9%99%90%E5%88%B6%EF%BC%88Rampup%EF%BC%89"><span class="toc-number">6.1.</span> <span class="toc-text">1. 斜坡限制（Rampup）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-%E8%B4%9F%E8%BD%BD%E8%B7%9F%E9%9A%8F%E4%B8%8B%E7%95%8C%EF%BC%88fCtrlPV-4PLoad-AC%EF%BC%89"><span class="toc-number">6.2.</span> <span class="toc-text">2. 负载跟随下界（fCtrlPV_4PLoad_AC）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-%E6%AD%BB%E5%8C%BA%E8%BF%87%E6%BB%A4%E4%B8%8E%E5%AE%9E%E9%99%85%E4%B8%8B%E5%8F%91"><span class="toc-number">6.3.</span> <span class="toc-text">3. 死区过滤与实际下发</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%85%AB%E3%80%81Auto%E6%A8%A1%E5%BC%8F%E9%87%8C%E7%9A%84-DAQ-%E4%BC%98%E5%85%88%E7%BA%A7%E7%A9%B6%E7%AB%9F%E6%84%8F%E5%91%B3%E7%9D%80%E4%BB%80%E4%B9%88"><span class="toc-number">7.</span> <span class="toc-text">八、Auto模式里的 DAQ 优先级究竟意味着什么</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B9%9D%E3%80%81%E5%BE%85%E6%9C%BA%E6%8E%A7%E5%88%B6%E7%9A%84%E8%81%94%E5%8A%A8"><span class="toc-number">8.</span> <span class="toc-text">九、待机控制的联动</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8D%81%E3%80%81%E6%95%B4%E4%BD%93%E8%AE%BE%E8%AE%A1%E5%9B%9E%E9%A1%BE"><span class="toc-number">9.</span> <span class="toc-text">十、整体设计回顾</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/07/31/2026-07-31-ctrl-pv-mode-design/" title="光储系统 AEMS 模块的光伏控制模式设计——从 ctrlPVMode 说起">光储系统 AEMS 模块的光伏控制模式设计——从 ctrlPVMode 说起</a><time datetime="2026-07-31T01:30:00.000Z" title="发表于 2026-07-31 09:30:00">2026-07-31</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/07/24/2026-07-24-amber-modbus-tcp-charger-troubleshooting/" title="充电桩Modbus TCP采集模块踩坑实录：从Too many data到并发死锁的完整修复">充电桩Modbus TCP采集模块踩坑实录：从Too many data到并发死锁的完整修复</a><time datetime="2026-07-24T02:00:00.000Z" title="发表于 2026-07-24 10:00:00">2026-07-24</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/07/14/2026-07-14-notebooklm-save-token/" title="用好NotebookLM立省80%Token">用好NotebookLM立省80%Token</a><time datetime="2026-07-14T12:00:00.000Z" title="发表于 2026-07-14 20:00:00">2026-07-14</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/07/14/2026-07-14-peak-valley-economic-model/" title="工商储能峰谷套利的经济模型与工程实现——从 EMS 代码看储能收益">工商储能峰谷套利的经济模型与工程实现——从 EMS 代码看储能收益</a><time datetime="2026-07-14T11:00:00.000Z" title="发表于 2026-07-14 19:00:00">2026-07-14</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/07/14/2026-07-14-workbuddy-skills-review/" title="WorkBuddy Skills 工程师实用评测：7 个真正值得集成到工作流的扩展能力">WorkBuddy Skills 工程师实用评测：7 个真正值得集成到工作流的扩展能力</a><time datetime="2026-07-14T10:00:00.000Z" title="发表于 2026-07-14 18:00:00">2026-07-14</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By kuangyue111</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.4</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="前往评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.4"></script><script src="/js/main.js?v=5.5.4"></script><div class="js-pjax"><script>(() => {
+  const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
+  const option = {"mapping":"url","lang":"zh-CN"}
+
+  const getGiscusTheme = theme => theme === 'dark' ? 'dark' : 'light'
+
+  const createScriptElement = config => {
+    const ele = document.createElement('script')
+    Object.entries(config).forEach(([key, value]) => {
+      ele.setAttribute(key, value)
+    })
+    return ele
+  }
+
+  const loadGiscus = (el = document, key) => {
+    const mappingConfig = isShuoshuo
+      ? { 'data-mapping': 'specific', 'data-term': key }
+      : { 'data-mapping': (option && option['data-mapping']) || 'pathname' }
+
+    const giscusConfig = {
+      src: 'https://giscus.app/client.js',
+      'data-repo': 'kuangyue111/kuangyue111.github.io',
+      'data-repo-id': 'R_kgDOSQde2Q',
+      'data-category-id': 'DIC_kwDOSQde2c4C8CgH',
+      'data-theme': getGiscusTheme(document.documentElement.getAttribute('data-theme')),
+      'data-reactions-enabled': '1',
+      crossorigin: 'anonymous',
+      async: true,
+      ...option,
+      ...mappingConfig
+    }
+
+    const scriptElement = createScriptElement(giscusConfig)
+
+    el.querySelector('#giscus-wrap').appendChild(scriptElement)
+
+    if (isShuoshuo) {
+      window.shuoshuoComment.destroyGiscus = () => {
+        if (el.children.length) {
+          el.innerHTML = ''
+          el.classList.add('no-comment')
+        }
+      }
+    }
+  }
+
+  const changeGiscusTheme = theme => {
+    const iframe = document.querySelector('#giscus-wrap iframe')
+    if (iframe) {
+      const message = {
+        giscus: {
+          setConfig: {
+            theme: getGiscusTheme(theme)
+          }
+        }
+      }
+      iframe.contentWindow.postMessage(message, 'https://giscus.app')
+    }
+  }
+
+  btf.addGlobalFn('themeChange', changeGiscusTheme, 'giscus')
+
+  if (isShuoshuo) {
+    'Giscus' === 'Giscus'
+      ? window.shuoshuoComment = { loadComment: loadGiscus }
+      : window.loadOtherComment = loadGiscus
+    return
+  }
+
+  if ('Giscus' === 'Giscus' || !false) {
+    if (false) btf.loadComment(document.getElementById('giscus-wrap'), loadGiscus)
+    else loadGiscus()
+  } else {
+    window.loadOtherComment = loadGiscus
+  }
+})()</script></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

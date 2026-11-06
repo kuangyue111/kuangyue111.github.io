@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="keywords" content="Hexo Theme Redefine">
+    
+    
+    <meta name="author" content="kuangyue111">
+    
+    <!-- Completely eliminate flash of wrong theme -->
+    <script>
+        (function() {
+            const THEME_KEY = "REDEFINE-THEME-STATUS";
+            const DARK = "dark", LIGHT = "light";
+            
+            // Get preferred theme
+            function getTheme() {
+                try {
+                    const saved = localStorage.getItem(THEME_KEY);
+                    if (saved) {
+                        const { isDark } = JSON.parse(saved);
+                        return isDark ? DARK : LIGHT;
+                    }
+                } catch (e) {}
+                
+                return matchMedia("(prefers-color-scheme: dark)").matches ? DARK : LIGHT;
+            }
+            
+            // Apply theme to document
+            function applyTheme(theme) {
+                const isDark = theme === DARK;
+                const root = document.documentElement;
+                
+                // Set classes for compatibility
+                root.classList.add(theme);
+                root.classList.remove(isDark ? LIGHT : DARK);
+                root.style.colorScheme = theme;
+            }
+            
+            // Initial application
+            const theme = getTheme();
+            applyTheme(theme);
+            
+            // Listen for system preference changes
+            matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ({ matches }) => {
+                // Only update if using system preference (no localStorage entry)
+                if (!localStorage.getItem(THEME_KEY)) {
+                    applyTheme(matches ? DARK : LIGHT);
+                }
+            });
+            
+            // Set body classes ASAP (before DOMContentLoaded)
+            (function() {
+                const addBodyClass = () => {
+                    const b = document.body;
+                    if (!b) return false;
+                    b.classList.add(theme + "-mode");
+                    return true;
+                };
+
+                // Try immediately
+                if (addBodyClass()) return;
+
+                // Observe until body exists
+                const mo = new MutationObserver(() => {
+                    if (addBodyClass()) mo.disconnect();
+                });
+                mo.observe(document.documentElement, { childList: true, subtree: true });
+            })();
+        })();
+    </script>
+    
+    <!-- preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    
+    <!--- Seo Part-->
+    
+    <link rel="canonical" href="https://kuangyue111.github.io/2026/06/09/2026-06-09-pv-storage-load-joint-forecasting-ems/"/>
+    <meta name="robots" content="index,follow">
+    <meta name="googlebot" content="index,follow">
+    <meta name="revisit-after" content="1 days">
+    
+    
+        
+        <meta name="description" content="Hexo Theme Redefine, Redefine Your Hexo Journey.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="光伏-储能-负荷联合预测：给 EMS 装上&quot;预知能力&quot;">
+<meta property="og:url" content="https://kuangyue111.github.io/2026/06/09/2026-06-09-pv-storage-load-joint-forecasting-ems/index.html">
+<meta property="og:site_name" content="KuangYue&#39;s Blog">
+<meta property="og:description" content="Hexo Theme Redefine, Redefine Your Hexo Journey.">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://kuangyue111.github.io/images/redefine-og.webp">
+<meta property="article:published_time" content="2026-06-09T08:00:00.000Z">
+<meta property="article:modified_time" content="2026-06-09T01:25:27.660Z">
+<meta property="article:author" content="kuangyue111">
+<meta property="article:tag" content="储能">
+<meta property="article:tag" content="EMS">
+<meta property="article:tag" content="机器学习">
+<meta property="article:tag" content="光伏">
+<meta property="article:tag" content="负荷预测">
+<meta property="article:tag" content="MPC">
+<meta property="article:tag" content="模型预测控制">
+<meta property="article:tag" content="时间序列">
+<meta property="article:tag" content="N-BEATS">
+<meta property="article:tag" content="PatchTST">
+<meta property="article:tag" content="新能源">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://kuangyue111.github.io/images/redefine-og.webp">
+    
+    
+    <!--- Icon Part-->
+    <link rel="icon" type="image/png" href="/images/redefine-favicon.svg" sizes="192x192">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/redefine-favicon.svg">
+    <meta name="theme-color" content="#A31F34">
+    <link rel="shortcut icon" href="/images/redefine-favicon.svg">
+    <!--- Page Info-->
+    
+    <title>
+        
+            光伏-储能-负荷联合预测：给 EMS 装上&#34;预知能力&#34; | KuangYue&#39;s Blog
+        
+    </title>
+
+    
+<link rel="stylesheet" href="/fonts/Chillax/chillax.css">
+
+
+    <!--- Inject Part-->
+    
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+        
+<link rel="stylesheet" href="/css/build/tailwind.css">
+
+    
+
+    
+<link rel="stylesheet" href="/fonts/GeistMono/geist-mono.css">
+
+    
+<link rel="stylesheet" href="/fonts/Geist/geist.css">
+
+    <!--- Font Part-->
+    
+    
+    
+    
+    
+    
+
+    <script id="hexo-configurations">
+    window.config = {"hostname":"kuangyue111.github.io","root":"/","language":"zh-CN"};
+    window.theme = {"articles":{"style":{"font_size":"16px","line_height":1.5,"image_border_radius":"14px","image_alignment":"center","image_caption":false,"link_icon":true,"delete_mask":false,"title_alignment":"left","headings_top_spacing":{"h1":"3.2rem","h2":"2.4rem","h3":"1.9rem","h4":"1.6rem","h5":"1.4rem","h6":"1.3rem"}},"word_count":{"enable":true,"count":true,"min2read":true},"author_label":{"enable":true,"auto":false,"list":[]},"code_block":{"copy":true,"style":"mac","highlight_theme":{"light":"github","dark":"vs2015"},"font":{"enable":false,"family":null,"url":null}},"toc":{"enable":true,"max_depth":3,"number":false,"expand":true,"init_open":true},"copyright":{"enable":true,"default":"cc_by_nc_sa"},"lazyload":true,"pangu_js":false,"recommendation":{"enable":false,"title":"推荐阅读","limit":3,"mobile_limit":2,"placeholder":"/images/wallhaven-wqery6-light.webp","skip_dirs":[]}},"colors":{"primary":"#A31F34","secondary":null,"default_mode":"light"},"global":{"fonts":{"chinese":{"enable":false,"family":null,"url":null},"english":{"enable":false,"family":null,"url":null},"title":{"enable":false,"family":null,"url":null}},"content_max_width":"1000px","sidebar_width":"210px","hover":{"shadow":true,"scale":false},"scroll_progress":{"bar":false,"percentage":true},"website_counter":{"url":"https://cn.vercount.one/js","enable":true,"site_pv":true,"site_uv":true,"post_pv":true},"single_page":true,"preloader":{"enable":false,"custom_message":null},"side_tools":{"gear_rotation":true,"auto_expand":false},"open_graph":{"enable":true,"image":"/images/redefine-og.webp","description":"Hexo Theme Redefine, Redefine Your Hexo Journey."},"google_analytics":{"enable":false,"id":null}},"home_banner":{"enable":true,"style":"fixed","image":{"light":"/images/wallhaven-wqery6-light.webp","dark":"/images/wallhaven-wqery6-dark.webp"},"title":"KuangYue's Blog","subtitle":{"text":["专注储能系统与嵌入式开发","记录 NCCU 控制单元架构演进","探索工业物联网与云端对接"],"hitokoto":{"enable":false,"show_author":false,"api":"https://v1.hitokoto.cn"},"typing_speed":100,"backing_speed":80,"starting_delay":500,"backing_delay":1500,"loop":true,"smart_backspace":true},"text_color":{"light":"#fff","dark":"#d1d1b6"},"text_style":{"title_size":"2.8rem","subtitle_size":"1.5rem","line_height":1.2},"custom_font":{"enable":false,"family":null,"url":null},"social_links":{"enable":true,"style":"default","links":[{"icon":"fa-brands fa-github","url":"https://github.com/kuangyue111"},{"icon":"fa-brands fa-twitter","url":null},{"icon":"fa-solid fa-at","url":"you@example.com"},{"icon":"fa-brands fa-telegram","url":null},{"icon":"/images/custom-icon.svg","url":null}],"qrs":[{"icon":"fa-brands fa-weixin","qr":null},{"icon":"/images/custom-icon.svg","qr":null}]}},"plugins":{"feed":{"enable":false},"aplayer":{"enable":false,"type":"fixed","audios":[{"name":null,"artist":null,"url":null,"cover":null,"lrc":null}]},"mermaid":{"theme":{"light":"default","dark":"dark"}},"katex":false,"chart":false},"version":"2.9.0","code_block":{"theme":"light","macStyle":false,"shrink":false,"copy_button":true,"language":true},"navbar":{"auto_hide":false,"color":{"left":"#f78736","right":"#367df7","transparency":35},"width":{"home":"1200px","pages":"1000px"},"links":{"Home":{"path":"/","icon":"fa-regular fa-house"},"Archives":{"path":"/archives/","icon":"fa-regular fa-archive"},"Tags":{"path":"/tags/","icon":"fa-regular fa-tags"},"Categories":{"path":"/categories/","icon":"fa-regular fa-folder"},"About":{"icon":"fa-regular fa-user","submenus":{"Me":"/about/","GitHub":"https://github.com/kuangyue111"}}},"search":{"enable":false,"preload":true}},"page_templates":{"friends_column":2,"tags_style":"blur","masonry":{"batch_size":12,"initial_batch_size":24}},"home":{"sidebar":{"enable":true,"position":"left","first_item":"menu","announcement":"专注于嵌入式与储能系统技术分享","show_on_mobile":true,"links":{"Archives":{"path":"/archives/","icon":"fa-regular fa-archive"},"Tags":{"path":"/tags/","icon":"fa-regular fa-tags"},"Categories":{"path":"/categories/","icon":"fa-regular fa-folder"}}},"article_date_format":"auto","excerpt_length":200,"categories":{"enable":true,"limit":3},"tags":{"enable":true,"limit":3}},"footer":{"runtime":true,"icon":"<i class=\"fa-solid fa-heart fa-beat\" style=\"--fa-animation-duration: 0.5s; color: #f54545\"></i>","start":"2022/8/17 11:45:14","statistics":true,"customize":null,"icp":{"enable":false,"number":null,"url":null},"since":2025,"custom":null,"copyright":true,"theme":{"enable":true},"counter":true},"footerStart":"2022/8/17 11:45:14","mermaid":{"style":{"light":"default","dark":"dark"}}};
+    window.lang_ago = {"second":"%s 秒前","minute":"%s 分钟前","hour":"%s 小时前","day":"%s 天前","week":"%s 周前","month":"%s 个月前","year":"%s 年前"};
+    window.i18n = {"search":"站内搜索您需要的内容...","toc":"目录","prev":"上一页","next":"下一页","prev_posts":"上一篇","next_posts":"下一篇","page":"第 %d 页","recent_posts":"最新文章","share":"分享","powered_by":"由 %s 驱动","theme":"主题","rss_feed":"RSS Feed","category":"分类","categories":"分类","tag":"标签","tags":"标签","post":"文章","posts":"文章","tagcloud":"标签云","comment":"评论","comments":"评论","top":"置顶","sticky":"置顶","go-back-home":"回到首页","masonry_loading":"照片加载中...","image_viewer":"图片查看器","close":"关闭","exif":{"title":"EXIF","cards":{"camera":"相机","lens":"镜头","exposure":"曝光","other":"其他"},"fields":{"make":"品牌","model":"机型","date_taken":"拍摄时间","lens_model":"镜头","focal_length":"焦距","focus_mode":"对焦模式","shutter":"快门","aperture":"光圈","iso":"感光度","exposure_program":"曝光程序","exposure_compensation":"曝光补偿","metering_mode":"测光模式","flash":"闪光灯","white_balance":"白平衡","latitude":"纬度","longitude":"经度","altitude":"海拔"},"status":{"loading":"加载中...","no_exif":"无 EXIF 信息","library_missing":"EXIF 库未加载","image_source_missing":"图片地址不可用","unavailable":"EXIF 不可用（可能被 CORS 阻止或缺少元数据）","flag_unavailable":"EXIF 不可用"}},"home":"首页","archive":"归档","archives":"归档","about":"关于","links":"链接","link":"链接","friends":"友情链接","friend":"友情链接","timeline":"时间轴","shuoshuo":"说说","bookmarks":"书签","site_uv":"访问人数","site_pv":"总访问量","read_more":"阅读全文","wordcount":"字","min2read":"分钟","changelog":"更新日志","status":"状态","runtime":"博客已运行","days":"天","hours":"小时","minutes":"分钟","seconds":"秒","optimized_by":"并由 Evan 进行优化","rights":"版权所有","site_posts":"共撰写了 %s 篇文章","site_wordcount":"共 %s 字","copyright":{"title":"标题","author":"作者","link":"链接","create_time":"创建于","update_time":"更新于","license_title":"版权声明","license_content":"本文章采用 %s 进行许可。","all_rights_reserved":"版权所有 &#169 %s，禁止转载。","public_domain":"本文为公有领域作品，可自由转载、引用。"},"ago":{"second":"%s 秒前","minute":"%s 分钟前","hour":"%s 小时前","day":"%s 天前","week":"%s 周前","month":"%s 个月前","year":"%s 年前"},"create_time":"创建","update_time":"更新","expired":"这篇文章最后更新于 %s 天前，内容可能已经过时。"};
+    window.data = {"masonry":false};
+  </script>
+    
+    <!--- Fontawesome Part-->
+    
+<link rel="stylesheet" href="/fontawesome/fontawesome.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/brands.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/solid.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/regular.min.css">
+
+    
+    
+    
+    
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+	<div class="progress-bar-container">
+	
+
+	
+	<span class="pjax-progress-bar"></span>
+	<!--        <span class="swup-progress-icon">-->
+	<!--            <i class="fa-solid fa-circle-notch fa-spin"></i>-->
+	<!--        </span>-->
+	
+</div>
+
+<main class="page-container" id="swup">
+
+	
+
+	<div class="main-content-container flex flex-col justify-between min-h-dvh">
+		<div class="main-content-header">
+			<header class="navbar-container px-6 md:px-12">
+    <div class="navbar-content transition-navbar ">
+        <div class="left">
+            
+            <a class="logo-title" href="/">
+                
+                KuangYue&#39;s Blog
+                
+            </a>
+        </div>
+
+        <div class="right">
+            <!-- PC -->
+            <div class="desktop">
+                <ul class="navbar-list">
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/"
+                                        >
+                                    <i class="fa-regular fa-house fa-fw"></i>
+                                    首页
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/archives/"
+                                        >
+                                    <i class="fa-regular fa-archive fa-fw"></i>
+                                    归档
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/tags/"
+                                        >
+                                    <i class="fa-regular fa-tags fa-fw"></i>
+                                    标签
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/categories/"
+                                        >
+                                    <i class="fa-regular fa-folder fa-fw"></i>
+                                    分类
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class="has-dropdown"
+                                   href="#"
+                                        onClick=&#34;return false;&#34;>
+                                    <i class="fa-regular fa-user fa-fw"></i>
+                                    关于
+                                    <i class="fa-solid fa-chevron-down fa-fw"></i>
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                                    <ul class="sub-menu">
+                                        
+                                            <li>
+                                                <a href="/about/">
+                                                    ME
+                                                </a>
+                                            </li>
+                                        
+                                            <li>
+                                                <a target="_blank" rel="noopener" href="https://github.com/kuangyue111">
+                                                    GITHUB
+                                                </a>
+                                            </li>
+                                        
+                                    </ul>
+                                
+                            </li>
+                    
+                    
+                </ul>
+            </div>
+            <!-- Mobile -->
+            <div class="mobile">
+                
+                <div class="icon-item navbar-bar">
+                    <div class="navbar-bar-middle"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile sheet -->
+    <div class="navbar-drawer h-dvh w-full absolute top-0 left-0 bg-background-color flex flex-col justify-between">
+        <ul class="drawer-navbar-list flex flex-col px-4 justify-center items-start">
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/"
+                        >
+                            <span>
+                                首页
+                            </span>
+                            
+                                <i class="fa-regular fa-house fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/archives/"
+                        >
+                            <span>
+                                归档
+                            </span>
+                            
+                                <i class="fa-regular fa-archive fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/tags/"
+                        >
+                            <span>
+                                标签
+                            </span>
+                            
+                                <i class="fa-regular fa-tags fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/categories/"
+                        >
+                            <span>
+                                分类
+                            </span>
+                            
+                                <i class="fa-regular fa-folder fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item-sub text-base my-1.5 flex flex-col w-full">
+                        
+                        <div class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary cursor-pointer text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                             navbar-data-toggle="submenu-About"
+                        >
+                            <span>
+                                关于
+                            </span>
+                            
+                                <i class="fa-solid fa-chevron-right fa-sm fa-fw transition-all"></i>
+                            
+                        </div>
+                        
+
+                        
+                            <div class="flex-col items-start px-2 py-2 hidden" data-target="submenu-About">
+                                
+                                    <div class="drawer-navbar-item text-base flex flex-col justify-center items-start hover:underline active:underline hover:underline-offset-1 rounded-3xl">
+                                        <a class=" text-third-text-color text-xl"
+                                           href="/about/">ME</a>
+                                    </div>
+                                
+                                    <div class="drawer-navbar-item text-base flex flex-col justify-center items-start hover:underline active:underline hover:underline-offset-1 rounded-3xl">
+                                        <a class=" text-third-text-color text-xl"
+                                           target="_blank" rel="noopener" href="https://github.com/kuangyue111">GITHUB</a>
+                                    </div>
+                                
+                            </div>
+                        
+                    </li>
+            
+
+            
+            
+                
+                    
+                    
+                    
+            
+        </ul>
+
+        <div class="statistics flex justify-around my-2.5">
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/tags">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">194</div>
+        <div class="label text-third-text-color text-sm">标签</div>
+    </a>
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/categories">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">16</div>
+        <div class="label text-third-text-color text-sm">分类</div>
+    </a>
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/archives">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">45</div>
+        <div class="label text-third-text-color text-sm">文章</div>
+    </a>
+</div>
+    </div>
+
+    <div class="window-mask"></div>
+
+</header>
+
+
+		</div>
+
+		<div class="main-content-body transition-fade-up">
+			
+
+			<div class="main-content">
+				<div class="post-page-container flex relative justify-between box-border w-full h-full">
+	<div class="article-content-container">
+
+		<div class="article-title relative w-full">
+			
+			<div class="w-full flex items-center pt-6 justify-start">
+				<h1 class="article-title-regular text-second-text-color tracking-tight text-4xl md:text-6xl font-semibold px-2 sm:px-6 md:px-8 py-3">光伏-储能-负荷联合预测：给 EMS 装上&#34;预知能力&#34;</h1>
+			</div>
+			
+		</div>
+
+		
+		<div class="article-header flex flex-row gap-2 items-center px-2 sm:px-6 md:px-8">
+			<div class="avatar w-[46px] h-[46px] shrink-0 rounded-medium border border-border-color p-px">
+				<img src="/images/redefine-avatar.svg">
+			</div>
+			<div class="info flex flex-col justify-between">
+				<div class="author flex items-center">
+					<span class="name text-default-text-color text-lg font-semibold">kuangyue111</span>
+					
+					<span class="author-label ml-1.5 text-xs px-2 py-0.5 rounded-small text-third-text-color border border-shadow-color-1">Lv4</span>
+					
+				</div>
+				<div class="meta-info">
+					<div class="article-meta-info">
+    <span class="article-date article-meta-item">
+        <i class="fa-regular fa-pen-fancy"></i>&nbsp;
+        <span class="desktop">2026-06-09 16:00</span>
+        <span class="mobile">2026-06-09 16:00</span>
+        <span class="hover-info">创建</span>
+    </span>
+    
+        <span class="article-date article-meta-item">
+            <i class="fa-regular fa-wrench"></i>&nbsp;
+            <span class="desktop">2026-06-09 09:25:27</span>
+            <span class="mobile">2026-06-09 09:25:27</span>
+            <span class="hover-info">更新</span>
+        </span>
+    
+
+    
+        <span class="article-categories article-meta-item">
+            <i class="fa-regular fa-folders"></i>&nbsp;
+            <ul>
+                
+                
+                    
+                        
+                        <li>
+                            <a href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/">技术分享</a>&nbsp;
+                        </li>
+                    
+                    
+                
+                    
+                        
+                            <li>></li>
+                        
+                        <li>
+                            <a href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/%E5%B5%8C%E5%85%A5%E5%BC%8F%E5%BC%80%E5%8F%91/">嵌入式开发</a>&nbsp;
+                        </li>
+                    
+                    
+                
+            </ul>
+        </span>
+    
+    
+        <span class="article-tags article-meta-item">
+            <i class="fa-regular fa-tags"></i>&nbsp;
+            <ul>
+                
+                    <li>
+                        <a href="/tags/%E5%82%A8%E8%83%BD/">储能</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/EMS/">EMS</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/">机器学习</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E5%85%89%E4%BC%8F/">光伏</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E8%B4%9F%E8%8D%B7%E9%A2%84%E6%B5%8B/">负荷预测</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/MPC/">MPC</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E6%A8%A1%E5%9E%8B%E9%A2%84%E6%B5%8B%E6%8E%A7%E5%88%B6/">模型预测控制</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E6%97%B6%E9%97%B4%E5%BA%8F%E5%88%97/">时间序列</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/N-BEATS/">N-BEATS</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/PatchTST/">PatchTST</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E6%96%B0%E8%83%BD%E6%BA%90/">新能源</a>&nbsp;
+                    </li>
+                
+            </ul>
+        </span>
+    
+
+    
+    
+    
+    
+        <span class="article-pv article-meta-item">
+            <i class="fa-regular fa-eye"></i>&nbsp;<span id="busuanzi_value_page_pv"></span>
+        </span>
+    
+</div>
+
+				</div>
+			</div>
+		</div>
+		
+
+		
+
+
+		<div class="article-content markdown-body px-2 sm:px-6 md:px-8 pb-8">
+			<h1 id="光伏-储能-负荷联合预测：给-EMS-装上”预知能力”"><a href="#光伏-储能-负荷联合预测：给-EMS-装上”预知能力”" class="headerlink" title="光伏-储能-负荷联合预测：给 EMS 装上”预知能力”"></a>光伏-储能-负荷联合预测：给 EMS 装上”预知能力”</h1><blockquote>
+<p>本文结合我正在维护的一套工业储能管理系统的真实工程实践，聊聊如何把预测能力嵌入 EMS 决策链路。代码片段均来自项目实际文件，不是伪代码。</p>
+</blockquote>
+<hr>
+<h2 id="一、为什么-EMS-需要预测？"><a href="#一、为什么-EMS-需要预测？" class="headerlink" title="一、为什么 EMS 需要预测？"></a>一、为什么 EMS 需要预测？</h2><p>我在调试这套系统的 MQTT 指令链路时，发现一个有意思的现象：EMS 的充放电决策完全依赖当前时刻的 SOC 和预设的时段计划表。翻开 <code>ems_management.c</code>，核心逻辑大概是这样的：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">BOOL <span class="title function_">IsBatt_Plan2_StartChrg</span><span class="params">(...)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (pEMS-&gt;nTMSector &lt; <span class="number">0</span>) <span class="keyword">return</span> FALSE;</span><br><span class="line">    <span class="keyword">if</span> (pPlanSectorNow-&gt;emBatt_WorkMode != BATT_WORKMODE_FIRST_CHRGING) <span class="keyword">return</span> FALSE;</span><br><span class="line">    <span class="keyword">if</span> (nBattSOC &gt;= pPlanSectorNow-&gt;nStopSOC) <span class="keyword">return</span> FALSE;</span><br><span class="line">    <span class="keyword">return</span> TRUE;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>逻辑很清晰：查当前时段（<code>nTMSector</code>），对比工作模式（<code>emBatt_WorkMode</code>）和停止 SOC 阈值（<code>nStopSOC</code>），决定充还是不充。</p>
+<p>这套逻辑在电价稳定、负荷规律的场景下跑得很好。但现实是：光伏出力受云层影响可以在几分钟内从满功率跌到零；工厂负荷在节假日和工作日差异巨大；电网侧的峰谷价差窗口也在动态变化。</p>
+<p><strong>纯规则驱动的 EMS 本质上是在用昨天的地图走今天的路。</strong></p>
+<p>预测的价值在于：把”当前状态 → 决策”的单步反应，升级为”未来状态预估 → 提前布局”的前瞻控制。这就是 MPC（模型预测控制）的核心思想，后面会详细展开。</p>
+<hr>
+<h2 id="二、数据基础：我们手里有什么原料？"><a href="#二、数据基础：我们手里有什么原料？" class="headerlink" title="二、数据基础：我们手里有什么原料？"></a>二、数据基础：我们手里有什么原料？</h2><p>预测模型不是凭空建的，得先搞清楚系统里有哪些可用的数据。</p>
+<h3 id="2-1-光伏逆变器采样数据"><a href="#2-1-光伏逆变器采样数据" class="headerlink" title="2.1 光伏逆变器采样数据"></a>2.1 光伏逆变器采样数据</h3><p>项目里的 PV 采样模块（<code>_inverter_sampler/</code>）支持 Growatt、华为、固德威、阳光电源等主流逆变器品牌，通过 RS485 轮询采集。核心数据结构 <code>PV_INVERTER_DATA</code>（定义在 <code>blob_model.h:4539</code>）包含：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">    <span class="type">float</span> fOutputActivePower;      <span class="comment">// AC 侧输出有功功率 (W)</span></span><br><span class="line">    <span class="type">float</span> fPVInputTotalPower;      <span class="comment">// DC 侧总输入功率 (W)</span></span><br><span class="line">    <span class="type">float</span> fPVGroupVolt[MAX_PV_NUM]; <span class="comment">// 各组串电压 (V)</span></span><br><span class="line">    <span class="type">float</span> fPVGroupCurr[MAX_PV_NUM * <span class="number">2</span>]; <span class="comment">// 各组串电流 (A)</span></span><br><span class="line">    <span class="type">float</span> fDailyPowerGeneration;   <span class="comment">// 当日发电量 (kWh)</span></span><br><span class="line">    <span class="type">float</span> fTotalPowerGeneration;   <span class="comment">// 累计发电量 (kWh)</span></span><br><span class="line">    <span class="type">int</span>   iActivePowerRate;        <span class="comment">// 有功功率限制百分比</span></span><br><span class="line">    <span class="type">int</span>   iWorkMode;               <span class="comment">// 0=未安装 1=等待 2=运行 3=故障</span></span><br><span class="line">&#125; PV_INVERTER_DATA;</span><br></pre></td></tr></table></figure></div>
+
+<p>汇总层面还有 <code>A_BLOB_PV_INVERTER_DATA_TOTAL</code>，字段 <code>fTotalPVOutputActPower</code> 给出全站光伏总出力（kW），这是预测模型的直接训练标签。</p>
+<p><strong>对预测有用的特征</strong>：<code>fPVGroupVolt</code>（组串电压反映辐照度变化）、<code>iWorkMode</code>（故障状态需要剔除异常样本）、<code>fDailyPowerGeneration</code>（日累计量用于校准预测偏差）。</p>
+<h3 id="2-2-DLT645-负荷计量数据"><a href="#2-2-DLT645-负荷计量数据" class="headerlink" title="2.2 DLT645 负荷计量数据"></a>2.2 DLT645 负荷计量数据</h3><p>负荷侧通过 DLT645 协议采集电表数据（<code>dlt645_kWmeter.c</code>）。协议帧结构是标准的 <code>0x68 + 地址域 + 0x68 + 控制码 + 数据域 + CS + 0x16</code>，采集的量包括：</p>
+<ul>
+<li>三相电压、电流、有功功率、无功功率</li>
+<li>正向&#x2F;反向累计电量（<code>WH_FRAME_TYPE_GET_TOTALWH</code> &#x2F; <code>WH_FRAME_TYPE_GET_RVSTATALWH</code>）</li>
+<li>最大需量（<code>WH_FRAME_TYPE_GET_PMAXDEMAND</code>）——这个字段对需量控制预测特别有价值</li>
+</ul>
+<p>数值解码用 BCD 转换：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">float</span> <span class="title function_">ConvertBCD_2WhVal</span><span class="params">(BYTE *pData, <span class="type">int</span> nLen, <span class="type">int</span> nDecimalPos)</span> &#123;</span><br><span class="line">    <span class="comment">// BCD 编码 → 浮点，nDecimalPos 控制小数点位置</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>实际运行中，<code>fGridMeter_Power[1]</code>（实时电网功率，kW）和 <code>fCabMeter_Power[1]</code>（柜内功率）是负荷预测的核心输入，采样周期通常是 1 分钟。</p>
+<h3 id="2-3-储能电池状态"><a href="#2-3-储能电池状态" class="headerlink" title="2.3 储能电池状态"></a>2.3 储能电池状态</h3><p>电池 SOC 存在 <code>nSOC</code>（千分位，0-1000 对应 0-100%），充放电能量分别记录在 <code>fCalc_ChargedEnergy</code> 和 <code>fCalc_DisChargedEnergy</code>。这些数据在预测框架里扮演”状态变量”角色——预测模型的输出要结合当前 SOC 才能转化为可执行的充放电指令。</p>
+<hr>
+<h2 id="三、光伏发电功率预测"><a href="#三、光伏发电功率预测" class="headerlink" title="三、光伏发电功率预测"></a>三、光伏发电功率预测</h2><h3 id="3-1-NWP-历史数据融合"><a href="#3-1-NWP-历史数据融合" class="headerlink" title="3.1 NWP + 历史数据融合"></a>3.1 NWP + 历史数据融合</h3><p>光伏功率预测的难点在于它强依赖气象条件，而气象本质上是混沌系统。工程上通行的做法是两路信号融合：</p>
+<p><strong>NWP（数值天气预报）路</strong>：从气象局或商业 API 获取未来 24-72 小时的辐照度（GHI&#x2F;DNI&#x2F;DHI）、云量、温度预报。辐照度是光伏出力的物理驱动量，理论上 $P_{pv} &#x3D; \eta \cdot A \cdot G$（$\eta$ 为效率，$A$ 为面积，$G$ 为辐照度），但实际逆变器效率随温度、老化程度变化，所以 NWP 只能给出粗粒度的趋势。</p>
+<p><strong>历史数据路</strong>：用过去 30-90 天的 <code>fTotalPVOutputActPower</code> 时序数据，学习”同类天气下的实际出力曲线”。关键是天气类型分类——晴天、多云、阴天、雨天的出力曲线形态差异极大，需要先做天气聚类再分类建模。</p>
+<p>融合方式：NWP 预报作为外生变量（exogenous variable）输入模型，历史序列提供自回归特征。</p>
+<h3 id="3-2-模型选型：为什么不用-LSTM？"><a href="#3-2-模型选型：为什么不用-LSTM？" class="headerlink" title="3.2 模型选型：为什么不用 LSTM？"></a>3.2 模型选型：为什么不用 LSTM？</h3><p>很多人第一反应是 LSTM，但在工业场景里我更倾向于 <strong>N-BEATS</strong> 或 <strong>PatchTST</strong>，原因如下：</p>
+<p><strong>N-BEATS</strong>（Neural Basis Expansion Analysis for Time Series）的核心思想是把时序分解为趋势项和季节项的叠加，每个 block 学习残差。对光伏这种有强日周期性的序列，这种归纳偏置（inductive bias）非常合适。而且 N-BEATS 是纯 MLP 结构，没有循环依赖，训练速度快，部署到嵌入式 Linux 上的推理开销也小。</p>
+<p><strong>PatchTST</strong> 把时序切成 patch（类似 ViT 对图像的处理），用 Transformer 的自注意力捕捉长程依赖。对于需要融合 NWP 多变量输入的场景，Transformer 的多头注意力天然适合处理异构特征。</p>
+<p><strong>Informer</strong> 用稀疏注意力（ProbSparse Attention）把复杂度从 $O(L^2)$ 降到 $O(L \log L)$，适合预测窗口很长（比如 72 小时）的场景。</p>
+<p>对于本项目这种 15 分钟粒度、预测 24 小时的需求，我会优先试 PatchTST，patch size 设为 16（对应 4 小时历史窗口），预测长度 96 个点。</p>
+<h3 id="3-3-不确定性量化：分位数回归"><a href="#3-3-不确定性量化：分位数回归" class="headerlink" title="3.3 不确定性量化：分位数回归"></a>3.3 不确定性量化：分位数回归</h3><p>点预测给出的是期望值，但 EMS 决策需要知道”最坏情况下光伏出力是多少”。这就是概率预测的价值。</p>
+<p>分位数回归（Quantile Regression）的损失函数：</p>
+<p>$$\mathcal{L}_q(\hat{y}, y) &#x3D; q \cdot \max(y - \hat{y}, 0) + (1-q) \cdot \max(\hat{y} - y, 0)$$</p>
+<p>同时预测 $q &#x3D; [0.1, 0.5, 0.9]$ 三个分位数，就得到了预测区间。EMS 在做保守决策时用 P10（下界），做激进决策时参考 P90（上界）。</p>
+<p>实现上，只需要把模型最后一层的输出维度从 1 改为 3，损失函数换成三个分位数损失的加权和，其余架构不变。</p>
+<hr>
+<h2 id="四、负荷预测：挖掘工业负荷的周期性规律"><a href="#四、负荷预测：挖掘工业负荷的周期性规律" class="headerlink" title="四、负荷预测：挖掘工业负荷的周期性规律"></a>四、负荷预测：挖掘工业负荷的周期性规律</h2><h3 id="4-1-工业负荷的三层周期结构"><a href="#4-1-工业负荷的三层周期结构" class="headerlink" title="4.1 工业负荷的三层周期结构"></a>4.1 工业负荷的三层周期结构</h3><p>工业负荷不像居民负荷那样平滑，它有很强的生产节律：</p>
+<ul>
+<li><strong>日内周期</strong>：班次切换（早班&#x2F;中班&#x2F;夜班）导致功率阶跃，<code>fGridMeter_Power</code> 的时序上会看到明显的台阶状跳变</li>
+<li><strong>周周期</strong>：工作日 vs 周末，某些工厂周末停产，负荷降到基础维持水平（空调、照明、待机）</li>
+<li><strong>节假日模式</strong>：春节、国庆等长假期间负荷曲线完全异于平日，需要单独建模</li>
+</ul>
+<p>从 DLT645 采集的历史数据里，可以用 STL 分解（Seasonal-Trend decomposition using LOESS）把这三层周期显式分离出来，再分别建模。</p>
+<h3 id="4-2-特征工程"><a href="#4-2-特征工程" class="headerlink" title="4.2 特征工程"></a>4.2 特征工程</h3><p>除了历史负荷序列本身，以下特征对工业负荷预测有显著提升：</p>
+<table>
+<thead>
+<tr>
+<th>特征</th>
+<th>来源</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>星期几（one-hot）</td>
+<td>系统时钟</td>
+<td>捕捉周周期</td>
+</tr>
+<tr>
+<td>是否节假日</td>
+<td>日历 API</td>
+<td>节假日模式切换</td>
+</tr>
+<tr>
+<td>时段索引（0-47）</td>
+<td><code>nTMSector</code></td>
+<td>对应 EMS 的 30 分钟时段划分</td>
+</tr>
+<tr>
+<td>最大需量</td>
+<td><code>WH_FRAME_TYPE_GET_PMAXDEMAND</code></td>
+<td>反映生产强度</td>
+</tr>
+<tr>
+<td>滞后特征（lag-24h, lag-168h）</td>
+<td>历史数据</td>
+<td>昨天同时刻、上周同时刻</td>
+</tr>
+<tr>
+<td>滚动均值（rolling mean 1h&#x2F;4h）</td>
+<td>历史数据</td>
+<td>平滑短期波动</td>
+</tr>
+</tbody></table>
+<p><code>nTMSector</code> 这个字段在 EMS 代码里本来是用来查时段计划表的，但它同时也是一个天然的时间特征——把它直接 embedding 进模型，比用原始时间戳效果好。</p>
+<h3 id="4-3-多变量时序预测"><a href="#4-3-多变量时序预测" class="headerlink" title="4.3 多变量时序预测"></a>4.3 多变量时序预测</h3><p>负荷预测不是孤立的，光伏出力、电池 SOC、历史电价都会影响实际负荷（比如高电价时段工厂会主动降负荷）。把这些变量一起输入 Informer 或 PatchTST，做多变量 → 单变量（或多变量 → 多变量）预测，通常比纯单变量模型提升 10-20% 的 MAE。</p>
+<hr>
+<h2 id="五、预测结果注入-EMS：MPC-框架"><a href="#五、预测结果注入-EMS：MPC-框架" class="headerlink" title="五、预测结果注入 EMS：MPC 框架"></a>五、预测结果注入 EMS：MPC 框架</h2><p>这是整个方案最关键的一环，也是最容易被忽视的一环。很多项目做完预测就停了，预测结果没有真正改变决策逻辑。</p>
+<h3 id="5-1-现有-EMS-决策的局限"><a href="#5-1-现有-EMS-决策的局限" class="headerlink" title="5.1 现有 EMS 决策的局限"></a>5.1 现有 EMS 决策的局限</h3><p>回到 <code>ems_management.c</code> 里的逻辑：<code>IsBatt_Plan2_StartChrg()</code> 和 <code>IsBatt_Plan2_StopDischarge()</code> 都是单步决策，只看当前时刻的 SOC 和时段配置。这意味着：</p>
+<ul>
+<li>如果预测到下午 2 点光伏会大发，现在（上午 10 点）就应该少充一点，留出空间吸纳光伏；但现有逻辑不知道这件事，会按计划表继续充到 <code>nStopSOC</code>。</li>
+<li>如果预测到晚上 8 点有一个负荷高峰，现在就应该开始储能，但现有逻辑要等到那个时段才触发。</li>
+</ul>
+<h3 id="5-2-MPC-的基本框架"><a href="#5-2-MPC-的基本框架" class="headerlink" title="5.2 MPC 的基本框架"></a>5.2 MPC 的基本框架</h3><p>MPC（Model Predictive Control，模型预测控制）的思路是：在每个控制周期，用预测模型生成未来 $N$ 步的状态预估，然后求解一个优化问题，得到未来 $N$ 步的最优控制序列，只执行第一步，下一个周期滚动重复。</p>
+<p><strong>优化目标</strong>（以经济性为例）：</p>
+<p>$$\min_{u_t, …, u_{t+N}} \sum_{k&#x3D;0}^{N-1} \left[ c_k^{buy} \cdot P_{grid,k}^+ - c_k^{sell} \cdot P_{grid,k}^- + \lambda \cdot \Delta u_k^2 \right]$$</p>
+<p>其中 $c_k^{buy&#x2F;sell}$ 是预测的电价，$P_{grid}^+$ 是购电功率，$P_{grid}^-$ 是售电功率，$\lambda \cdot \Delta u_k^2$ 是控制平滑项（避免频繁切换充放电）。</p>
+<p><strong>约束条件</strong>：</p>
+<p>$$SOC_{min} \leq SOC_k \leq SOC_{max}$$<br>$$P_{batt,min} \leq P_{batt,k} \leq P_{batt,max}$$<br>$$SOC_{k+1} &#x3D; SOC_k + \frac{\eta_{chg} \cdot P_{batt,k}^+ - P_{batt,k}^- &#x2F; \eta_{dis}}{E_{cap}} \cdot \Delta t$$</p>
+<p>功率平衡约束：</p>
+<p>$$P_{pv,k} + P_{batt,k} + P_{grid,k} &#x3D; P_{load,k}$$</p>
+<p>这里 $P_{pv,k}$ 和 $P_{load,k}$ 就是预测模型的输出。</p>
+<h3 id="5-3-与现有代码的接口设计"><a href="#5-3-与现有代码的接口设计" class="headerlink" title="5.3 与现有代码的接口设计"></a>5.3 与现有代码的接口设计</h3><p>要把 MPC 嵌入现有系统，最小侵入的方式是：<strong>不改变底层执行逻辑，只替换决策层的参数生成</strong>。</p>
+<p>现有系统通过 MQTT 下发 <code>cmd/set/emu/powerCmd</code> 来控制充放电模式，通过 <code>cmd/set/emu/dispatchPower</code> 下发调度计划。MPC 优化器可以作为一个独立进程运行，每 15 分钟执行一次：</p>
+<ol>
+<li>从数据库读取最新的 <code>fTotalPVOutputActPower</code>、<code>fGridMeter_Power</code>、<code>nSOC</code></li>
+<li>调用预测模型，生成未来 24 小时的 $\hat{P}<em>{pv}$ 和 $\hat{P}</em>{load}$</li>
+<li>求解 MPC 优化问题（用 <code>scipy.optimize</code> 或 <code>cvxpy</code>）</li>
+<li>把优化结果转换为 <code>dispatchPower</code> 的 JSON 格式，通过 MQTT 下发</li>
+</ol>
+<p>注意 <code>EMU_dispatchPower</code> 函数（<code>GH_DigitalEnergy_Pub.c:2582</code>）里有时间戳校验：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// GH_DigitalEnergy_Pub.c:2631</span></span><br><span class="line"><span class="keyword">if</span>(ABS(Now_time - Ts_val-&gt;valueint) &gt; <span class="number">15</span>) &#123;</span><br><span class="line">    pMqtt-&gt;bDisPower = TRUE;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>MPC 优化器下发指令时，时间戳字段必须用设备当前时间（误差 ≤15 秒），这是一个容易踩的坑。</p>
+<h3 id="5-4-不确定性在-MPC-中的处理"><a href="#5-4-不确定性在-MPC-中的处理" class="headerlink" title="5.4 不确定性在 MPC 中的处理"></a>5.4 不确定性在 MPC 中的处理</h3><p>前面提到分位数预测给出了 P10&#x2F;P50&#x2F;P90 三条曲线。在 MPC 里，可以用<strong>鲁棒 MPC</strong> 的思路：</p>
+<ul>
+<li>光伏预测用 P10（保守估计），避免因高估光伏出力导致过度放电</li>
+<li>负荷预测用 P90（保守估计），确保高负荷场景下有足够储能余量</li>
+<li>在约束里加入 SOC 缓冲带（比如 SOC 下限从 10% 提高到 15%），为预测误差留出安全裕度</li>
+</ul>
+<p>这种处理方式不需要复杂的随机优化，计算开销小，适合嵌入式 Linux 环境。</p>
+<hr>
+<h2 id="六、工程落地的几个实际问题"><a href="#六、工程落地的几个实际问题" class="headerlink" title="六、工程落地的几个实际问题"></a>六、工程落地的几个实际问题</h2><h3 id="6-1-数据质量"><a href="#6-1-数据质量" class="headerlink" title="6.1 数据质量"></a>6.1 数据质量</h3><p>DLT645 采集偶尔会有通信超时，<code>ConvertBCD_2WhVal</code> 返回异常值。训练数据里需要做异常检测（3σ 准则或 IQR 过滤），否则一个坏点会严重影响模型。</p>
+<p>光伏逆变器的 <code>iWorkMode == 3</code>（故障）期间的数据要标记并剔除，不能用来训练”正常发电”的模式。</p>
+<h3 id="6-2-模型更新频率"><a href="#6-2-模型更新频率" class="headerlink" title="6.2 模型更新频率"></a>6.2 模型更新频率</h3><p>光伏组件会随时间老化（年衰减约 0.5-0.8%），负荷模式会随生产计划变化。模型不能训练一次就永久使用，建议每月用最新 90 天数据重新微调（fine-tune），而不是从头训练。</p>
+<h3 id="6-3-预测失效时的降级策略"><a href="#6-3-预测失效时的降级策略" class="headerlink" title="6.3 预测失效时的降级策略"></a>6.3 预测失效时的降级策略</h3><p>预测模型是软件，会出 bug，NWP 数据源也可能断线。系统必须有降级逻辑：当预测模块不可用时，自动回退到现有的规则驱动模式（<code>IsBatt_Plan2_StartChrg</code> 那套逻辑）。这个降级切换可以通过 <code>emControlMode</code> 字段来实现——预测驱动模式和规则模式对应不同的控制模式枚举值。</p>
+<h3 id="6-4-计算资源约束"><a href="#6-4-计算资源约束" class="headerlink" title="6.4 计算资源约束"></a>6.4 计算资源约束</h3><p>项目运行在 ARM 嵌入式 Linux 上（从 <code>src/mkenv_arm_st</code> 可以看出是 ARM 交叉编译环境）。深度学习模型推理需要考虑资源限制：</p>
+<ul>
+<li>N-BEATS 的 MLP 结构可以用 ONNX Runtime 部署，推理一次 24 小时预测在 ARM Cortex-A 上通常在 100ms 以内</li>
+<li>MPC 优化问题如果是线性规划（LP），用 <code>glpk</code> 或 <code>HiGHS</code> 求解，几十个变量的问题毫秒级可解</li>
+<li>如果资源实在紧张，可以把预测和优化放到云端，设备只负责执行，通过 MQTT 接收优化后的调度计划</li>
+</ul>
+<hr>
+<h2 id="七、小结"><a href="#七、小结" class="headerlink" title="七、小结"></a>七、小结</h2><p>从”当前 SOC + 时段表 → 充放电决策”到”未来 24 小时预测 + MPC 优化 → 前瞻调度”，这不是一个简单的模型替换，而是整个决策架构的升级。</p>
+<p>核心链路是：<strong>原始采样数据（PV 逆变器 + DLT645 电表）→ 特征工程 → 时序预测模型（PatchTST&#x2F;N-BEATS）→ 概率预测区间 → MPC 优化求解 → MQTT 指令下发 → 设备执行</strong>。</p>
+<p>每个环节都有工程细节需要处理，但最重要的是把预测结果真正接入决策闭环，而不是让它停留在离线分析报告里。现有代码里的 <code>dispatchPower</code> 接口已经提供了足够的控制自由度，缺的只是上游的预测驱动层。</p>
+<p>这套方案在理论上可以把储能系统的经济收益提升 15-30%（相比纯规则调度），具体数字取决于当地电价结构和光伏&#x2F;负荷的波动程度。值得投入工程资源去做。</p>
+<hr>
+<p><em>代码引用均来自项目实际文件，文中行号以当前代码版本为准。</em></p>
+
+		</div>
+
+		
+		<div class="post-copyright-info w-full my-8 px-2 sm:px-6 md:px-8">
+			<div class="article-copyright-info-container">
+    <ul>
+        <li><strong>标题:</strong> 光伏-储能-负荷联合预测：给 EMS 装上&#34;预知能力&#34;</li>
+        <li><strong>作者:</strong> kuangyue111</li>
+        <li><strong>创建于
+                :</strong> 2026-06-09 16:00:00</li>
+        
+            <li>
+                <strong>更新于
+                    :</strong> 2026-06-09 09:25:27
+            </li>
+        
+        <li>
+            <strong>链接:</strong> https://kuangyue111.github.io/2026/06/09/2026-06-09-pv-storage-load-joint-forecasting-ems/
+        </li>
+        <li>
+            <strong>
+                版权声明:
+            </strong>
+            
+
+            
+                本文章采用 <a class="license" target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0">CC BY-NC-SA 4.0</a> 进行许可。
+            
+        </li>
+    </ul>
+</div>
+
+		</div>
+		
+
+		
+		<ul class="post-tags-box text-lg mt-1.5 flex-wrap justify-center flex md:hidden">
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E5%82%A8%E8%83%BD/">#储能</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/EMS/">#EMS</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/">#机器学习</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E5%85%89%E4%BC%8F/">#光伏</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E8%B4%9F%E8%8D%B7%E9%A2%84%E6%B5%8B/">#负荷预测</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/MPC/">#MPC</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E6%A8%A1%E5%9E%8B%E9%A2%84%E6%B5%8B%E6%8E%A7%E5%88%B6/">#模型预测控制</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E6%97%B6%E9%97%B4%E5%BA%8F%E5%88%97/">#时间序列</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/N-BEATS/">#N-BEATS</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/PatchTST/">#PatchTST</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E6%96%B0%E8%83%BD%E6%BA%90/">#新能源</a>&nbsp;
+			</li>
+			
+		</ul>
+		
+
+		
+
+		
+		<div class="article-nav my-8 flex justify-between items-center px-2 sm:px-6 md:px-8">
+			
+			<div class="article-prev border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
+				<a class="prev" rel="prev" href="/2026/06/13/2026-06-13-energy-storage-underlying-logic/">
+					<span class="left arrow-icon flex justify-center items-center">
+						<i class="fa-solid fa-chevron-left"></i>
+					</span>
+					<span class="title flex justify-center items-center">
+						<span class="post-nav-title-item truncate max-w-48">储能系统技术的底层逻辑：从直流母线架构到SOC估计</span>
+						<span class="post-nav-item">上一篇</span>
+					</span>
+				</a>
+			</div>
+			
+			
+			<div class="article-next border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
+				<a class="next" rel="next" href="/2026/06/09/2026-06-09-solid-state-transformer-industry-analysis/">
+					<span class="title flex justify-center items-center">
+						<span class="post-nav-title-item truncate max-w-48">固态变压器（SST）行业深度分析报告</span>
+						<span class="post-nav-item">下一篇</span>
+					</span>
+					<span class="right arrow-icon flex justify-center items-center">
+						<i class="fa-solid fa-chevron-right"></i>
+					</span>
+				</a>
+			</div>
+			
+		</div>
+		
+
+
+		
+		<div class="comment-container px-2 sm:px-6 md:px-8 pb-8">
+			<div class="comments-container mt-10 w-full ">
+    <div id="comment-anchor" class="w-full h-2.5"></div>
+    <div class="comment-area-title w-full my-1.5 md:my-2.5 text-xl md:text-3xl font-bold">
+        评论
+    </div>
+    
+
+        
+            
+    <div id="waline"></div>
+    <script type="module" data-swup-reload-script>
+      import { init } from '/js/libs/waline.js';
+
+      (function() {
+        const startPath = location.pathname;
+        const startTime = Date.now();
+        const retryDelay = 200;
+        const retryLimit = 5000;
+
+        const runWaline = () => {
+          if (location.pathname !== startPath) {
+            return;
+          }
+
+          const container = document.getElementById('waline');
+          if (!container) {
+            if (Date.now() - startTime < retryLimit) {
+              setTimeout(runWaline, retryDelay);
+            }
+            return;
+          }
+
+          if (window.redefineWalineInstance?.destroy) {
+            window.redefineWalineInstance.destroy();
+          }
+
+          container.innerHTML = '';
+          window.redefineWalineInstance = init({
+            el: '#waline',
+            serverURL: 'https://example.example.com',
+            path: location.pathname,
+            dark: 'body[class~="dark-mode"]',
+            reaction: false,
+            requiredMeta: ['nick', 'mail'],
+            emoji: [],
+                      lang: 'zh-CN',
+          });
+        };
+
+        runWaline();
+      })();
+    </script>
+
+
+
+        
+    
+</div>
+
+		</div>
+		
+	</div>
+
+	
+	<div class="toc-content-container">
+		<div class="post-toc-wrap">
+	<div class="post-toc">
+		<div class="toc-title">目录</div>
+		<div class="page-title">光伏-储能-负荷联合预测：给 EMS 装上&#34;预知能力&#34;</div>
+		<ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%89%E4%BC%8F-%E5%82%A8%E8%83%BD-%E8%B4%9F%E8%8D%B7%E8%81%94%E5%90%88%E9%A2%84%E6%B5%8B%EF%BC%9A%E7%BB%99-EMS-%E8%A3%85%E4%B8%8A%E2%80%9D%E9%A2%84%E7%9F%A5%E8%83%BD%E5%8A%9B%E2%80%9D"><span class="nav-text">光伏-储能-负荷联合预测：给 EMS 装上”预知能力”</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E4%B8%BA%E4%BB%80%E4%B9%88-EMS-%E9%9C%80%E8%A6%81%E9%A2%84%E6%B5%8B%EF%BC%9F"><span class="nav-text">一、为什么 EMS 需要预测？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E6%95%B0%E6%8D%AE%E5%9F%BA%E7%A1%80%EF%BC%9A%E6%88%91%E4%BB%AC%E6%89%8B%E9%87%8C%E6%9C%89%E4%BB%80%E4%B9%88%E5%8E%9F%E6%96%99%EF%BC%9F"><span class="nav-text">二、数据基础：我们手里有什么原料？</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-%E5%85%89%E4%BC%8F%E9%80%86%E5%8F%98%E5%99%A8%E9%87%87%E6%A0%B7%E6%95%B0%E6%8D%AE"><span class="nav-text">2.1 光伏逆变器采样数据</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-DLT645-%E8%B4%9F%E8%8D%B7%E8%AE%A1%E9%87%8F%E6%95%B0%E6%8D%AE"><span class="nav-text">2.2 DLT645 负荷计量数据</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-%E5%82%A8%E8%83%BD%E7%94%B5%E6%B1%A0%E7%8A%B6%E6%80%81"><span class="nav-text">2.3 储能电池状态</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E5%85%89%E4%BC%8F%E5%8F%91%E7%94%B5%E5%8A%9F%E7%8E%87%E9%A2%84%E6%B5%8B"><span class="nav-text">三、光伏发电功率预测</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-NWP-%E5%8E%86%E5%8F%B2%E6%95%B0%E6%8D%AE%E8%9E%8D%E5%90%88"><span class="nav-text">3.1 NWP + 历史数据融合</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-%E6%A8%A1%E5%9E%8B%E9%80%89%E5%9E%8B%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E4%B8%8D%E7%94%A8-LSTM%EF%BC%9F"><span class="nav-text">3.2 模型选型：为什么不用 LSTM？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-3-%E4%B8%8D%E7%A1%AE%E5%AE%9A%E6%80%A7%E9%87%8F%E5%8C%96%EF%BC%9A%E5%88%86%E4%BD%8D%E6%95%B0%E5%9B%9E%E5%BD%92"><span class="nav-text">3.3 不确定性量化：分位数回归</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E8%B4%9F%E8%8D%B7%E9%A2%84%E6%B5%8B%EF%BC%9A%E6%8C%96%E6%8E%98%E5%B7%A5%E4%B8%9A%E8%B4%9F%E8%8D%B7%E7%9A%84%E5%91%A8%E6%9C%9F%E6%80%A7%E8%A7%84%E5%BE%8B"><span class="nav-text">四、负荷预测：挖掘工业负荷的周期性规律</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#4-1-%E5%B7%A5%E4%B8%9A%E8%B4%9F%E8%8D%B7%E7%9A%84%E4%B8%89%E5%B1%82%E5%91%A8%E6%9C%9F%E7%BB%93%E6%9E%84"><span class="nav-text">4.1 工业负荷的三层周期结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-2-%E7%89%B9%E5%BE%81%E5%B7%A5%E7%A8%8B"><span class="nav-text">4.2 特征工程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-3-%E5%A4%9A%E5%8F%98%E9%87%8F%E6%97%B6%E5%BA%8F%E9%A2%84%E6%B5%8B"><span class="nav-text">4.3 多变量时序预测</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E9%A2%84%E6%B5%8B%E7%BB%93%E6%9E%9C%E6%B3%A8%E5%85%A5-EMS%EF%BC%9AMPC-%E6%A1%86%E6%9E%B6"><span class="nav-text">五、预测结果注入 EMS：MPC 框架</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#5-1-%E7%8E%B0%E6%9C%89-EMS-%E5%86%B3%E7%AD%96%E7%9A%84%E5%B1%80%E9%99%90"><span class="nav-text">5.1 现有 EMS 决策的局限</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-2-MPC-%E7%9A%84%E5%9F%BA%E6%9C%AC%E6%A1%86%E6%9E%B6"><span class="nav-text">5.2 MPC 的基本框架</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-3-%E4%B8%8E%E7%8E%B0%E6%9C%89%E4%BB%A3%E7%A0%81%E7%9A%84%E6%8E%A5%E5%8F%A3%E8%AE%BE%E8%AE%A1"><span class="nav-text">5.3 与现有代码的接口设计</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-4-%E4%B8%8D%E7%A1%AE%E5%AE%9A%E6%80%A7%E5%9C%A8-MPC-%E4%B8%AD%E7%9A%84%E5%A4%84%E7%90%86"><span class="nav-text">5.4 不确定性在 MPC 中的处理</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AD%E3%80%81%E5%B7%A5%E7%A8%8B%E8%90%BD%E5%9C%B0%E7%9A%84%E5%87%A0%E4%B8%AA%E5%AE%9E%E9%99%85%E9%97%AE%E9%A2%98"><span class="nav-text">六、工程落地的几个实际问题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#6-1-%E6%95%B0%E6%8D%AE%E8%B4%A8%E9%87%8F"><span class="nav-text">6.1 数据质量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-2-%E6%A8%A1%E5%9E%8B%E6%9B%B4%E6%96%B0%E9%A2%91%E7%8E%87"><span class="nav-text">6.2 模型更新频率</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-3-%E9%A2%84%E6%B5%8B%E5%A4%B1%E6%95%88%E6%97%B6%E7%9A%84%E9%99%8D%E7%BA%A7%E7%AD%96%E7%95%A5"><span class="nav-text">6.3 预测失效时的降级策略</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-4-%E8%AE%A1%E7%AE%97%E8%B5%84%E6%BA%90%E7%BA%A6%E6%9D%9F"><span class="nav-text">6.4 计算资源约束</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%83%E3%80%81%E5%B0%8F%E7%BB%93"><span class="nav-text">七、小结</span></a></li></ol></li></ol>
+
+	</div>
+</div>
+	</div>
+	
+</div>
+
+			</div>
+
+			
+		</div>
+
+		<div class="main-content-footer">
+			<footer class="footer mt-5 py-5 h-auto text-base text-third-text-color relative border-t-2 border-t-border-color">
+    <div class="info-container py-3 text-center">
+        
+        <div class="text-center">
+            &copy;
+            
+              <span>2022</span>
+              -
+            
+            2026&nbsp;&nbsp;<i class="fa-solid fa-heart fa-beat" style="--fa-animation-duration: 0.5s; color: #f54545"></i>&nbsp;&nbsp;<a href="/">kuangyue111</a>
+            
+                
+                <p class="post-count space-x-0.5">
+                    <span>
+                        共撰写了 45 篇文章
+                    </span>
+                    
+                </p>
+            
+        </div>
+        
+            <script data-swup-reload-script src="https://cn.vercount.one/js"></script>
+            <div class="relative text-center lg:absolute lg:right-[20px] lg:top-1/2 lg:-translate-y-1/2 lg:text-right">
+                
+                    <span id="busuanzi_container_site_uv" class="lg:!block">
+                        <span class="text-sm">访问人数</span>
+                        <span id="busuanzi_value_site_uv"></span>
+                    </span>
+                
+                
+                    <span id="busuanzi_container_site_pv" class="lg:!block">
+                        <span class="text-sm">总访问量</span>
+                        <span id="busuanzi_value_site_pv"></span>
+                    </span>
+                
+            </div>
+        
+        <div class="relative text-center lg:absolute lg:left-[20px] lg:top-1/2 lg:-translate-y-1/2 lg:text-left">
+            <span class="lg:block text-sm">由 <?xml version="1.0" encoding="utf-8"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg class="relative top-[2px] inline-block align-baseline" version="1.1" id="圖層_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="1rem" height="1rem" viewBox="0 0 512 512" enable-background="new 0 0 512 512" xml:space="preserve"><path fill="#0E83CD" d="M256.4,25.8l-200,115.5L56,371.5l199.6,114.7l200-115.5l0.4-230.2L256.4,25.8z M349,354.6l-18.4,10.7l-18.6-11V275H200v79.6l-18.4,10.7l-18.6-11v-197l18.5-10.6l18.5,10.8V237h112v-79.6l18.5-10.6l18.5,10.8V354.6z"/></svg><a target="_blank" class="text-base" href="https://hexo.io">Hexo</a> 驱动</span>
+            <span class="text-sm lg:block">主题&nbsp;<a class="text-base" target="_blank" href="https://github.com/EvanNotFound/hexo-theme-redefine">Redefine v2.9.0</a></span>
+        </div>
+        
+        
+            <div>
+                博客已运行 <span class="odometer" id="runtime_days" ></span> 天 <span class="odometer" id="runtime_hours"></span> 小时 <span class="odometer" id="runtime_minutes"></span> 分钟 <span class="odometer" id="runtime_seconds"></span> 秒
+            </div>
+        
+        
+            <script data-swup-reload-script>
+                try {
+                    function odometer_init() {
+                    const elements = document.querySelectorAll('.odometer');
+                    elements.forEach(el => {
+                        new Odometer({
+                            el,
+                            format: '( ddd).dd',
+                            duration: 200
+                        });
+                    });
+                    }
+                    odometer_init();
+                } catch (error) {}
+            </script>
+        
+        
+        
+    </div>  
+</footer>
+		</div>
+	</div>
+
+	
+	<div class="post-tools">
+		<div class="post-tools-container">
+	<ul class="article-tools-list">
+		<!-- TOC aside toggle -->
+		
+		<li class="right-bottom-tools page-aside-toggle">
+			<i class="fa-regular fa-outdent"></i>
+		</li>
+		
+
+		<!-- go comment -->
+		
+		<li class="go-comment">
+			<i class="fa-regular fa-comments"></i>
+		</li>
+		
+	</ul>
+</div>
+	</div>
+	
+
+	<div class="right-side-tools-container">
+		<div class="side-tools-container">
+	<ul class="hidden-tools-list">
+		<li class="right-bottom-tools tool-font-adjust-plus flex justify-center items-center">
+			<i class="fa-regular fa-magnifying-glass-plus"></i>
+		</li>
+
+		<li class="right-bottom-tools tool-font-adjust-minus flex justify-center items-center">
+			<i class="fa-regular fa-magnifying-glass-minus"></i>
+		</li>
+
+		<li class="right-bottom-tools tool-dark-light-toggle flex justify-center items-center">
+			<i class="fa-regular fa-moon"></i>
+		</li>
+
+		<!-- rss -->
+		
+
+		
+
+		<li class="right-bottom-tools tool-scroll-to-bottom flex justify-center items-center">
+			<i class="fa-regular fa-arrow-down"></i>
+		</li>
+	</ul>
+
+	<ul class="visible-tools-list">
+		<li class="right-bottom-tools toggle-tools-list flex justify-center items-center">
+			<i class="fa-regular fa-cog fa-spin"></i>
+		</li>
+		
+		<li class="right-bottom-tools tool-scroll-to-top flex justify-center items-center">
+			<i class="arrow-up fas fa-arrow-up"></i>
+			<span class="percent"></span>
+		</li>
+		
+		
+	</ul>
+</div>
+	</div>
+
+	<div class="image-viewer-container" role="dialog" aria-modal="true" aria-label="图片查看器">
+	<button class="image-viewer-close" type="button" aria-label="关闭">
+		<i class="fa-solid fa-xmark"></i>
+	</button>
+	<button class="image-viewer-prev" type="button" aria-label="上一页">
+		<i class="fa-solid fa-chevron-left"></i>
+	</button>
+	<div class="image-viewer-frame">
+		<img src="" alt="">
+	</div>
+	<div class="image-viewer-exif-panel hidden absolute left-1/2 bottom-20 -translate-x-1/2 w-[min(92vw,420px)] max-h-[60vh] overflow-hidden rounded-2xl bg-background-color-transparent-80 p-4 text-left shadow-redefine-flat backdrop-blur-md" role="dialog" aria-label="EXIF" aria-hidden="true">
+		<div class="flex items-center justify-between mb-3">
+			<span class="text-sm font-semibold text-first-text-color">EXIF</span>
+			<button class="image-viewer-exif-close flex h-8 w-8 items-center justify-center rounded-full bg-background-color-transparent-80 text-first-text-color transition hover:bg-background-color-transparent-40" type="button" aria-label="关闭">
+				<i class="fa-solid fa-xmark text-[0.65rem]"></i>
+			</button>
+		</div>
+		<div class="image-viewer-exif-cards grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto pr-1 scrollbar-hide"></div>
+		<template class="image-viewer-exif-card-template">
+			<div class="rounded-lg bg-background-color-transparent-40 px-3 py-2">
+				<div class="image-viewer-exif-card-header flex items-center gap-2 mb-1">
+					<i class="image-viewer-exif-card-icon fa-solid fa-circle-info text-xs text-third-text-color"></i>
+					<div class="image-viewer-exif-card-title text-xs font-semibold text-first-text-color"></div>
+				</div>
+				<div class="image-viewer-exif-card-items flex flex-col gap-1"></div>
+			</div>
+		</template>
+	</div>
+	<button class="image-viewer-exif-toggle flex items-center gap-2 hidden absolute left-1/2 bottom-6 -translate-x-1/2 rounded-full border border-border-color bg-background-color-transparent-80 px-4 py-2 text-first-text-color backdrop-blur-md transition hover:bg-background-color-transparent-40" type="button" aria-label="EXIF" aria-expanded="false">
+		<i class="fa-solid fa-circle-info text-xs"></i>
+		<span class="text-xs font-semibold uppercase tracking-wider">EXIF</span>
+	</button>
+	<button class="image-viewer-next" type="button" aria-label="下一页">
+		<i class="fa-solid fa-chevron-right"></i>
+	</button>
+</div>
+
+
+	
+
+</main>
+
+
+
+<script src="/js/build/libs/Swup.min.js"></script>
+
+<script src="/js/build/libs/SwupSlideTheme.min.js"></script>
+
+<script src="/js/build/libs/SwupScriptsPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupProgressPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupScrollPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupPreloadPlugin.min.js"></script>
+
+<script>
+    window.swup = new Swup({
+        plugins: [
+            new SwupScriptsPlugin({
+                optin: true,
+            }),
+            new SwupProgressPlugin(),
+            new SwupScrollPlugin({
+                offset: 80,
+            }),
+            new SwupSlideTheme({
+                mainElement: ".main-content-body",
+            }),
+            new SwupPreloadPlugin(),
+        ],
+        containers: ["#swup"],
+    });
+
+    window.dispatchEvent(
+        new CustomEvent("redefine:swup:ready", {
+            detail: {
+                swup: window.swup,
+            },
+        }),
+    );
+</script>
+
+
+
+
+	
+<script src="/js/build/main.js" type="module"></script>
+
+
+
+    
+<script src="/js/build/libs/odometer.min.js"></script>
+
+    
+<link rel="stylesheet" href="/assets/odometer-theme-minimal.css">
+
+
+
+
+
+
+
+  
+<script src="/js/build/libs/Typed.min.js"></script>
+
+
+
+
+
+
+
+
+
+
+<script src="/js/build/libs/moment-with-locales.min.js" data-swup-reload-script=""></script>
+
+
+
+	
+</body>
+
+</html>

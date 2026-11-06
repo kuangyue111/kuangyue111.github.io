@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="keywords" content="Hexo Theme Redefine">
+    
+    
+    <meta name="author" content="kuangyue111">
+    
+    <!-- Completely eliminate flash of wrong theme -->
+    <script>
+        (function() {
+            const THEME_KEY = "REDEFINE-THEME-STATUS";
+            const DARK = "dark", LIGHT = "light";
+            
+            // Get preferred theme
+            function getTheme() {
+                try {
+                    const saved = localStorage.getItem(THEME_KEY);
+                    if (saved) {
+                        const { isDark } = JSON.parse(saved);
+                        return isDark ? DARK : LIGHT;
+                    }
+                } catch (e) {}
+                
+                return matchMedia("(prefers-color-scheme: dark)").matches ? DARK : LIGHT;
+            }
+            
+            // Apply theme to document
+            function applyTheme(theme) {
+                const isDark = theme === DARK;
+                const root = document.documentElement;
+                
+                // Set classes for compatibility
+                root.classList.add(theme);
+                root.classList.remove(isDark ? LIGHT : DARK);
+                root.style.colorScheme = theme;
+            }
+            
+            // Initial application
+            const theme = getTheme();
+            applyTheme(theme);
+            
+            // Listen for system preference changes
+            matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ({ matches }) => {
+                // Only update if using system preference (no localStorage entry)
+                if (!localStorage.getItem(THEME_KEY)) {
+                    applyTheme(matches ? DARK : LIGHT);
+                }
+            });
+            
+            // Set body classes ASAP (before DOMContentLoaded)
+            (function() {
+                const addBodyClass = () => {
+                    const b = document.body;
+                    if (!b) return false;
+                    b.classList.add(theme + "-mode");
+                    return true;
+                };
+
+                // Try immediately
+                if (addBodyClass()) return;
+
+                // Observe until body exists
+                const mo = new MutationObserver(() => {
+                    if (addBodyClass()) mo.disconnect();
+                });
+                mo.observe(document.documentElement, { childList: true, subtree: true });
+            })();
+        })();
+    </script>
+    
+    <!-- preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    
+    <!--- Seo Part-->
+    
+    <link rel="canonical" href="https://kuangyue111.github.io/2026/07/14/2026-07-14-peak-valley-economic-model/"/>
+    <meta name="robots" content="index,follow">
+    <meta name="googlebot" content="index,follow">
+    <meta name="revisit-after" content="1 days">
+    
+    
+        
+        <meta name="description" content="Hexo Theme Redefine, Redefine Your Hexo Journey.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="工商储能峰谷套利的经济模型与工程实现——从 EMS 代码看储能收益">
+<meta property="og:url" content="https://kuangyue111.github.io/2026/07/14/2026-07-14-peak-valley-economic-model/index.html">
+<meta property="og:site_name" content="KuangYue&#39;s Blog">
+<meta property="og:description" content="Hexo Theme Redefine, Redefine Your Hexo Journey.">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://kuangyue111.github.io/images/redefine-og.webp">
+<meta property="article:published_time" content="2026-07-14T11:00:00.000Z">
+<meta property="article:modified_time" content="2026-07-14T11:31:28.244Z">
+<meta property="article:author" content="kuangyue111">
+<meta property="article:tag" content="BMS">
+<meta property="article:tag" content="储能">
+<meta property="article:tag" content="EMS">
+<meta property="article:tag" content="峰谷套利">
+<meta property="article:tag" content="工商业储能">
+<meta property="article:tag" content="需量管理">
+<meta property="article:tag" content="经济模型">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://kuangyue111.github.io/images/redefine-og.webp">
+    
+    
+    <!--- Icon Part-->
+    <link rel="icon" type="image/png" href="/images/redefine-favicon.svg" sizes="192x192">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/redefine-favicon.svg">
+    <meta name="theme-color" content="#A31F34">
+    <link rel="shortcut icon" href="/images/redefine-favicon.svg">
+    <!--- Page Info-->
+    
+    <title>
+        
+            工商储能峰谷套利的经济模型与工程实现——从 EMS 代码看储能收益 | KuangYue&#39;s Blog
+        
+    </title>
+
+    
+<link rel="stylesheet" href="/fonts/Chillax/chillax.css">
+
+
+    <!--- Inject Part-->
+    
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+        
+<link rel="stylesheet" href="/css/build/tailwind.css">
+
+    
+
+    
+<link rel="stylesheet" href="/fonts/GeistMono/geist-mono.css">
+
+    
+<link rel="stylesheet" href="/fonts/Geist/geist.css">
+
+    <!--- Font Part-->
+    
+    
+    
+    
+    
+    
+
+    <script id="hexo-configurations">
+    window.config = {"hostname":"kuangyue111.github.io","root":"/","language":"zh-CN"};
+    window.theme = {"articles":{"style":{"font_size":"16px","line_height":1.5,"image_border_radius":"14px","image_alignment":"center","image_caption":false,"link_icon":true,"delete_mask":false,"title_alignment":"left","headings_top_spacing":{"h1":"3.2rem","h2":"2.4rem","h3":"1.9rem","h4":"1.6rem","h5":"1.4rem","h6":"1.3rem"}},"word_count":{"enable":true,"count":true,"min2read":true},"author_label":{"enable":true,"auto":false,"list":[]},"code_block":{"copy":true,"style":"mac","highlight_theme":{"light":"github","dark":"vs2015"},"font":{"enable":false,"family":null,"url":null}},"toc":{"enable":true,"max_depth":3,"number":false,"expand":true,"init_open":true},"copyright":{"enable":true,"default":"cc_by_nc_sa"},"lazyload":true,"pangu_js":false,"recommendation":{"enable":false,"title":"推荐阅读","limit":3,"mobile_limit":2,"placeholder":"/images/wallhaven-wqery6-light.webp","skip_dirs":[]}},"colors":{"primary":"#A31F34","secondary":null,"default_mode":"light"},"global":{"fonts":{"chinese":{"enable":false,"family":null,"url":null},"english":{"enable":false,"family":null,"url":null},"title":{"enable":false,"family":null,"url":null}},"content_max_width":"1000px","sidebar_width":"210px","hover":{"shadow":true,"scale":false},"scroll_progress":{"bar":false,"percentage":true},"website_counter":{"url":"https://cn.vercount.one/js","enable":true,"site_pv":true,"site_uv":true,"post_pv":true},"single_page":true,"preloader":{"enable":false,"custom_message":null},"side_tools":{"gear_rotation":true,"auto_expand":false},"open_graph":{"enable":true,"image":"/images/redefine-og.webp","description":"Hexo Theme Redefine, Redefine Your Hexo Journey."},"google_analytics":{"enable":false,"id":null}},"home_banner":{"enable":true,"style":"fixed","image":{"light":"/images/wallhaven-wqery6-light.webp","dark":"/images/wallhaven-wqery6-dark.webp"},"title":"KuangYue's Blog","subtitle":{"text":["专注储能系统与嵌入式开发","记录 NCCU 控制单元架构演进","探索工业物联网与云端对接"],"hitokoto":{"enable":false,"show_author":false,"api":"https://v1.hitokoto.cn"},"typing_speed":100,"backing_speed":80,"starting_delay":500,"backing_delay":1500,"loop":true,"smart_backspace":true},"text_color":{"light":"#fff","dark":"#d1d1b6"},"text_style":{"title_size":"2.8rem","subtitle_size":"1.5rem","line_height":1.2},"custom_font":{"enable":false,"family":null,"url":null},"social_links":{"enable":true,"style":"default","links":[{"icon":"fa-brands fa-github","url":"https://github.com/kuangyue111"},{"icon":"fa-brands fa-twitter","url":null},{"icon":"fa-solid fa-at","url":"you@example.com"},{"icon":"fa-brands fa-telegram","url":null},{"icon":"/images/custom-icon.svg","url":null}],"qrs":[{"icon":"fa-brands fa-weixin","qr":null},{"icon":"/images/custom-icon.svg","qr":null}]}},"plugins":{"feed":{"enable":false},"aplayer":{"enable":false,"type":"fixed","audios":[{"name":null,"artist":null,"url":null,"cover":null,"lrc":null}]},"mermaid":{"theme":{"light":"default","dark":"dark"}},"katex":false,"chart":false},"version":"2.9.0","code_block":{"theme":"light","macStyle":false,"shrink":false,"copy_button":true,"language":true},"navbar":{"auto_hide":false,"color":{"left":"#f78736","right":"#367df7","transparency":35},"width":{"home":"1200px","pages":"1000px"},"links":{"Home":{"path":"/","icon":"fa-regular fa-house"},"Archives":{"path":"/archives/","icon":"fa-regular fa-archive"},"Tags":{"path":"/tags/","icon":"fa-regular fa-tags"},"Categories":{"path":"/categories/","icon":"fa-regular fa-folder"},"About":{"icon":"fa-regular fa-user","submenus":{"Me":"/about/","GitHub":"https://github.com/kuangyue111"}}},"search":{"enable":false,"preload":true}},"page_templates":{"friends_column":2,"tags_style":"blur","masonry":{"batch_size":12,"initial_batch_size":24}},"home":{"sidebar":{"enable":true,"position":"left","first_item":"menu","announcement":"专注于嵌入式与储能系统技术分享","show_on_mobile":true,"links":{"Archives":{"path":"/archives/","icon":"fa-regular fa-archive"},"Tags":{"path":"/tags/","icon":"fa-regular fa-tags"},"Categories":{"path":"/categories/","icon":"fa-regular fa-folder"}}},"article_date_format":"auto","excerpt_length":200,"categories":{"enable":true,"limit":3},"tags":{"enable":true,"limit":3}},"footer":{"runtime":true,"icon":"<i class=\"fa-solid fa-heart fa-beat\" style=\"--fa-animation-duration: 0.5s; color: #f54545\"></i>","start":"2022/8/17 11:45:14","statistics":true,"customize":null,"icp":{"enable":false,"number":null,"url":null},"since":2025,"custom":null,"copyright":true,"theme":{"enable":true},"counter":true},"footerStart":"2022/8/17 11:45:14","mermaid":{"style":{"light":"default","dark":"dark"}}};
+    window.lang_ago = {"second":"%s 秒前","minute":"%s 分钟前","hour":"%s 小时前","day":"%s 天前","week":"%s 周前","month":"%s 个月前","year":"%s 年前"};
+    window.i18n = {"search":"站内搜索您需要的内容...","toc":"目录","prev":"上一页","next":"下一页","prev_posts":"上一篇","next_posts":"下一篇","page":"第 %d 页","recent_posts":"最新文章","share":"分享","powered_by":"由 %s 驱动","theme":"主题","rss_feed":"RSS Feed","category":"分类","categories":"分类","tag":"标签","tags":"标签","post":"文章","posts":"文章","tagcloud":"标签云","comment":"评论","comments":"评论","top":"置顶","sticky":"置顶","go-back-home":"回到首页","masonry_loading":"照片加载中...","image_viewer":"图片查看器","close":"关闭","exif":{"title":"EXIF","cards":{"camera":"相机","lens":"镜头","exposure":"曝光","other":"其他"},"fields":{"make":"品牌","model":"机型","date_taken":"拍摄时间","lens_model":"镜头","focal_length":"焦距","focus_mode":"对焦模式","shutter":"快门","aperture":"光圈","iso":"感光度","exposure_program":"曝光程序","exposure_compensation":"曝光补偿","metering_mode":"测光模式","flash":"闪光灯","white_balance":"白平衡","latitude":"纬度","longitude":"经度","altitude":"海拔"},"status":{"loading":"加载中...","no_exif":"无 EXIF 信息","library_missing":"EXIF 库未加载","image_source_missing":"图片地址不可用","unavailable":"EXIF 不可用（可能被 CORS 阻止或缺少元数据）","flag_unavailable":"EXIF 不可用"}},"home":"首页","archive":"归档","archives":"归档","about":"关于","links":"链接","link":"链接","friends":"友情链接","friend":"友情链接","timeline":"时间轴","shuoshuo":"说说","bookmarks":"书签","site_uv":"访问人数","site_pv":"总访问量","read_more":"阅读全文","wordcount":"字","min2read":"分钟","changelog":"更新日志","status":"状态","runtime":"博客已运行","days":"天","hours":"小时","minutes":"分钟","seconds":"秒","optimized_by":"并由 Evan 进行优化","rights":"版权所有","site_posts":"共撰写了 %s 篇文章","site_wordcount":"共 %s 字","copyright":{"title":"标题","author":"作者","link":"链接","create_time":"创建于","update_time":"更新于","license_title":"版权声明","license_content":"本文章采用 %s 进行许可。","all_rights_reserved":"版权所有 &#169 %s，禁止转载。","public_domain":"本文为公有领域作品，可自由转载、引用。"},"ago":{"second":"%s 秒前","minute":"%s 分钟前","hour":"%s 小时前","day":"%s 天前","week":"%s 周前","month":"%s 个月前","year":"%s 年前"},"create_time":"创建","update_time":"更新","expired":"这篇文章最后更新于 %s 天前，内容可能已经过时。"};
+    window.data = {"masonry":false};
+  </script>
+    
+    <!--- Fontawesome Part-->
+    
+<link rel="stylesheet" href="/fontawesome/fontawesome.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/brands.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/solid.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/regular.min.css">
+
+    
+    
+    
+    
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+	<div class="progress-bar-container">
+	
+
+	
+	<span class="pjax-progress-bar"></span>
+	<!--        <span class="swup-progress-icon">-->
+	<!--            <i class="fa-solid fa-circle-notch fa-spin"></i>-->
+	<!--        </span>-->
+	
+</div>
+
+<main class="page-container" id="swup">
+
+	
+
+	<div class="main-content-container flex flex-col justify-between min-h-dvh">
+		<div class="main-content-header">
+			<header class="navbar-container px-6 md:px-12">
+    <div class="navbar-content transition-navbar ">
+        <div class="left">
+            
+            <a class="logo-title" href="/">
+                
+                KuangYue&#39;s Blog
+                
+            </a>
+        </div>
+
+        <div class="right">
+            <!-- PC -->
+            <div class="desktop">
+                <ul class="navbar-list">
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/"
+                                        >
+                                    <i class="fa-regular fa-house fa-fw"></i>
+                                    首页
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/archives/"
+                                        >
+                                    <i class="fa-regular fa-archive fa-fw"></i>
+                                    归档
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/tags/"
+                                        >
+                                    <i class="fa-regular fa-tags fa-fw"></i>
+                                    标签
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/categories/"
+                                        >
+                                    <i class="fa-regular fa-folder fa-fw"></i>
+                                    分类
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class="has-dropdown"
+                                   href="#"
+                                        onClick=&#34;return false;&#34;>
+                                    <i class="fa-regular fa-user fa-fw"></i>
+                                    关于
+                                    <i class="fa-solid fa-chevron-down fa-fw"></i>
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                                    <ul class="sub-menu">
+                                        
+                                            <li>
+                                                <a href="/about/">
+                                                    ME
+                                                </a>
+                                            </li>
+                                        
+                                            <li>
+                                                <a target="_blank" rel="noopener" href="https://github.com/kuangyue111">
+                                                    GITHUB
+                                                </a>
+                                            </li>
+                                        
+                                    </ul>
+                                
+                            </li>
+                    
+                    
+                </ul>
+            </div>
+            <!-- Mobile -->
+            <div class="mobile">
+                
+                <div class="icon-item navbar-bar">
+                    <div class="navbar-bar-middle"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile sheet -->
+    <div class="navbar-drawer h-dvh w-full absolute top-0 left-0 bg-background-color flex flex-col justify-between">
+        <ul class="drawer-navbar-list flex flex-col px-4 justify-center items-start">
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/"
+                        >
+                            <span>
+                                首页
+                            </span>
+                            
+                                <i class="fa-regular fa-house fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/archives/"
+                        >
+                            <span>
+                                归档
+                            </span>
+                            
+                                <i class="fa-regular fa-archive fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/tags/"
+                        >
+                            <span>
+                                标签
+                            </span>
+                            
+                                <i class="fa-regular fa-tags fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/categories/"
+                        >
+                            <span>
+                                分类
+                            </span>
+                            
+                                <i class="fa-regular fa-folder fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item-sub text-base my-1.5 flex flex-col w-full">
+                        
+                        <div class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary cursor-pointer text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                             navbar-data-toggle="submenu-About"
+                        >
+                            <span>
+                                关于
+                            </span>
+                            
+                                <i class="fa-solid fa-chevron-right fa-sm fa-fw transition-all"></i>
+                            
+                        </div>
+                        
+
+                        
+                            <div class="flex-col items-start px-2 py-2 hidden" data-target="submenu-About">
+                                
+                                    <div class="drawer-navbar-item text-base flex flex-col justify-center items-start hover:underline active:underline hover:underline-offset-1 rounded-3xl">
+                                        <a class=" text-third-text-color text-xl"
+                                           href="/about/">ME</a>
+                                    </div>
+                                
+                                    <div class="drawer-navbar-item text-base flex flex-col justify-center items-start hover:underline active:underline hover:underline-offset-1 rounded-3xl">
+                                        <a class=" text-third-text-color text-xl"
+                                           target="_blank" rel="noopener" href="https://github.com/kuangyue111">GITHUB</a>
+                                    </div>
+                                
+                            </div>
+                        
+                    </li>
+            
+
+            
+            
+                
+                    
+                    
+                    
+            
+        </ul>
+
+        <div class="statistics flex justify-around my-2.5">
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/tags">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">194</div>
+        <div class="label text-third-text-color text-sm">标签</div>
+    </a>
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/categories">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">16</div>
+        <div class="label text-third-text-color text-sm">分类</div>
+    </a>
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/archives">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">45</div>
+        <div class="label text-third-text-color text-sm">文章</div>
+    </a>
+</div>
+    </div>
+
+    <div class="window-mask"></div>
+
+</header>
+
+
+		</div>
+
+		<div class="main-content-body transition-fade-up">
+			
+
+			<div class="main-content">
+				<div class="post-page-container flex relative justify-between box-border w-full h-full">
+	<div class="article-content-container">
+
+		<div class="article-title relative w-full">
+			
+			<div class="w-full flex items-center pt-6 justify-start">
+				<h1 class="article-title-regular text-second-text-color tracking-tight text-4xl md:text-6xl font-semibold px-2 sm:px-6 md:px-8 py-3">工商储能峰谷套利的经济模型与工程实现——从 EMS 代码看储能收益</h1>
+			</div>
+			
+		</div>
+
+		
+		<div class="article-header flex flex-row gap-2 items-center px-2 sm:px-6 md:px-8">
+			<div class="avatar w-[46px] h-[46px] shrink-0 rounded-medium border border-border-color p-px">
+				<img src="/images/redefine-avatar.svg">
+			</div>
+			<div class="info flex flex-col justify-between">
+				<div class="author flex items-center">
+					<span class="name text-default-text-color text-lg font-semibold">kuangyue111</span>
+					
+					<span class="author-label ml-1.5 text-xs px-2 py-0.5 rounded-small text-third-text-color border border-shadow-color-1">Lv4</span>
+					
+				</div>
+				<div class="meta-info">
+					<div class="article-meta-info">
+    <span class="article-date article-meta-item">
+        <i class="fa-regular fa-pen-fancy"></i>&nbsp;
+        <span class="desktop">2026-07-14 19:00</span>
+        <span class="mobile">2026-07-14 19:00</span>
+        <span class="hover-info">创建</span>
+    </span>
+    
+        <span class="article-date article-meta-item">
+            <i class="fa-regular fa-wrench"></i>&nbsp;
+            <span class="desktop">2026-07-14 19:31:28</span>
+            <span class="mobile">2026-07-14 19:31:28</span>
+            <span class="hover-info">更新</span>
+        </span>
+    
+
+    
+        <span class="article-categories article-meta-item">
+            <i class="fa-regular fa-folders"></i>&nbsp;
+            <ul>
+                
+                
+                    
+                        
+                        <li>
+                            <a href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/">技术分享</a>&nbsp;
+                        </li>
+                    
+                    
+                
+                    
+                        
+                            <li>></li>
+                        
+                        <li>
+                            <a href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/%E5%B5%8C%E5%85%A5%E5%BC%8F%E5%BC%80%E5%8F%91/">嵌入式开发</a>&nbsp;
+                        </li>
+                    
+                    
+                
+            </ul>
+        </span>
+    
+    
+        <span class="article-tags article-meta-item">
+            <i class="fa-regular fa-tags"></i>&nbsp;
+            <ul>
+                
+                    <li>
+                        <a href="/tags/BMS/">BMS</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E5%82%A8%E8%83%BD/">储能</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/EMS/">EMS</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E5%B3%B0%E8%B0%B7%E5%A5%97%E5%88%A9/">峰谷套利</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E5%B7%A5%E5%95%86%E4%B8%9A%E5%82%A8%E8%83%BD/">工商业储能</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E9%9C%80%E9%87%8F%E7%AE%A1%E7%90%86/">需量管理</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E7%BB%8F%E6%B5%8E%E6%A8%A1%E5%9E%8B/">经济模型</a>&nbsp;
+                    </li>
+                
+            </ul>
+        </span>
+    
+
+    
+    
+    
+    
+        <span class="article-pv article-meta-item">
+            <i class="fa-regular fa-eye"></i>&nbsp;<span id="busuanzi_value_page_pv"></span>
+        </span>
+    
+</div>
+
+				</div>
+			</div>
+		</div>
+		
+
+		
+
+
+		<div class="article-content markdown-body px-2 sm:px-6 md:px-8 pb-8">
+			<p>  写工商储能控制代码的时候，最常被问到的一个问题不是”算法对不对”，而是”这台柜子今天到底能赚多少钱”。这两个问题其实是同一个问题——调度算法决定了储能资产的现金流模型，而 EMS 里那几个不起眼的工作模式切换、SOC<br>  阈值判断、功率限值计算，背后对应的是一套相当严谨的经济学决策链。</p>
+<p>  下面结合手头这套主控代码（<code>ems_management.c</code>），把峰谷套利这件事掰开讲一讲。</p>
+<h1 id="一、调度的最小单元：管理计划时段"><a href="#一、调度的最小单元：管理计划时段" class="headerlink" title="一、调度的最小单元：管理计划时段"></a>一、调度的最小单元：管理计划时段</h1><p>  打开 <code>GetCurrentTimeSector</code> 这个函数，看里面的 <code>EMS_LIMIT_SECTOR</code> 结构体：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">pPlanSectorNow-&gt;tmStart =        pEMS-&gt;tmStart0sec;</span><br><span class="line">pPlanSectorNow-&gt;nInterval =      <span class="number">86400</span>;</span><br><span class="line">pPlanSectorNow-&gt;emBatt_WorkMode = BATT_WORKMODE_IDLE;</span><br><span class="line">pPlanSectorNow-&gt;nStopSOC =       <span class="number">0</span>;</span><br><span class="line">pPlanSectorNow-&gt;nActvPwrLmt =    <span class="number">0</span>;</span><br><span class="line">pPlanSectorNow-&gt;nReActvPwrLmt =  <span class="number">0</span>;</span><br><span class="line">pPlanSectorNow-&gt;nBattGrpPwrLmt = <span class="number">0</span>;</span><br></pre></td></tr></table></figure></div>
+<p>  这就是峰谷套利在代码里最核心的抽象——一段管理计划由起始时间、持续秒数、工作模式、停止 <code>SOC</code>、有功无功功率限制、单柜功率限制构成。一天 24 小时被切成若干段，每段绑定一个<br>  <div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">BATT_WORKMODE_FIRST_CHRGING（优先充电）、BATT_WORKMODE_FIRST_DISCHRG（优先放电）或 BATT_WORKMODE_IDLE（空闲）。</span><br></pre></td></tr></table></figure></div><br>  为什么这么设计？因为国内大部分工商业电价是分时定价：大工业用电典型分四段——尖、峰、平、谷，部分省份还有深谷。江浙沪一带峰谷价差能拉到 0.7~1.0<br>  元&#x2F;kWh，理论套利空间一度电就是这么多。系统要做的事情，本质上是把电从谷段（低价）”搬”到峰段（高价）卖出去，扣掉效率损耗、电池衰减成本、容量电费分摊之后剩下的，就是项目的毛利。</p>
+<p>  时段配置在数学上就是把一个连续的优化问题离散化。如果记电价为 $p(t)$，电池充放电功率为 $P(t)$（充为正，放为负），充放电效率为 $\eta_c, \eta_d$，那么一天内的套利收益是：</p>
+<p>  $$<br>  R &#x3D; \int_{0}^{T} \left[ -p(t) \cdot P_{chg}(t) + p(t) \cdot \eta_d \cdot P_{dis}(t) \right] dt<br>  $$</p>
+<p>  约束条件包括 <code>SOC</code> 上下限、功率限制、电池容量、循环次数等。代码里的 <code>nActvPwrLmt</code>、<code>nStopSOC</code>、<code>nBattGrpPwrLmt</code> 就是这些约束的硬编码版本。把积分换成求和，每个 <code>EMS_LIMIT_SECTOR</code><br>  对应一个时间区间的离散决策——这就是日前优化（<code>day-ahead optimization</code>）的工程落地。</p>
+<h1 id="二、SOC-终止逻辑：什么时候该停下来"><a href="#二、SOC-终止逻辑：什么时候该停下来" class="headerlink" title="二、SOC 终止逻辑：什么时候该停下来"></a>二、SOC 终止逻辑：什么时候该停下来</h1><p>  光靠”现在是峰段就放电”这条规则远远不够。真实情况是电池放到一定程度就必须停，否则下一段谷电充满都不一定够。代码里这两个判断函数把这层语义写得很清楚：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> BOOL <span class="title function_">IsBatt_Plan2_StartChrg</span><span class="params">(ROUGH_CCU_DATA* pCCU, UINT nBattSOC)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span>((pPlanSectorNow-&gt;emBatt_WorkMode == BATT_WORKMODE_FIRST_CHRGING) &amp;&amp;</span><br><span class="line">        (nBattSOC &lt; pPlanSectorNow-&gt;nStopSOC))</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">return</span> TRUE;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> FALSE;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">充电时，nStopSOC 是上限——SOC 没到这个值才继续充。放电时反过来：</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span>(pCCU-&gt;emDisChgByStopSOC == TRUE)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span>(nBattSOC &lt;= pPlanSectorNow-&gt;nStopSOC) &#123;</span><br><span class="line">        <span class="keyword">return</span> TRUE;  <span class="comment">// 停止放电</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+<p>  这里有个容易被忽略的经济学细节：<code>nStopSOC</code> 不是简单的”放空”或”充满”，而是一个资产保值与套利收益的折中点。锂电池循环寿命与放电深度（<code>DOD</code>）强相关，宁德时代磷酸铁锂电芯标称 6000 次循环是建立在 80% DOD 基础上的；如果每天做<br>  95% DOD，循环寿命可能掉到 3500 次以下。</p>
+<p>  折算下来很直接：电池柜成本假设 0.6 元&#x2F;Wh，循环 6000 次每 kWh 折旧约 0.1 元；循环 3500 次就变成 0.17 元。多放 15% 的容量，每天多赚的钱可能还覆盖不了多损耗的循环成本。所以 nStopSOC 在工程上一般取 10%~95%<br>  这个区间，不是任意填的。</p>
+<h1 id="三、工作模式切换的二维条件"><a href="#三、工作模式切换的二维条件" class="headerlink" title="三、工作模式切换的二维条件"></a>三、工作模式切换的二维条件</h1><p>  <code>GetCurrentTimeSector</code> 末尾这段逻辑值得单独看：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (pPlanSectorNow-&gt;nActvPwrLmt &lt; <span class="number">1</span> || pPlanSectorNow-&gt;nBattGrpPwrLmt &lt; <span class="number">1</span> ||</span><br><span class="line">    pClientSum-&gt;emCCUStateSum!=CCU_STATE_IDLE ||</span><br><span class="line">    pClientSum-&gt;emPMCtrlModeSum!=AUTO_CTRL_PM_MODE ||</span><br><span class="line">    (pPlanSectorNow-&gt;emBatt_WorkMode==BATT_WORKMODE_FIRST_CHRGING &amp;&amp; bStopChrgBySoc_Plan) ||</span><br><span class="line">    (pPlanSectorNow-&gt;emBatt_WorkMode==BATT_WORKMODE_FIRST_DISCHRG &amp;&amp; bStopDiscBySoc_Plan)</span><br><span class="line">)</span><br><span class="line">&#123;</span><br><span class="line">    pPlanSectorNow-&gt;emBatt_WorkMode = BATT_WORKMODE_IDLE;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+<p>  工作模式不是直接读管理计划那一段就完事了，要叠加一层运行时判断——只要功率限值无效、CCU 状态不空闲、控制权不在自动模式、或者 SOC 已经触达边界，统统降级到 IDLE。这是套利策略落到工程上必须做的兜底：计划是计划，执行是执行。</p>
+<p>  把这套逻辑抽象出来，工作模式切换的判定其实是一个二维决策：时间维度（哪个时段）× 状态维度（SOC、功率能力、设备状态）。代码里通过 planSectorNow 拿到时间维度的目标，再用 IsBatt_Plan2_* 系列和上面这段 if<br>  检查状态维度是否允许执行。</p>
+<h1 id="四、需量电费控制：被低估的高价值场景"><a href="#四、需量电费控制：被低估的高价值场景" class="headerlink" title="四、需量电费控制：被低估的高价值场景"></a>四、需量电费控制：被低估的高价值场景</h1><p>  在中国，工商业用电除了电度电费还有一项基本电费（容量电费或需量电费）。需量电费是按月最大需量计费的，江苏一档目录电价约 48 元&#x2F;kW·月。如果你这个月最大需量峰值飙到 1500 kW，下个月即便只用 800 kW 的负载，也要按 1500 kW<br>  缴基本电费——这一项一年就是几十万。</p>
+<p>  代码里 <code>Need_AntiOverloadHV 和 Calc_ESS_ChgLmtPower</code> 共同处理了这件事：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (Need_AntiOverloadHV(pCCU))</span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">float</span> fPdemandHV = MAX(pEMS-&gt;f_PmaxGridDemand, pCCU-&gt;blobBackendCfg.fSysACInput_PwrLmtHV);</span><br><span class="line">    pEMS-&gt;fRemainDemand4Chrg = fPdemandHV - pEMS-&gt;f_PgridMeter + pEMS-&gt;f_PcabMeter;</span><br><span class="line">    pEMS-&gt;fGridRemainACPwr2Chrg = MIN(pEMS-&gt;fRemainDemand4Chrg, pEMS-&gt;fRemainPwr4Chrg);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+<p>  <code>f_PmaxGridDemand</code> 是高压表当月已经记录的最大需量，<code>fSysACInput_PwrLmtHV</code><br>  是用户设置的需量初始值。剩余可充电功率被压到”距离当前最大需量还差多少”——这条约束的经济意义就是：储能在充电时绝不能把电网侧负荷拉超历史峰值，否则当月需量基数就被刷新，赚的套利费抵不上多缴的基本电费。</p>
+<p>  更精彩的是过载触发后的分级处理：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (fRemain &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">    pEMS-&gt;fTotal_PessChgAvaliable *= <span class="number">0.8f</span>;</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (fRemain &lt; fHalfProt) &#123;</span><br><span class="line">    pEMS-&gt;fTotal_PessChgAvaliable -= fProt;</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    fRemain = MAX((fProt-fRemain), <span class="number">0</span>);</span><br><span class="line">    pEMS-&gt;fTotal_PessChgAvaliable -= fRemain;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+<p>  距离限值越近，降功率越激进。这种”软刹车”的好处是避免功率震荡——如果直接一刀切到零，下一秒发现负荷又下来了再开起来，PCS 频繁启停反而损坏设备。</p>
+<p>  对于装了高压关口表的项目，需量管理本身就能产生独立的经济价值，这部分有时被叫做”需量管理服务”，按月节省的容量电费分账给项目方。代码里 emPmaxDemandMode &#x3D;&#x3D; 1 这个开关就是给这种商业模式留的入口。</p>
+<h1 id="五、实时调整：自动充放与防逆流"><a href="#五、实时调整：自动充放与防逆流" class="headerlink" title="五、实时调整：自动充放与防逆流"></a>五、实时调整：自动充放与防逆流</h1><p>  日前优化解出来的计划是基于负荷预测的。真实运行中负荷会偏离预测，光伏出力会突变，所以必须有实时层。代码里 AutoCharging_IfReflux 和 AutoDischarging_IfOverload 这两个函数就是干这个的。</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">float</span> fCalPessTrgt = pEMS-&gt;fTargetPwr_4Chrg_SEMS - pEMS-&gt;fPacload4Dischg;</span><br><span class="line">...</span><br><span class="line"><span class="keyword">if</span> (ElapseS(s_tmLastRflx_Exit) &gt; MAX_PERIOD_ENTER_WORKING) &#123;</span><br><span class="line">    pEMS-&gt;bEnter_AutoChrg_SEMS = TRUE;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+<p>  逻辑是：当负荷负数（光伏发电倒灌到电网）持续一段时间，系统自动从 IDLE<br>  切到充电，把光伏多余的电吸进电池。这条路径的经济收益不是峰谷价差，而是避免余电上网——绝大多数工商业自发自用项目，光伏余电上网的脱硫煤标杆电价远低于自用节省的电费，所以宁可让储能消化掉也不上网卖。</p>
+<p>  放电侧的 <code>AutoDischarging_IfOverload</code> 则是当电网取电超过预设阈值时自动启动放电，把超出部分的电力供给负载——这其实就是需量响应（<code>Demand   Response</code>）的本地化实现。如果项目签了电网公司的需求侧响应合同，每次响应还能拿到额外补贴（华东地区典型 3~5 元&#x2F;kWh，按响应电量结算）。</p>
+<p> <code>PID</code> 控制环 <code>Power_Control_Loop</code> 进一步对充放电功率做精细化补偿：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">error = target_power - meter_power;</span><br><span class="line">...</span><br><span class="line"><span class="type">float</span> p_term_delta = pPidParams-&gt;Kp * (error - pPID_Ctx-&gt;fPrevError);</span><br><span class="line"><span class="type">float</span> i_term_delta = pPidParams-&gt;Ki * error;</span><br><span class="line">pPID_Ctx-&gt;fCompensation += output_delta;</span><br></pre></td></tr></table></figure></div>
+<p>  这是位置-增量混合 PID，目标值稳定计数 nTargetStableCount 用来判定是否进入稳态——只有稳态才启用 PID 调节。这个细节解决了一个工程上的经典问题：在管理计划切换瞬间，目标功率会跳变，如果立刻让 PID<br>  介入，积分项会被瞬态误差污染，导致下一段稳定后还要花很长时间才把补偿值收敛回来。代码用计数阈值绕开这个坑，相当于给 PID 加了一个 schmitt 触发器。</p>
+<h1 id="六、收益分解：为什么模型不能只看价差"><a href="#六、收益分解：为什么模型不能只看价差" class="headerlink" title="六、收益分解：为什么模型不能只看价差"></a>六、收益分解：为什么模型不能只看价差</h1><p>  把峰谷套利的年化收益模型写出来：</p>
+<p>$$<br>R_{\text{年}} &#x3D; \sum_{d&#x3D;1}^{365} \left[ E_d \cdot (\bar{p}<em>{\text{峰}} - \bar{p}</em>{\text{谷}}) \cdot \eta_{\text{RT}} \right] - C_{\text{deg}} \cdot N_{\text{cycle}} - C_{\text{O&amp;M}}<br>$$</p>
+<p>  其中 $E_d$ 是当日实际放电电量，$\eta_{RT}$ 是往返效率（典型 85%~88%），$C_{deg}$ 是每次循环的电池衰减成本，$C_{O&amp;M}$ 是运维分摊。</p>
+<p>  举个具体数字：1 MWh 系统，CAPEX 按 1.2 元&#x2F;Wh 算就是 120 万；江苏峰谷价差 0.7 元，每天两充两放（典型双高峰省份），按 90% DOD 实际放电 0.9 MWh×2&#x3D;1.8 MWh，套利毛收入约 1.8×0.7×0.87&#x3D;1100 元&#x2F;天。一年按 330 天可用计，毛收入<br>  36 万。</p>
+<p>  但电池循环成本不能忽略：循环寿命 6000 次，每天 2 次循环，单次成本 120 万 &#x2F; 6000 &#x3D; 200 元。一天放电 1.8 MWh，折合 0.11 元&#x2F;kWh 衰减成本，年化约 13 万。再扣掉 5% 的运维费用约 1.8 万，净收益 21 万左右，简单测算回本周期 5~6   年。</p>
+<p>  代码里的几个关键参数都直接影响这套模型：</p>
+<ul>
+<li><code>PowerRate_Chrg、fOutput2AC_PwrRate </code>是充放电效率折算系数，直接对应 $\eta_{RT}$</li>
+<li><code>nStopSOC</code> 决定 <code>DOD</code>，影响循环寿命</li>
+<li><code>fPreProt_Chrg</code>、<code>fPreProt4RefluxAndOverLoad</code> 是保护裕度，太大会影响实际可用功率</li>
+</ul>
+<p>  实际项目里这几个参数怎么调，本质上是经济模型在调——保守的参数损失收益，激进的参数加速衰减。</p>
+<h1 id="七、容量市场和电量市场：储能参与电力交易"><a href="#七、容量市场和电量市场：储能参与电力交易" class="headerlink" title="七、容量市场和电量市场：储能参与电力交易"></a>七、容量市场和电量市场：储能参与电力交易</h1><p>  近两年广东、山东、山西的电力现货市场都开了储能参与通道。容量市场和电量市场是两个独立的收益来源：电量市场就是按时段电价做套利，逻辑和峰谷套利一致只是价格信号变成了实时市场出清价；容量市场则是按你能”承诺响应”的功率给容量<br>  补偿，相当于电网为系统的备用能力付费。</p>
+<p>  代码里 <code>enableREMSCtrl</code> 和 <code>EMSCtrlMode_REMS</code> 这一套远程控制接口就是给市场参与留的：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (pClientSum-&gt;emEMSCtrlMode_REMS == EMSCtrlMode_Remote)</span><br><span class="line">&#123;</span><br><span class="line">    pEMS-&gt;bCtrlByREMS = TRUE;</span><br><span class="line">    ...</span><br><span class="line">    SetPlanSector(&amp;planSectorNow, emBatt_WorkModeReq, (BYTE)nStopSoc,</span><br><span class="line">        (UINT)(ABS(pClientSum-&gt;fActvPwrReq_REMS)), <span class="number">0</span>, MAX_PWR_LMT);</span><br><span class="line">    ModifyBlobEmsCfgPlan(pCCU, FALSE, &amp;planSectorNow, <span class="literal">NULL</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+<p>  当上层 EMS 切到远程模式，本地管理计划被临时覆盖，按上层下发的 fActvPwrReq_REMS<br>  直接执行——这其实就是把储能的调度权租给了聚合商或现货平台。本地仍然保留防过载和防逆流的兜底（<code>enableAntiOvld_REMS</code>、<code>enableAntiRflx_REMS</code>），避免聚合商指令把用户自己的电费搞糟。</p>
+<p>  这种”本地经济性优先 + 远程市场可调”的双层架构，是目前国内储能并网参与电力市场的主流做法。</p>
+<h1 id="八、AI-介入的合理切入点"><a href="#八、AI-介入的合理切入点" class="headerlink" title="八、AI 介入的合理切入点"></a>八、AI 介入的合理切入点</h1><p>  那么 AI 在这套体系里能做什么？看代码就明白：管理计划 EMS_LIMIT_SECTOR 是静态配置，每天的时段划分和功率限值靠人工预设。这套配置足以应对稳态电价场景，但有两个明显的痛点：</p>
+<p>  第一，电价非平稳。山东现货市场实时价格波动剧烈，按固定时段策略走会错过日内的尖峰套利窗口。这里的 AI 应用是电价预测——用 <code>LSTM</code> 或 <code>Transformer</code> 做日前&#x2F;日内电价预测，输出每 15 分钟一个的预测价格序列，喂给优化器生成第二天的<code>emsLmtSectors[]</code>。</p>
+<p>  第二，负荷不平稳。fPacload4Dischg 这个值在代码里直接来自电表实测，没有前瞻性。如果工厂明天有大订单要开机，今晚谷段就该多充点电，否则明天峰段功率不够。这里 AI<br>  的角色是负荷预测——结合历史负荷曲线、生产排程、天气预报输出负荷预测，再用动态规划求解最优 SOC 轨迹。</p>
+<p>  动态规划的形式相对简洁：</p>
+<p>  $$<br>  V_t(SOC_t) &#x3D; \max_{P_t} \left[ p_t \cdot P_t \cdot \Delta t + V_{t+1}(SOC_{t+1}) \right]<br>  $$</p>
+<p>  约束条件是 SOC 上下限、功率限制和最终 SOC 目标。求解出每个时段的最优功率 $P_t^*$ 之后，反向填充到 <code>EMS_LIMIT_SECTOR</code> 的 <code>nActvPwrLmt</code> 和 <code>emBatt_WorkMode</code> 字段，就是 AI 调度落到现有代码框架的方式。</p>
+<p>  代码里 <code>ModifyBlobEmsCfgPlan</code> 这个函数其实给 AI 留好了接口——只要把 AI 算出来的优化结果用 <code>PlanSector</code> 结构封装传进去，下面所有的 SOC 判断、功率分配、防过载逻辑都不用动。这种工程架构上的解耦让算法迭代成本很低。</p>
+<h1 id="写在最后"><a href="#写在最后" class="headerlink" title="写在最后"></a>写在最后</h1><p>  工商储能这个赛道，硬件和电芯的同质化已经很严重，下一阶段差异化会主要体现在调度算法上。看一份 EMS 代码能看出多少经济学含量，基本能判断这套系统的运营潜力——管理计划是否支持灵活的时段配置、SOC 阈值是否可独立设定、需量管理是否独立成模块、是否预留远程控制接口、PID 控制是否考虑了瞬态污染……这些细节比 PPT 上的”AI 智能调度”实在得多。</p>
+<p>核心函数十几个，把日前优化、实时调整、需量控制、防逆流防过载、远程调度都覆盖到了。AI介入的空间不在重写它，而在于让它的几个关键参数从”人工配置”升级到”模型驱动”。这条路走通了，工商储能的 ROI 还有相当可观的提升空间。</p>
+
+		</div>
+
+		
+		<div class="post-copyright-info w-full my-8 px-2 sm:px-6 md:px-8">
+			<div class="article-copyright-info-container">
+    <ul>
+        <li><strong>标题:</strong> 工商储能峰谷套利的经济模型与工程实现——从 EMS 代码看储能收益</li>
+        <li><strong>作者:</strong> kuangyue111</li>
+        <li><strong>创建于
+                :</strong> 2026-07-14 19:00:00</li>
+        
+            <li>
+                <strong>更新于
+                    :</strong> 2026-07-14 19:31:28
+            </li>
+        
+        <li>
+            <strong>链接:</strong> https://kuangyue111.github.io/2026/07/14/2026-07-14-peak-valley-economic-model/
+        </li>
+        <li>
+            <strong>
+                版权声明:
+            </strong>
+            
+
+            
+                本文章采用 <a class="license" target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0">CC BY-NC-SA 4.0</a> 进行许可。
+            
+        </li>
+    </ul>
+</div>
+
+		</div>
+		
+
+		
+		<ul class="post-tags-box text-lg mt-1.5 flex-wrap justify-center flex md:hidden">
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/BMS/">#BMS</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E5%82%A8%E8%83%BD/">#储能</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/EMS/">#EMS</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E5%B3%B0%E8%B0%B7%E5%A5%97%E5%88%A9/">#峰谷套利</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E5%B7%A5%E5%95%86%E4%B8%9A%E5%82%A8%E8%83%BD/">#工商业储能</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E9%9C%80%E9%87%8F%E7%AE%A1%E7%90%86/">#需量管理</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E7%BB%8F%E6%B5%8E%E6%A8%A1%E5%9E%8B/">#经济模型</a>&nbsp;
+			</li>
+			
+		</ul>
+		
+
+		
+
+		
+		<div class="article-nav my-8 flex justify-between items-center px-2 sm:px-6 md:px-8">
+			
+			<div class="article-prev border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
+				<a class="prev" rel="prev" href="/2026/07/14/2026-07-14-notebooklm-save-token/">
+					<span class="left arrow-icon flex justify-center items-center">
+						<i class="fa-solid fa-chevron-left"></i>
+					</span>
+					<span class="title flex justify-center items-center">
+						<span class="post-nav-title-item truncate max-w-48">用好NotebookLM立省80%Token</span>
+						<span class="post-nav-item">上一篇</span>
+					</span>
+				</a>
+			</div>
+			
+			
+			<div class="article-next border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
+				<a class="next" rel="next" href="/2026/07/14/2026-07-14-workbuddy-skills-review/">
+					<span class="title flex justify-center items-center">
+						<span class="post-nav-title-item truncate max-w-48">WorkBuddy Skills 工程师实用评测：7 个真正值得集成到工作流的扩展能力</span>
+						<span class="post-nav-item">下一篇</span>
+					</span>
+					<span class="right arrow-icon flex justify-center items-center">
+						<i class="fa-solid fa-chevron-right"></i>
+					</span>
+				</a>
+			</div>
+			
+		</div>
+		
+
+
+		
+		<div class="comment-container px-2 sm:px-6 md:px-8 pb-8">
+			<div class="comments-container mt-10 w-full ">
+    <div id="comment-anchor" class="w-full h-2.5"></div>
+    <div class="comment-area-title w-full my-1.5 md:my-2.5 text-xl md:text-3xl font-bold">
+        评论
+    </div>
+    
+
+        
+            
+    <div id="waline"></div>
+    <script type="module" data-swup-reload-script>
+      import { init } from '/js/libs/waline.js';
+
+      (function() {
+        const startPath = location.pathname;
+        const startTime = Date.now();
+        const retryDelay = 200;
+        const retryLimit = 5000;
+
+        const runWaline = () => {
+          if (location.pathname !== startPath) {
+            return;
+          }
+
+          const container = document.getElementById('waline');
+          if (!container) {
+            if (Date.now() - startTime < retryLimit) {
+              setTimeout(runWaline, retryDelay);
+            }
+            return;
+          }
+
+          if (window.redefineWalineInstance?.destroy) {
+            window.redefineWalineInstance.destroy();
+          }
+
+          container.innerHTML = '';
+          window.redefineWalineInstance = init({
+            el: '#waline',
+            serverURL: 'https://example.example.com',
+            path: location.pathname,
+            dark: 'body[class~="dark-mode"]',
+            reaction: false,
+            requiredMeta: ['nick', 'mail'],
+            emoji: [],
+                      lang: 'zh-CN',
+          });
+        };
+
+        runWaline();
+      })();
+    </script>
+
+
+
+        
+    
+</div>
+
+		</div>
+		
+	</div>
+
+	
+	<div class="toc-content-container">
+		<div class="post-toc-wrap">
+	<div class="post-toc">
+		<div class="toc-title">目录</div>
+		<div class="page-title">工商储能峰谷套利的经济模型与工程实现——从 EMS 代码看储能收益</div>
+		<ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E8%B0%83%E5%BA%A6%E7%9A%84%E6%9C%80%E5%B0%8F%E5%8D%95%E5%85%83%EF%BC%9A%E7%AE%A1%E7%90%86%E8%AE%A1%E5%88%92%E6%97%B6%E6%AE%B5"><span class="nav-text">一、调度的最小单元：管理计划时段</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8C%E3%80%81SOC-%E7%BB%88%E6%AD%A2%E9%80%BB%E8%BE%91%EF%BC%9A%E4%BB%80%E4%B9%88%E6%97%B6%E5%80%99%E8%AF%A5%E5%81%9C%E4%B8%8B%E6%9D%A5"><span class="nav-text">二、SOC 终止逻辑：什么时候该停下来</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E5%B7%A5%E4%BD%9C%E6%A8%A1%E5%BC%8F%E5%88%87%E6%8D%A2%E7%9A%84%E4%BA%8C%E7%BB%B4%E6%9D%A1%E4%BB%B6"><span class="nav-text">三、工作模式切换的二维条件</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E9%9C%80%E9%87%8F%E7%94%B5%E8%B4%B9%E6%8E%A7%E5%88%B6%EF%BC%9A%E8%A2%AB%E4%BD%8E%E4%BC%B0%E7%9A%84%E9%AB%98%E4%BB%B7%E5%80%BC%E5%9C%BA%E6%99%AF"><span class="nav-text">四、需量电费控制：被低估的高价值场景</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E5%AE%9E%E6%97%B6%E8%B0%83%E6%95%B4%EF%BC%9A%E8%87%AA%E5%8A%A8%E5%85%85%E6%94%BE%E4%B8%8E%E9%98%B2%E9%80%86%E6%B5%81"><span class="nav-text">五、实时调整：自动充放与防逆流</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%AD%E3%80%81%E6%94%B6%E7%9B%8A%E5%88%86%E8%A7%A3%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E6%A8%A1%E5%9E%8B%E4%B8%8D%E8%83%BD%E5%8F%AA%E7%9C%8B%E4%BB%B7%E5%B7%AE"><span class="nav-text">六、收益分解：为什么模型不能只看价差</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%83%E3%80%81%E5%AE%B9%E9%87%8F%E5%B8%82%E5%9C%BA%E5%92%8C%E7%94%B5%E9%87%8F%E5%B8%82%E5%9C%BA%EF%BC%9A%E5%82%A8%E8%83%BD%E5%8F%82%E4%B8%8E%E7%94%B5%E5%8A%9B%E4%BA%A4%E6%98%93"><span class="nav-text">七、容量市场和电量市场：储能参与电力交易</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%AB%E3%80%81AI-%E4%BB%8B%E5%85%A5%E7%9A%84%E5%90%88%E7%90%86%E5%88%87%E5%85%A5%E7%82%B9"><span class="nav-text">八、AI 介入的合理切入点</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%86%99%E5%9C%A8%E6%9C%80%E5%90%8E"><span class="nav-text">写在最后</span></a></li></ol>
+
+	</div>
+</div>
+	</div>
+	
+</div>
+
+			</div>
+
+			
+		</div>
+
+		<div class="main-content-footer">
+			<footer class="footer mt-5 py-5 h-auto text-base text-third-text-color relative border-t-2 border-t-border-color">
+    <div class="info-container py-3 text-center">
+        
+        <div class="text-center">
+            &copy;
+            
+              <span>2022</span>
+              -
+            
+            2026&nbsp;&nbsp;<i class="fa-solid fa-heart fa-beat" style="--fa-animation-duration: 0.5s; color: #f54545"></i>&nbsp;&nbsp;<a href="/">kuangyue111</a>
+            
+                
+                <p class="post-count space-x-0.5">
+                    <span>
+                        共撰写了 45 篇文章
+                    </span>
+                    
+                </p>
+            
+        </div>
+        
+            <script data-swup-reload-script src="https://cn.vercount.one/js"></script>
+            <div class="relative text-center lg:absolute lg:right-[20px] lg:top-1/2 lg:-translate-y-1/2 lg:text-right">
+                
+                    <span id="busuanzi_container_site_uv" class="lg:!block">
+                        <span class="text-sm">访问人数</span>
+                        <span id="busuanzi_value_site_uv"></span>
+                    </span>
+                
+                
+                    <span id="busuanzi_container_site_pv" class="lg:!block">
+                        <span class="text-sm">总访问量</span>
+                        <span id="busuanzi_value_site_pv"></span>
+                    </span>
+                
+            </div>
+        
+        <div class="relative text-center lg:absolute lg:left-[20px] lg:top-1/2 lg:-translate-y-1/2 lg:text-left">
+            <span class="lg:block text-sm">由 <?xml version="1.0" encoding="utf-8"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg class="relative top-[2px] inline-block align-baseline" version="1.1" id="圖層_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="1rem" height="1rem" viewBox="0 0 512 512" enable-background="new 0 0 512 512" xml:space="preserve"><path fill="#0E83CD" d="M256.4,25.8l-200,115.5L56,371.5l199.6,114.7l200-115.5l0.4-230.2L256.4,25.8z M349,354.6l-18.4,10.7l-18.6-11V275H200v79.6l-18.4,10.7l-18.6-11v-197l18.5-10.6l18.5,10.8V237h112v-79.6l18.5-10.6l18.5,10.8V354.6z"/></svg><a target="_blank" class="text-base" href="https://hexo.io">Hexo</a> 驱动</span>
+            <span class="text-sm lg:block">主题&nbsp;<a class="text-base" target="_blank" href="https://github.com/EvanNotFound/hexo-theme-redefine">Redefine v2.9.0</a></span>
+        </div>
+        
+        
+            <div>
+                博客已运行 <span class="odometer" id="runtime_days" ></span> 天 <span class="odometer" id="runtime_hours"></span> 小时 <span class="odometer" id="runtime_minutes"></span> 分钟 <span class="odometer" id="runtime_seconds"></span> 秒
+            </div>
+        
+        
+            <script data-swup-reload-script>
+                try {
+                    function odometer_init() {
+                    const elements = document.querySelectorAll('.odometer');
+                    elements.forEach(el => {
+                        new Odometer({
+                            el,
+                            format: '( ddd).dd',
+                            duration: 200
+                        });
+                    });
+                    }
+                    odometer_init();
+                } catch (error) {}
+            </script>
+        
+        
+        
+    </div>  
+</footer>
+		</div>
+	</div>
+
+	
+	<div class="post-tools">
+		<div class="post-tools-container">
+	<ul class="article-tools-list">
+		<!-- TOC aside toggle -->
+		
+		<li class="right-bottom-tools page-aside-toggle">
+			<i class="fa-regular fa-outdent"></i>
+		</li>
+		
+
+		<!-- go comment -->
+		
+		<li class="go-comment">
+			<i class="fa-regular fa-comments"></i>
+		</li>
+		
+	</ul>
+</div>
+	</div>
+	
+
+	<div class="right-side-tools-container">
+		<div class="side-tools-container">
+	<ul class="hidden-tools-list">
+		<li class="right-bottom-tools tool-font-adjust-plus flex justify-center items-center">
+			<i class="fa-regular fa-magnifying-glass-plus"></i>
+		</li>
+
+		<li class="right-bottom-tools tool-font-adjust-minus flex justify-center items-center">
+			<i class="fa-regular fa-magnifying-glass-minus"></i>
+		</li>
+
+		<li class="right-bottom-tools tool-dark-light-toggle flex justify-center items-center">
+			<i class="fa-regular fa-moon"></i>
+		</li>
+
+		<!-- rss -->
+		
+
+		
+
+		<li class="right-bottom-tools tool-scroll-to-bottom flex justify-center items-center">
+			<i class="fa-regular fa-arrow-down"></i>
+		</li>
+	</ul>
+
+	<ul class="visible-tools-list">
+		<li class="right-bottom-tools toggle-tools-list flex justify-center items-center">
+			<i class="fa-regular fa-cog fa-spin"></i>
+		</li>
+		
+		<li class="right-bottom-tools tool-scroll-to-top flex justify-center items-center">
+			<i class="arrow-up fas fa-arrow-up"></i>
+			<span class="percent"></span>
+		</li>
+		
+		
+	</ul>
+</div>
+	</div>
+
+	<div class="image-viewer-container" role="dialog" aria-modal="true" aria-label="图片查看器">
+	<button class="image-viewer-close" type="button" aria-label="关闭">
+		<i class="fa-solid fa-xmark"></i>
+	</button>
+	<button class="image-viewer-prev" type="button" aria-label="上一页">
+		<i class="fa-solid fa-chevron-left"></i>
+	</button>
+	<div class="image-viewer-frame">
+		<img src="" alt="">
+	</div>
+	<div class="image-viewer-exif-panel hidden absolute left-1/2 bottom-20 -translate-x-1/2 w-[min(92vw,420px)] max-h-[60vh] overflow-hidden rounded-2xl bg-background-color-transparent-80 p-4 text-left shadow-redefine-flat backdrop-blur-md" role="dialog" aria-label="EXIF" aria-hidden="true">
+		<div class="flex items-center justify-between mb-3">
+			<span class="text-sm font-semibold text-first-text-color">EXIF</span>
+			<button class="image-viewer-exif-close flex h-8 w-8 items-center justify-center rounded-full bg-background-color-transparent-80 text-first-text-color transition hover:bg-background-color-transparent-40" type="button" aria-label="关闭">
+				<i class="fa-solid fa-xmark text-[0.65rem]"></i>
+			</button>
+		</div>
+		<div class="image-viewer-exif-cards grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto pr-1 scrollbar-hide"></div>
+		<template class="image-viewer-exif-card-template">
+			<div class="rounded-lg bg-background-color-transparent-40 px-3 py-2">
+				<div class="image-viewer-exif-card-header flex items-center gap-2 mb-1">
+					<i class="image-viewer-exif-card-icon fa-solid fa-circle-info text-xs text-third-text-color"></i>
+					<div class="image-viewer-exif-card-title text-xs font-semibold text-first-text-color"></div>
+				</div>
+				<div class="image-viewer-exif-card-items flex flex-col gap-1"></div>
+			</div>
+		</template>
+	</div>
+	<button class="image-viewer-exif-toggle flex items-center gap-2 hidden absolute left-1/2 bottom-6 -translate-x-1/2 rounded-full border border-border-color bg-background-color-transparent-80 px-4 py-2 text-first-text-color backdrop-blur-md transition hover:bg-background-color-transparent-40" type="button" aria-label="EXIF" aria-expanded="false">
+		<i class="fa-solid fa-circle-info text-xs"></i>
+		<span class="text-xs font-semibold uppercase tracking-wider">EXIF</span>
+	</button>
+	<button class="image-viewer-next" type="button" aria-label="下一页">
+		<i class="fa-solid fa-chevron-right"></i>
+	</button>
+</div>
+
+
+	
+
+</main>
+
+
+
+<script src="/js/build/libs/Swup.min.js"></script>
+
+<script src="/js/build/libs/SwupSlideTheme.min.js"></script>
+
+<script src="/js/build/libs/SwupScriptsPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupProgressPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupScrollPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupPreloadPlugin.min.js"></script>
+
+<script>
+    window.swup = new Swup({
+        plugins: [
+            new SwupScriptsPlugin({
+                optin: true,
+            }),
+            new SwupProgressPlugin(),
+            new SwupScrollPlugin({
+                offset: 80,
+            }),
+            new SwupSlideTheme({
+                mainElement: ".main-content-body",
+            }),
+            new SwupPreloadPlugin(),
+        ],
+        containers: ["#swup"],
+    });
+
+    window.dispatchEvent(
+        new CustomEvent("redefine:swup:ready", {
+            detail: {
+                swup: window.swup,
+            },
+        }),
+    );
+</script>
+
+
+
+
+	
+<script src="/js/build/main.js" type="module"></script>
+
+
+
+    
+<script src="/js/build/libs/odometer.min.js"></script>
+
+    
+<link rel="stylesheet" href="/assets/odometer-theme-minimal.css">
+
+
+
+
+
+
+
+  
+<script src="/js/build/libs/Typed.min.js"></script>
+
+
+
+
+
+
+
+
+
+
+<script src="/js/build/libs/moment-with-locales.min.js" data-swup-reload-script=""></script>
+
+
+
+	
+</body>
+
+</html>

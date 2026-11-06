@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="keywords" content="Hexo Theme Redefine">
+    
+    
+    <meta name="author" content="kuangyue111">
+    
+    <!-- Completely eliminate flash of wrong theme -->
+    <script>
+        (function() {
+            const THEME_KEY = "REDEFINE-THEME-STATUS";
+            const DARK = "dark", LIGHT = "light";
+            
+            // Get preferred theme
+            function getTheme() {
+                try {
+                    const saved = localStorage.getItem(THEME_KEY);
+                    if (saved) {
+                        const { isDark } = JSON.parse(saved);
+                        return isDark ? DARK : LIGHT;
+                    }
+                } catch (e) {}
+                
+                return matchMedia("(prefers-color-scheme: dark)").matches ? DARK : LIGHT;
+            }
+            
+            // Apply theme to document
+            function applyTheme(theme) {
+                const isDark = theme === DARK;
+                const root = document.documentElement;
+                
+                // Set classes for compatibility
+                root.classList.add(theme);
+                root.classList.remove(isDark ? LIGHT : DARK);
+                root.style.colorScheme = theme;
+            }
+            
+            // Initial application
+            const theme = getTheme();
+            applyTheme(theme);
+            
+            // Listen for system preference changes
+            matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ({ matches }) => {
+                // Only update if using system preference (no localStorage entry)
+                if (!localStorage.getItem(THEME_KEY)) {
+                    applyTheme(matches ? DARK : LIGHT);
+                }
+            });
+            
+            // Set body classes ASAP (before DOMContentLoaded)
+            (function() {
+                const addBodyClass = () => {
+                    const b = document.body;
+                    if (!b) return false;
+                    b.classList.add(theme + "-mode");
+                    return true;
+                };
+
+                // Try immediately
+                if (addBodyClass()) return;
+
+                // Observe until body exists
+                const mo = new MutationObserver(() => {
+                    if (addBodyClass()) mo.disconnect();
+                });
+                mo.observe(document.documentElement, { childList: true, subtree: true });
+            })();
+        })();
+    </script>
+    
+    <!-- preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    
+    <!--- Seo Part-->
+    
+    <link rel="canonical" href="https://kuangyue111.github.io/2026/08/21/2026-08-21-bms-insulation-detection-unbalanced-bridge/"/>
+    <meta name="robots" content="index,follow">
+    <meta name="googlebot" content="index,follow">
+    <meta name="revisit-after" content="1 days">
+    
+    
+        
+        <meta name="description" content="Hexo Theme Redefine, Redefine Your Hexo Journey.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="储能 BMS 的绝缘检测，到底是怎么同时测出正、负两路绝缘电阻的">
+<meta property="og:url" content="https://kuangyue111.github.io/2026/08/21/2026-08-21-bms-insulation-detection-unbalanced-bridge/index.html">
+<meta property="og:site_name" content="KuangYue&#39;s Blog">
+<meta property="og:description" content="Hexo Theme Redefine, Redefine Your Hexo Journey.">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://kuangyue111.github.io/images/redefine-og.webp">
+<meta property="article:published_time" content="2026-08-21T02:00:00.000Z">
+<meta property="article:modified_time" content="2026-08-21T07:46:59.828Z">
+<meta property="article:author" content="kuangyue111">
+<meta property="article:tag" content="BMS">
+<meta property="article:tag" content="S32K146">
+<meta property="article:tag" content="安全保护">
+<meta property="article:tag" content="储能系统">
+<meta property="article:tag" content="绝缘检测">
+<meta property="article:tag" content="不平衡电桥">
+<meta property="article:tag" content="LTC2949">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://kuangyue111.github.io/images/redefine-og.webp">
+    
+    
+    <!--- Icon Part-->
+    <link rel="icon" type="image/png" href="/images/redefine-favicon.svg" sizes="192x192">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/redefine-favicon.svg">
+    <meta name="theme-color" content="#A31F34">
+    <link rel="shortcut icon" href="/images/redefine-favicon.svg">
+    <!--- Page Info-->
+    
+    <title>
+        
+            储能 BMS 的绝缘检测，到底是怎么同时测出正、负两路绝缘电阻的 | KuangYue&#39;s Blog
+        
+    </title>
+
+    
+<link rel="stylesheet" href="/fonts/Chillax/chillax.css">
+
+
+    <!--- Inject Part-->
+    
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+        
+<link rel="stylesheet" href="/css/build/tailwind.css">
+
+    
+
+    
+<link rel="stylesheet" href="/fonts/GeistMono/geist-mono.css">
+
+    
+<link rel="stylesheet" href="/fonts/Geist/geist.css">
+
+    <!--- Font Part-->
+    
+    
+    
+    
+    
+    
+
+    <script id="hexo-configurations">
+    window.config = {"hostname":"kuangyue111.github.io","root":"/","language":"zh-CN"};
+    window.theme = {"articles":{"style":{"font_size":"16px","line_height":1.5,"image_border_radius":"14px","image_alignment":"center","image_caption":false,"link_icon":true,"delete_mask":false,"title_alignment":"left","headings_top_spacing":{"h1":"3.2rem","h2":"2.4rem","h3":"1.9rem","h4":"1.6rem","h5":"1.4rem","h6":"1.3rem"}},"word_count":{"enable":true,"count":true,"min2read":true},"author_label":{"enable":true,"auto":false,"list":[]},"code_block":{"copy":true,"style":"mac","highlight_theme":{"light":"github","dark":"vs2015"},"font":{"enable":false,"family":null,"url":null}},"toc":{"enable":true,"max_depth":3,"number":false,"expand":true,"init_open":true},"copyright":{"enable":true,"default":"cc_by_nc_sa"},"lazyload":true,"pangu_js":false,"recommendation":{"enable":false,"title":"推荐阅读","limit":3,"mobile_limit":2,"placeholder":"/images/wallhaven-wqery6-light.webp","skip_dirs":[]}},"colors":{"primary":"#A31F34","secondary":null,"default_mode":"light"},"global":{"fonts":{"chinese":{"enable":false,"family":null,"url":null},"english":{"enable":false,"family":null,"url":null},"title":{"enable":false,"family":null,"url":null}},"content_max_width":"1000px","sidebar_width":"210px","hover":{"shadow":true,"scale":false},"scroll_progress":{"bar":false,"percentage":true},"website_counter":{"url":"https://cn.vercount.one/js","enable":true,"site_pv":true,"site_uv":true,"post_pv":true},"single_page":true,"preloader":{"enable":false,"custom_message":null},"side_tools":{"gear_rotation":true,"auto_expand":false},"open_graph":{"enable":true,"image":"/images/redefine-og.webp","description":"Hexo Theme Redefine, Redefine Your Hexo Journey."},"google_analytics":{"enable":false,"id":null}},"home_banner":{"enable":true,"style":"fixed","image":{"light":"/images/wallhaven-wqery6-light.webp","dark":"/images/wallhaven-wqery6-dark.webp"},"title":"KuangYue's Blog","subtitle":{"text":["专注储能系统与嵌入式开发","记录 NCCU 控制单元架构演进","探索工业物联网与云端对接"],"hitokoto":{"enable":false,"show_author":false,"api":"https://v1.hitokoto.cn"},"typing_speed":100,"backing_speed":80,"starting_delay":500,"backing_delay":1500,"loop":true,"smart_backspace":true},"text_color":{"light":"#fff","dark":"#d1d1b6"},"text_style":{"title_size":"2.8rem","subtitle_size":"1.5rem","line_height":1.2},"custom_font":{"enable":false,"family":null,"url":null},"social_links":{"enable":true,"style":"default","links":[{"icon":"fa-brands fa-github","url":"https://github.com/kuangyue111"},{"icon":"fa-brands fa-twitter","url":null},{"icon":"fa-solid fa-at","url":"you@example.com"},{"icon":"fa-brands fa-telegram","url":null},{"icon":"/images/custom-icon.svg","url":null}],"qrs":[{"icon":"fa-brands fa-weixin","qr":null},{"icon":"/images/custom-icon.svg","qr":null}]}},"plugins":{"feed":{"enable":false},"aplayer":{"enable":false,"type":"fixed","audios":[{"name":null,"artist":null,"url":null,"cover":null,"lrc":null}]},"mermaid":{"theme":{"light":"default","dark":"dark"}},"katex":false,"chart":false},"version":"2.9.0","code_block":{"theme":"light","macStyle":false,"shrink":false,"copy_button":true,"language":true},"navbar":{"auto_hide":false,"color":{"left":"#f78736","right":"#367df7","transparency":35},"width":{"home":"1200px","pages":"1000px"},"links":{"Home":{"path":"/","icon":"fa-regular fa-house"},"Archives":{"path":"/archives/","icon":"fa-regular fa-archive"},"Tags":{"path":"/tags/","icon":"fa-regular fa-tags"},"Categories":{"path":"/categories/","icon":"fa-regular fa-folder"},"About":{"icon":"fa-regular fa-user","submenus":{"Me":"/about/","GitHub":"https://github.com/kuangyue111"}}},"search":{"enable":false,"preload":true}},"page_templates":{"friends_column":2,"tags_style":"blur","masonry":{"batch_size":12,"initial_batch_size":24}},"home":{"sidebar":{"enable":true,"position":"left","first_item":"menu","announcement":"专注于嵌入式与储能系统技术分享","show_on_mobile":true,"links":{"Archives":{"path":"/archives/","icon":"fa-regular fa-archive"},"Tags":{"path":"/tags/","icon":"fa-regular fa-tags"},"Categories":{"path":"/categories/","icon":"fa-regular fa-folder"}}},"article_date_format":"auto","excerpt_length":200,"categories":{"enable":true,"limit":3},"tags":{"enable":true,"limit":3}},"footer":{"runtime":true,"icon":"<i class=\"fa-solid fa-heart fa-beat\" style=\"--fa-animation-duration: 0.5s; color: #f54545\"></i>","start":"2022/8/17 11:45:14","statistics":true,"customize":null,"icp":{"enable":false,"number":null,"url":null},"since":2025,"custom":null,"copyright":true,"theme":{"enable":true},"counter":true},"footerStart":"2022/8/17 11:45:14","mermaid":{"style":{"light":"default","dark":"dark"}}};
+    window.lang_ago = {"second":"%s 秒前","minute":"%s 分钟前","hour":"%s 小时前","day":"%s 天前","week":"%s 周前","month":"%s 个月前","year":"%s 年前"};
+    window.i18n = {"search":"站内搜索您需要的内容...","toc":"目录","prev":"上一页","next":"下一页","prev_posts":"上一篇","next_posts":"下一篇","page":"第 %d 页","recent_posts":"最新文章","share":"分享","powered_by":"由 %s 驱动","theme":"主题","rss_feed":"RSS Feed","category":"分类","categories":"分类","tag":"标签","tags":"标签","post":"文章","posts":"文章","tagcloud":"标签云","comment":"评论","comments":"评论","top":"置顶","sticky":"置顶","go-back-home":"回到首页","masonry_loading":"照片加载中...","image_viewer":"图片查看器","close":"关闭","exif":{"title":"EXIF","cards":{"camera":"相机","lens":"镜头","exposure":"曝光","other":"其他"},"fields":{"make":"品牌","model":"机型","date_taken":"拍摄时间","lens_model":"镜头","focal_length":"焦距","focus_mode":"对焦模式","shutter":"快门","aperture":"光圈","iso":"感光度","exposure_program":"曝光程序","exposure_compensation":"曝光补偿","metering_mode":"测光模式","flash":"闪光灯","white_balance":"白平衡","latitude":"纬度","longitude":"经度","altitude":"海拔"},"status":{"loading":"加载中...","no_exif":"无 EXIF 信息","library_missing":"EXIF 库未加载","image_source_missing":"图片地址不可用","unavailable":"EXIF 不可用（可能被 CORS 阻止或缺少元数据）","flag_unavailable":"EXIF 不可用"}},"home":"首页","archive":"归档","archives":"归档","about":"关于","links":"链接","link":"链接","friends":"友情链接","friend":"友情链接","timeline":"时间轴","shuoshuo":"说说","bookmarks":"书签","site_uv":"访问人数","site_pv":"总访问量","read_more":"阅读全文","wordcount":"字","min2read":"分钟","changelog":"更新日志","status":"状态","runtime":"博客已运行","days":"天","hours":"小时","minutes":"分钟","seconds":"秒","optimized_by":"并由 Evan 进行优化","rights":"版权所有","site_posts":"共撰写了 %s 篇文章","site_wordcount":"共 %s 字","copyright":{"title":"标题","author":"作者","link":"链接","create_time":"创建于","update_time":"更新于","license_title":"版权声明","license_content":"本文章采用 %s 进行许可。","all_rights_reserved":"版权所有 &#169 %s，禁止转载。","public_domain":"本文为公有领域作品，可自由转载、引用。"},"ago":{"second":"%s 秒前","minute":"%s 分钟前","hour":"%s 小时前","day":"%s 天前","week":"%s 周前","month":"%s 个月前","year":"%s 年前"},"create_time":"创建","update_time":"更新","expired":"这篇文章最后更新于 %s 天前，内容可能已经过时。"};
+    window.data = {"masonry":false};
+  </script>
+    
+    <!--- Fontawesome Part-->
+    
+<link rel="stylesheet" href="/fontawesome/fontawesome.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/brands.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/solid.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/regular.min.css">
+
+    
+    
+    
+    
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+	<div class="progress-bar-container">
+	
+
+	
+	<span class="pjax-progress-bar"></span>
+	<!--        <span class="swup-progress-icon">-->
+	<!--            <i class="fa-solid fa-circle-notch fa-spin"></i>-->
+	<!--        </span>-->
+	
+</div>
+
+<main class="page-container" id="swup">
+
+	
+
+	<div class="main-content-container flex flex-col justify-between min-h-dvh">
+		<div class="main-content-header">
+			<header class="navbar-container px-6 md:px-12">
+    <div class="navbar-content transition-navbar ">
+        <div class="left">
+            
+            <a class="logo-title" href="/">
+                
+                KuangYue&#39;s Blog
+                
+            </a>
+        </div>
+
+        <div class="right">
+            <!-- PC -->
+            <div class="desktop">
+                <ul class="navbar-list">
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/"
+                                        >
+                                    <i class="fa-regular fa-house fa-fw"></i>
+                                    首页
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/archives/"
+                                        >
+                                    <i class="fa-regular fa-archive fa-fw"></i>
+                                    归档
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/tags/"
+                                        >
+                                    <i class="fa-regular fa-tags fa-fw"></i>
+                                    标签
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/categories/"
+                                        >
+                                    <i class="fa-regular fa-folder fa-fw"></i>
+                                    分类
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class="has-dropdown"
+                                   href="#"
+                                        onClick=&#34;return false;&#34;>
+                                    <i class="fa-regular fa-user fa-fw"></i>
+                                    关于
+                                    <i class="fa-solid fa-chevron-down fa-fw"></i>
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                                    <ul class="sub-menu">
+                                        
+                                            <li>
+                                                <a href="/about/">
+                                                    ME
+                                                </a>
+                                            </li>
+                                        
+                                            <li>
+                                                <a target="_blank" rel="noopener" href="https://github.com/kuangyue111">
+                                                    GITHUB
+                                                </a>
+                                            </li>
+                                        
+                                    </ul>
+                                
+                            </li>
+                    
+                    
+                </ul>
+            </div>
+            <!-- Mobile -->
+            <div class="mobile">
+                
+                <div class="icon-item navbar-bar">
+                    <div class="navbar-bar-middle"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile sheet -->
+    <div class="navbar-drawer h-dvh w-full absolute top-0 left-0 bg-background-color flex flex-col justify-between">
+        <ul class="drawer-navbar-list flex flex-col px-4 justify-center items-start">
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/"
+                        >
+                            <span>
+                                首页
+                            </span>
+                            
+                                <i class="fa-regular fa-house fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/archives/"
+                        >
+                            <span>
+                                归档
+                            </span>
+                            
+                                <i class="fa-regular fa-archive fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/tags/"
+                        >
+                            <span>
+                                标签
+                            </span>
+                            
+                                <i class="fa-regular fa-tags fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/categories/"
+                        >
+                            <span>
+                                分类
+                            </span>
+                            
+                                <i class="fa-regular fa-folder fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item-sub text-base my-1.5 flex flex-col w-full">
+                        
+                        <div class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary cursor-pointer text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                             navbar-data-toggle="submenu-About"
+                        >
+                            <span>
+                                关于
+                            </span>
+                            
+                                <i class="fa-solid fa-chevron-right fa-sm fa-fw transition-all"></i>
+                            
+                        </div>
+                        
+
+                        
+                            <div class="flex-col items-start px-2 py-2 hidden" data-target="submenu-About">
+                                
+                                    <div class="drawer-navbar-item text-base flex flex-col justify-center items-start hover:underline active:underline hover:underline-offset-1 rounded-3xl">
+                                        <a class=" text-third-text-color text-xl"
+                                           href="/about/">ME</a>
+                                    </div>
+                                
+                                    <div class="drawer-navbar-item text-base flex flex-col justify-center items-start hover:underline active:underline hover:underline-offset-1 rounded-3xl">
+                                        <a class=" text-third-text-color text-xl"
+                                           target="_blank" rel="noopener" href="https://github.com/kuangyue111">GITHUB</a>
+                                    </div>
+                                
+                            </div>
+                        
+                    </li>
+            
+
+            
+            
+                
+                    
+                    
+                    
+            
+        </ul>
+
+        <div class="statistics flex justify-around my-2.5">
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/tags">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">194</div>
+        <div class="label text-third-text-color text-sm">标签</div>
+    </a>
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/categories">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">16</div>
+        <div class="label text-third-text-color text-sm">分类</div>
+    </a>
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/archives">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">45</div>
+        <div class="label text-third-text-color text-sm">文章</div>
+    </a>
+</div>
+    </div>
+
+    <div class="window-mask"></div>
+
+</header>
+
+
+		</div>
+
+		<div class="main-content-body transition-fade-up">
+			
+
+			<div class="main-content">
+				<div class="post-page-container flex relative justify-between box-border w-full h-full">
+	<div class="article-content-container">
+
+		<div class="article-title relative w-full">
+			
+			<div class="w-full flex items-center pt-6 justify-start">
+				<h1 class="article-title-regular text-second-text-color tracking-tight text-4xl md:text-6xl font-semibold px-2 sm:px-6 md:px-8 py-3">储能 BMS 的绝缘检测，到底是怎么同时测出正、负两路绝缘电阻的</h1>
+			</div>
+			
+		</div>
+
+		
+		<div class="article-header flex flex-row gap-2 items-center px-2 sm:px-6 md:px-8">
+			<div class="avatar w-[46px] h-[46px] shrink-0 rounded-medium border border-border-color p-px">
+				<img src="/images/redefine-avatar.svg">
+			</div>
+			<div class="info flex flex-col justify-between">
+				<div class="author flex items-center">
+					<span class="name text-default-text-color text-lg font-semibold">kuangyue111</span>
+					
+					<span class="author-label ml-1.5 text-xs px-2 py-0.5 rounded-small text-third-text-color border border-shadow-color-1">Lv4</span>
+					
+				</div>
+				<div class="meta-info">
+					<div class="article-meta-info">
+    <span class="article-date article-meta-item">
+        <i class="fa-regular fa-pen-fancy"></i>&nbsp;
+        <span class="desktop">2026-08-21 10:00</span>
+        <span class="mobile">2026-08-21 10:00</span>
+        <span class="hover-info">创建</span>
+    </span>
+    
+        <span class="article-date article-meta-item">
+            <i class="fa-regular fa-wrench"></i>&nbsp;
+            <span class="desktop">2026-08-21 15:46:59</span>
+            <span class="mobile">2026-08-21 15:46:59</span>
+            <span class="hover-info">更新</span>
+        </span>
+    
+
+    
+        <span class="article-categories article-meta-item">
+            <i class="fa-regular fa-folders"></i>&nbsp;
+            <ul>
+                
+                
+                    
+                        
+                        <li>
+                            <a href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/">技术分享</a>&nbsp;
+                        </li>
+                    
+                    
+                
+                    
+                        
+                            <li>></li>
+                        
+                        <li>
+                            <a href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/%E5%B5%8C%E5%85%A5%E5%BC%8F%E5%BC%80%E5%8F%91/">嵌入式开发</a>&nbsp;
+                        </li>
+                    
+                    
+                
+            </ul>
+        </span>
+    
+    
+        <span class="article-tags article-meta-item">
+            <i class="fa-regular fa-tags"></i>&nbsp;
+            <ul>
+                
+                    <li>
+                        <a href="/tags/BMS/">BMS</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/S32K146/">S32K146</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E5%AE%89%E5%85%A8%E4%BF%9D%E6%8A%A4/">安全保护</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E5%82%A8%E8%83%BD%E7%B3%BB%E7%BB%9F/">储能系统</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E7%BB%9D%E7%BC%98%E6%A3%80%E6%B5%8B/">绝缘检测</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E4%B8%8D%E5%B9%B3%E8%A1%A1%E7%94%B5%E6%A1%A5/">不平衡电桥</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/LTC2949/">LTC2949</a>&nbsp;
+                    </li>
+                
+            </ul>
+        </span>
+    
+
+    
+    
+    
+    
+        <span class="article-pv article-meta-item">
+            <i class="fa-regular fa-eye"></i>&nbsp;<span id="busuanzi_value_page_pv"></span>
+        </span>
+    
+</div>
+
+				</div>
+			</div>
+		</div>
+		
+
+		
+
+
+		<div class="article-content markdown-body px-2 sm:px-6 md:px-8 pb-8">
+			<h1 id="储能-BMS-的绝缘检测，到底是怎么同时测出正、负两路绝缘电阻的"><a href="#储能-BMS-的绝缘检测，到底是怎么同时测出正、负两路绝缘电阻的" class="headerlink" title="储能 BMS 的绝缘检测，到底是怎么同时测出正、负两路绝缘电阻的"></a>储能 BMS 的绝缘检测，到底是怎么同时测出正、负两路绝缘电阻的</h1><p>在储能系统里，绝缘检测是少数几个「平时没人注意，出事就是大事故」的功能。电池堆的正负极母线动辄几百伏，一旦对机壳的绝缘性能下降，轻则漏电报警，重则电弧、短路、起火。所以几乎每一套正经的储能 BMS 都会把绝缘检测做进安全保护逻辑里，而且它的优先级往往排在所有故障的最前面——绝缘失效意味着系统已经不适合继续上高压了。</p>
+<p>这篇文章我想讲清楚一件事：一套储能 BMS 是怎么通过<strong>不平衡电桥法</strong>，用两次电压测量，同时把「正极对地绝缘电阻」和「负极对地绝缘电阻」两个未知数都解出来的。我会结合一套真实的量产代码来讲一套基于 NXP S32K146 + LTC2949 的储能 BMU 固件，绝缘检测的完整实现就落在 <code>InsuCheck.c</code> 里，一共一千五百多行。</p>
+<h2 id="一、先搞清楚要测的到底是什么"><a href="#一、先搞清楚要测的到底是什么" class="headerlink" title="一、先搞清楚要测的到底是什么"></a>一、先搞清楚要测的到底是什么</h2><p>一个电池堆接到系统里，正极母线和负极母线对机壳（chassis，也就是「地」）之间，天然存在两条漏电路径。我们把它们抽象成两个电阻：</p>
+<ul>
+<li><strong>Rp</strong>：正极对地的绝缘电阻</li>
+<li><strong>Rn</strong>：负极对地的绝缘电阻</li>
+</ul>
+<p>理想情况下这两个电阻都无穷大，正负极和机壳之间完全隔离。但现实里因为灰尘、凝露、绝缘材料老化、走线破损，它们会变成有限值，而且往往不是同步下降的——可能正极这边先漏，也可能负极那边先漏。</p>
+<p>这就引出了绝缘检测的第一个难点：<strong>你得把 Rp 和 Rn 分开测</strong>，不能只测「总绝缘」。为什么？因为如果一个故障只发生在正极侧，你测出「总绝缘偏低」，但不知道是正极还是负极漏，保护策略就没法做——正极漏和负极漏对系统安全的影响、对后续排查的方向，是完全不同的两回事。</p>
+<p>国标对储能和电动汽车的绝缘电阻都有明确要求，而且这个要求不是固定阻值，而是<strong>按电压折算</strong>的，通常表述成「每伏特多少欧姆」，比如常见的 100 Ω&#x2F;V 或者 500 Ω&#x2F;V。为什么按电压折算？因为绝缘电阻的安全意义本质上是限制漏电流。漏电流等于电压除以绝缘电阻，I &#x3D; V &#x2F; R。电压越高，同样的电阻产生的漏电流就越大、越危险。所以「安全」的判据应该是漏电流不超过某个安全值，也就是 R ≥ V &#x2F; I_safe，等价于 R ≥ V × K，其中 K 是常数（单位 Ω&#x2F;V）。</p>
+<p>这个「按电压折算」的思路，会直接体现在后面要讲的报警阈值判断里。</p>
+<h2 id="二、平衡电桥法，以及它的致命盲区"><a href="#二、平衡电桥法，以及它的致命盲区" class="headerlink" title="二、平衡电桥法，以及它的致命盲区"></a>二、平衡电桥法，以及它的致命盲区</h2><p>测绝缘电阻最朴素的思路，是电桥法。</p>
+<p>在正极和机壳地之间、负极和机壳地之间，各接一个已知阻值的电阻（通常是相同阻值，所以叫「平衡桥」），然后测机壳地对电池的电位。根据分压关系，就能反推出绝缘电阻。</p>
+<p>平衡电桥的优点是电路简单、一次测量就能出结果。但它有一个教科书里反复强调的盲区：<strong>当正极和负极的绝缘电阻同时、等比例地下降时，平衡桥测不出来</strong>。</p>
+<p>理解这个盲区并不难。平衡电桥的两个桥臂电阻对称，如果 Rp 和 Rn 也对称地下降（比如都从 10MΩ 掉到 1MΩ），那么机壳地的电位根本不会变——因为分压比例没变。测量系统看到的是「一切正常」，实际上两侧绝缘都已经劣化了。对一个以安全为底线的系统来说，这种「故障了但仪表显示正常」的情况，比直接报故障更危险。</p>
+<p>所以真正量产的系统，几乎都绕不开<strong>不平衡电桥法</strong>。</p>
+<h2 id="三、不平衡电桥法的核心思想：两次测量，两个方程，两个未知数"><a href="#三、不平衡电桥法的核心思想：两次测量，两个方程，两个未知数" class="headerlink" title="三、不平衡电桥法的核心思想：两次测量，两个方程，两个未知数"></a>三、不平衡电桥法的核心思想：两次测量，两个方程，两个未知数</h2><p>不平衡电桥的「不平衡」，指的是投切进去的已知电阻不对称。它的核心思路一句话就能概括：</p>
+<blockquote>
+<p>用两个不同的已知电阻，分别做一次测量，得到两个独立的方程，就能解出 Rp 和 Rn 两个未知数。</p>
+</blockquote>
+<p>这是整个方法论的骨架，值得停下来把它想透。一个未知数需要一个方程，两个未知数就需要两个方程。而「两个方程」从哪来？靠的是改变电路条件——投切不同的已知电阻，让电路进入两种不同的状态，各测一次电压。</p>
+<p>下面我把这个过程用电路方程走一遍。这部分是理解后面代码的关键。</p>
+<p>设电池总电压为 Vbat，正极对地电压为 Up，负极对地电压为 Un（这里 Un 取「地到负极」的电压幅值，是个正数），那么 Up + Un &#x3D; Vbat。</p>
+<p>电路里有三个电阻：正极对地的绝缘电阻 Rp、负极对地的绝缘电阻 Rn，以及一个通过继电器投切的已知电阻 R（一会儿是 20kΩ，一会儿是 2.2MΩ）。这个已知电阻 R 接在正极和地之间。</p>
+<p>根据基尔霍夫电流定律，在「地」这个节点上，流入的电流等于流出的电流：正极经 Rp 流入地的电流（Up&#x2F;Rp），加上正极经已知电阻 R 流入地的电流（Up&#x2F;R），等于地经 Rn 流入负极的电流（Un&#x2F;Rn）。写成式子：</p>
+<div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Up/Rp + Up/R = Un/Rn</span><br></pre></td></tr></table></figure></div>
+
+<p>把 Up&#x2F;Un 这个比值单独拎出来，记作系数 k（它其实就是「正极对地电压」和「负极对地电压」的比值，是可以直接测出来的量）：</p>
+<div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">k = Up/Un</span><br></pre></td></tr></table></figure></div>
+
+<p>代入上面的方程，整理一下：</p>
+<div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">k × (1/Rp + 1/R) = 1/Rn</span><br></pre></td></tr></table></figure></div>
+
+<p>现在关键来了：R 有两个取值。投切 R1 时测一次，得到 k1；投切 R2 时再测一次，得到 k2。两个方程：</p>
+<div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">k1 × (1/Rp + 1/R1) = 1/Rn</span><br><span class="line">k2 × (1/Rp + 1/R2) = 1/Rn</span><br></pre></td></tr></table></figure></div>
+
+<p>两个方程、两个未知数 Rp 和 Rn，联立求解。用第二个减第一个消掉 Rn，就能先解出 Rp，再代回任意一个方程解出 Rn。</p>
+<p>到这里，不平衡电桥法的「道」就讲完了。你会注意到，推导过程里没有任何神奇的东西，就是一个基尔霍夫电流定律加上「改变电路条件做两次测量」这个朴素的思路。真正体现工程功力的，是怎么把这个思路落到具体的芯片和电路上。</p>
+<h2 id="四、这套系统是怎么落地的：LTC2949-两个电阻-一个继电器"><a href="#四、这套系统是怎么落地的：LTC2949-两个电阻-一个继电器" class="headerlink" title="四、这套系统是怎么落地的：LTC2949 + 两个电阻 + 一个继电器"></a>四、这套系统是怎么落地的：LTC2949 + 两个电阻 + 一个继电器</h2><p>回到这套 BMU。它的绝缘检测硬件方案是这样搭的：</p>
+<ul>
+<li><strong>采样芯片</strong>是 LTC2949。这颗芯片大家更熟悉它的身份是「高压侧电流&#x2F;能量监控」，但它其实带了不少辅助测量通道，本系统就复用了它来做绝缘检测的电压采样。</li>
+<li><strong>两个已知电阻</strong>：R1 &#x3D; 20kΩ，R2 &#x3D; 2.2MΩ（2200kΩ）。这两个阻值在 <code>InsuCheck.h</code> 里定义了：</li>
+</ul>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> ISO_R2   (2200.0)   <span class="comment">/* 绝缘检测电阻值 R2, (KΩ) */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> ISO_R1   (20.0)     <span class="comment">/* 绝缘检测电阻值 R1, (KΩ) */</span></span></span><br></pre></td></tr></table></figure></div>
+
+<ul>
+<li><strong>一个继电器</strong>负责在这两个电阻之间切换，也就是前面说的「投切」。代码里它对应 GPIO 端口 <code>ePOut_ISO_PGND</code>，检测开始时闭合，通过 LTC2949 内部的 RLY9 通道在 R1 和 R2 之间切换。</li>
+</ul>
+<p>这里有一个值得注意的细节：R1 和 R2 差了整整两个数量级（20kΩ 对 2.2MΩ）。这不是随手选的。小电阻 R1 投进去，会把正极「拉低」得比较明显，让分压比变化大、测量更灵敏，适合用来测那一侧的绝缘；大电阻 R2 投进去，对电路几乎没什么扰动，接近开路状态，适合测另一侧。两个数量级的差距，保证了两次测量之间有足够大的「差异」，方程才解得稳。</p>
+<h2 id="五、采样流程：一个五步的状态机"><a href="#五、采样流程：一个五步的状态机" class="headerlink" title="五、采样流程：一个五步的状态机"></a>五、采样流程：一个五步的状态机</h2><p>绝缘检测不是一个瞬间完成的操作，它在代码里被拆成了一个清晰的状态机，由 <code>InsuAdhesMeasurTask()</code> 这个 100ms 周期任务驱动。状态定义在 <code>InsuCheck.h</code> 里：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">enum</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    eIsoVpgnd_Init   = <span class="number">0</span>,   <span class="comment">/* 初始化 */</span></span><br><span class="line">    eIsoVpgnd_SeleV1 = <span class="number">1</span>,   <span class="comment">/* 片选 V1 */</span></span><br><span class="line">    eIsoVpgnd_SampV1 = <span class="number">2</span>,   <span class="comment">/* 采集 V1 */</span></span><br><span class="line">    eIsoVpgnd_SeleV2 = <span class="number">3</span>,   <span class="comment">/* 片选 V2 */</span></span><br><span class="line">    eIsoVpgnd_SampV2 = <span class="number">4</span>,   <span class="comment">/* 采集 V2 */</span></span><br><span class="line">    eIsoVpgnd_SampOK = <span class="number">5</span>,   <span class="comment">/* 采集完成 */</span></span><br><span class="line">    eIsoVpgnd_DiagOK = <span class="number">6</span>,   <span class="comment">/* 诊断完成 */</span></span><br><span class="line">    eIsoVpgnd_Fin</span><br><span class="line">&#125; e_IsoVpgndSampStep;</span><br></pre></td></tr></table></figure></div>
+
+<p>流程走下来是：先片选 V1（把继电器拨到 R1 一侧），等采样稳定后采集 V1；再片选 V2（拨到 R2 一侧），采集 V2；两次都采完，进入计算。</p>
+<p>这里有三个电压量：<strong>Vbat</strong>（电池总电压）、<strong>V1</strong>（接 R1 时负极对地的电压）、<strong>V2</strong>（接 R2 时负极对地的电压）。它们都是通过 LTC2949 采样后，由 <code>InputInsuSampDataAPI()</code> 喂进绝缘检测模块的。这个函数里同时做了两件事：一是保存采样值，二是<strong>当场算出分压比系数</strong>。看关键几行：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">case</span> eInsu_V1:</span><br><span class="line">    IsoCalcMsg.SampV1 = ...;                              <span class="comment">/* 保存 V1 */</span></span><br><span class="line">    IsoCalcMsg.CalcCoeA = (SampVbat - SampV1) / SampV1;   <span class="comment">/* 系数 A = 正极对地电压 / 负极对地电压 */</span></span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">case</span> eInsu_V2:</span><br><span class="line">    IsoCalcMsg.SampV2 = ...;                              <span class="comment">/* 保存 V2 */</span></span><br><span class="line">    IsoCalcMsg.CalcCoeB = (SampVbat - SampV2) / SampV2;   <span class="comment">/* 系数 B */</span></span><br><span class="line">    <span class="keyword">break</span>;</span><br></pre></td></tr></table></figure></div>
+
+<p><code>CalcCoeA</code> 和 <code>CalcCoeB</code> 就是我前面推导里的 k1 和 k2——正极对地电压和负极对地电压的比值。<code>(SampVbat - SampV1)</code> 是正极对地电压（总电压减去负极对地电压），<code>SampV1</code> 是负极对地电压，二者一除就是分压比。</p>
+<p>注意一个工程细节：这些浮点计算里，代码反复在做「乘 10000 再除 10000」的操作，比如：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">IsoCalcMsg.CalcCoeA = (u32)(IsoCalcMsg.CalcCoeA * <span class="number">10000</span>);   <span class="comment">/* 只保留四位小数 */</span></span><br><span class="line">IsoCalcMsg.CalcCoeA = (<span class="type">float</span>)IsoCalcMsg.CalcCoeA / <span class="number">10000</span>;</span><br></pre></td></tr></table></figure></div>
+
+<p>这是在用整数截断来限制浮点精度，避免系数保留过多小数位导致后续计算不稳定。没有浮点运算单元的嵌入式平台上，这种「先放大、取整、再缩小」的手法很常见，写代码的人显然是吃过精度亏的。</p>
+<h2 id="六、从系数到绝缘电阻：两行公式"><a href="#六、从系数到绝缘电阻：两行公式" class="headerlink" title="六、从系数到绝缘电阻：两行公式"></a>六、从系数到绝缘电阻：两行公式</h2><p>两次采样完成后，状态机走到计算这一步。核心就是 <code>InsuAdhesMeasurTask()</code> 里 case 2 的这段：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 电池电压大于阈值才进行绝缘判断 */</span></span><br><span class="line"><span class="keyword">if</span> (IsoCalcMsg.SampVbat &gt;= ISO_MIN_BAT_V)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">/* 计算正极对地绝缘阻抗 */</span></span><br><span class="line">    IsoRp = (IsoCalcMsg.CalcCoeB - IsoCalcMsg.CalcCoeA) * ISO_R2 * <span class="number">2</span> / (<span class="number">2</span> + IsoCalcMsg.CalcCoeA);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 计算负极对地绝缘阻抗（拆成三个中间量，避免中间结果溢出） */</span></span><br><span class="line">    IsoAuxValueA = <span class="number">2</span> * (CalcCoeB - CalcCoeA) * (<span class="number">2</span>*ISO_R2 + ISO_R1) * ISO_R2;</span><br><span class="line">    IsoAuxValueB = <span class="number">2</span> * CalcCoeA * (<span class="number">3</span>*ISO_R2 + ISO_R1);</span><br><span class="line">    IsoAuxValueC = <span class="number">2</span>*ISO_R2 - <span class="number">2</span>*ISO_R2*CalcCoeA - ISO_R1*CalcCoeA;</span><br><span class="line">    IsoRn = IsoAuxValueA / (IsoAuxValueB - CalcCoeB * IsoAuxValueC);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p><code>IsoRp</code> 就是正极对地绝缘电阻，<code>IsoRn</code> 是负极对地绝缘电阻，单位都是 kΩ。这两个公式，就是我前面第三节那组二元方程在这个特定电路拓扑下的解析解。你看 <code>IsoRp</code> 里出现了 <code>(CoeB - CoeA)</code> 和 <code>(2 + CoeA)</code>，<code>IsoRn</code> 里出现了 <code>(2*ISO_R2 + ISO_R1)</code>、<code>(3*ISO_R2 + ISO_R1)</code> 这样的组合——这些整数系数，全都来自本系统具体电阻网络（20kΩ 和 2.2MΩ 以及它们的并联串联关系）的化简结果。换句话说，公式长得这么「怪」，是因为它已经被针对这个具体电路解好了，代码里直接套用，不重新解方程。</p>
+<p>有个细节特别值得提：IsoRn 的计算被拆成了 <code>IsoAuxValueA</code>、<code>IsoAuxValueB</code>、<code>IsoAuxValueC</code> 三个中间量，而不是一行写完。原因在注释里——「防止越界」。这三个中间量动辄是 <code>2 × 2200 × 2200</code> 这种几十万量级的乘积，如果强行在一条表达式里连乘，中间结果可能超出某些数据类型的范围。拆开算，每一步的数值都可控。这是嵌入式浮点&#x2F;定点计算里一个非常实际、又很容易被忽略的坑。</p>
+<h2 id="七、边界条件与异常处理：比公式更见功力"><a href="#七、边界条件与异常处理：比公式更见功力" class="headerlink" title="七、边界条件与异常处理：比公式更见功力"></a>七、边界条件与异常处理：比公式更见功力</h2><p>公式只是理想情况。真实系统里，采样值会碰到各种异常，代码花了不少篇幅处理这些边界。我把它们归纳成三类，每一类背后都有一个真实的物理场景。</p>
+<p><strong>第一类：电压太低不测。</strong></p>
+<p>代码先判断 <code>SampVbat &gt;= ISO_MIN_BAT_V</code>，<code>ISO_MIN_BAT_V</code> 定义成 36V。低于这个电压，绝缘检测没有意义（电压太低，漏电流本来就测不准，而且低压下绝缘问题不构成安全威胁），直接把 Rp、Rn 置成无效值 <code>3000kΩ</code>（3MΩ），跳过判断。</p>
+<p>这里有个值得注意的小细节：头文件里 <code>ISO_MIN_BAT_V</code> 定义的是 36.0，但代码注释里写的是「电池电压大于 48V 才进行绝缘判断」。注释和实际值对不上——这大概率是历史版本改过阈值、注释没同步更新。这种「注释与代码不一致」的地方，恰恰是阅读存量代码时要留心的点，面试里能主动指出来，是很加分的。</p>
+<p><strong>第二类：结果出现负值或无意义值。</strong></p>
+<p>理想情况下 Rp、Rn 都该是正数。但采样误差、噪声、以及公式在极端情况下的数值行为，都可能算出负值或者溢出。代码对这些情况做了兜底：</p>
+<ul>
+<li>如果 <code>IsoRp &gt; 3000</code>（超过量程上限 3MΩ），就把它钳到 3MΩ——超过这个值说明绝缘已经好到超出测量范围，直接按「良好」处理。</li>
+<li>如果 <code>IsoRp &lt; 0</code>，说明算出了负值。这时再分情况：如果 V1 接近 Vbat（差值小于 5V），说明正极对地几乎短路，Rp 判定为 0；否则判定为量程外的无效值。</li>
+<li>类似的逻辑对 <code>IsoRn</code> 也走一遍：如果 V1 小于 1V，说明负极对地几乎短路，Rn 判定为 0。</li>
+</ul>
+<p>你看这段边界处理，本质上是在用「电压的极端取值」来反推「绝缘电阻的物理状态」。V1 接近 Vbat，意味着地电位被抬到了接近正极，正极对地自然就是短路的；V1 接近 0，意味着地电位被拉到了接近负极，负极对地短路。这个对应关系，是理解整套检测物理意义的关键。</p>
+<p><strong>第三类：超时保护。</strong></p>
+<p>绝缘检测靠 LTC2949 的连续采样，如果芯片通信故障或者采样一直没完成，状态机就会卡住。代码在等待采样完成时设了 25 秒超时：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (GetSysSecondTimeAPI() &gt;= (sHisInsuTime + <span class="number">25</span>))</span><br><span class="line">&#123;</span><br><span class="line">    SetInsuVpgndSampFlagAPI(eIsoVpgnd_SampOK);   <span class="comment">/* 超时强制置为采样完成 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>超时后强制推进状态机，保证不会永远卡死在某个采样步骤上。这种「任何等待都配超时」的做法，是实时系统的基本素养。</p>
+<h2 id="八、报警分级：把绝缘电阻翻译成安全等级"><a href="#八、报警分级：把绝缘电阻翻译成安全等级" class="headerlink" title="八、报警分级：把绝缘电阻翻译成安全等级"></a>八、报警分级：把绝缘电阻翻译成安全等级</h2><p>算出 Rp、Rn 之后，系统还要把它们翻译成「该不该报警、报什么级别的警」。这一步在 <code>InsuErrStateCheck()</code> 里完成，输出四级状态：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">enum</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    <span class="comment">/* 0:正常  1:一级报警(严重)  2:二级报警(轻微)  3:绝缘检测异常(失效) */</span></span><br><span class="line">&#125; ...</span><br></pre></td></tr></table></figure></div>
+
+<p>判断逻辑是这样的：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 绝缘值为失效值 */</span></span><br><span class="line"><span class="keyword">if</span> ((<span class="number">0xffff</span> == isoRp) || (<span class="number">0xffff</span> == isoRn))</span><br><span class="line">&#123;</span><br><span class="line">    sInsuErrStateFlag = <span class="number">3</span>;    <span class="comment">/* 检测失效 */</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/* 绝缘值在一级(严重)范围 */</span></span><br><span class="line"><span class="keyword">else</span> <span class="keyword">if</span> ((isoRp * <span class="number">1000</span>) &lt; (Leak1Lim * Vbat) || (isoRn * <span class="number">1000</span>) &lt; (Leak1Lim * Vbat))</span><br><span class="line">&#123;</span><br><span class="line">    sInsuErrStateFlag = <span class="number">1</span>;    <span class="comment">/* 一级报警 */</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/* 绝缘值在二级(轻微)范围 */</span></span><br><span class="line"><span class="keyword">else</span> <span class="keyword">if</span> ((isoRp * <span class="number">1000</span>) &lt; (Leak2Lim * Vbat) || (isoRn * <span class="number">1000</span>) &lt; (Leak2Lim * Vbat))</span><br><span class="line">&#123;</span><br><span class="line">    sInsuErrStateFlag = <span class="number">2</span>;    <span class="comment">/* 二级报警 */</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">&#123;</span><br><span class="line">    sInsuErrStateFlag = <span class="number">0</span>;    <span class="comment">/* 正常 */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>注意那个判断式：<code>isoRp * 1000 &lt; Leak1Lim * Vbat</code>。<code>isoRp</code> 单位是 kΩ，乘 1000 变成 Ω；<code>Leak1Lim</code> 单位是 Ω&#x2F;V，乘 Vbat 得到「当前电压下允许的最低绝缘电阻」。这正好呼应了第一节讲的「绝缘阈值按电压折算」——<strong>电压越高，允许的最低绝缘电阻就越高</strong>，因为要保证漏电流不超过安全值。</p>
+<p>两级阈值 <code>Leak1Lim</code> 和 <code>Leak2Lim</code> 是参数表里的可配置项（存在 <code>gGBmuGenPara_102</code> 里），一级对应更低的电阻值（更严重的漏电），二级对应略高的电阻值（轻微劣化）。从严重到轻微逐级判断，符合故障分级的基本逻辑：先看是不是最严重的，不是再看是不是次严重的。</p>
+<p>这套分级最终会接到系统的诊断流水线上，转化成具体的保护动作——比如二级报警可能只做提示，一级报警就要限制功率甚至断开高压回路。绝缘检测在整个 BMS 里扮演的就是「第一道安全闸门」的角色。</p>
+<h2 id="九、什么时候测：触发条件的设计"><a href="#九、什么时候测：触发条件的设计" class="headerlink" title="九、什么时候测：触发条件的设计"></a>九、什么时候测：触发条件的设计</h2><p>绝缘检测不是一直跑，它有明确的触发时机，这部分的逻辑在 <code>SysNeedInsuCheckState()</code> 里，写得很细致。挑几个关键的讲：</p>
+<ul>
+<li><strong>上电早期要测</strong>：系统上电后的头几秒会做一次检测，确认初始状态是安全的。</li>
+<li><strong>接触器断开时才测</strong>：这是很关键的一个约束。接触器闭合时，电池已经和母线、负载连通，此时测到的「绝缘」会受到负载电路的干扰，测不准。所以很多工作模式下，系统要求接触器全部断开后才做绝缘检测。对应代码里的 <code>LeakMonitType</code> 参数，1&#x2F;2 表示「只在接触器断开时检测」。</li>
+<li><strong>电压变化触发</strong>：如果总电压或者负母线电压发生了明显跳变（比如变化超过 10V），说明系统状态变了，需要重新检测。代码里有专门的分支判断 <code>ABS(GetGSampSumVoltAPI(), sSumVolt) &gt;= 100</code>。</li>
+<li><strong>周期性复检</strong>：正常运行一段时间后，按参数设定的周期重新检测，防止绝缘性能在运行中慢慢劣化。</li>
+<li><strong>外部请求</strong>：上位机或调试口可以主动下发检测命令。</li>
+</ul>
+<p>这套触发逻辑体现了一个原则：<strong>绝缘检测有成本（要断开接触器、要占用采样时间），所以只在「需要」的时候做</strong>，而「需要」的定义覆盖了上电、状态跳变、周期性复检、外部请求这几类场景。这个「何时测、测多频」的权衡，是绝缘检测工程化里很容易被忽略、但其实很见功力的一环。</p>
+<h2 id="十、写到最后"><a href="#十、写到最后" class="headerlink" title="十、写到最后"></a>十、写到最后</h2><p>把整个链路串起来，就是：<strong>LTC2949 通过继电器在 20kΩ 和 2.2MΩ 两个已知电阻之间切换，各采一次负极对地电压，算出两个分压比系数，套入预先解好的公式，同时得到正极和负极的绝缘电阻，再按电压折算的阈值分成正常&#x2F;轻微&#x2F;严重&#x2F;失效四级，送入诊断系统驱动保护动作。</strong></p>
+<p>拆开看，每一步都不复杂。真正有价值的，是看到一套理论方法（不平衡电桥）是怎么在真实芯片、真实电路、真实代码约束下被一步步落地的——从电阻阻值的选取、采样状态机的设计，到浮点精度控制、超时保护、边界异常兜底、按电压折算的阈值、以及触发时机的权衡。这些细节，才是区分「背过绝缘检测原理」和「真正做过绝缘检测」的分界线。</p>
+<p>如果你也在做 BMS 或者准备 BMS 相关的面试，我的建议是别只记那两个公式，去把这段代码从头到尾读一遍。读代码的时候问自己三个问题：为什么两个电阻要差两个数量级？为什么报警阈值要乘电压？为什么很多判断要等接触器断开？这三个「为什么」能答上来，绝缘检测这块你就真正通了。</p>
+
+		</div>
+
+		
+		<div class="post-copyright-info w-full my-8 px-2 sm:px-6 md:px-8">
+			<div class="article-copyright-info-container">
+    <ul>
+        <li><strong>标题:</strong> 储能 BMS 的绝缘检测，到底是怎么同时测出正、负两路绝缘电阻的</li>
+        <li><strong>作者:</strong> kuangyue111</li>
+        <li><strong>创建于
+                :</strong> 2026-08-21 10:00:00</li>
+        
+            <li>
+                <strong>更新于
+                    :</strong> 2026-08-21 15:46:59
+            </li>
+        
+        <li>
+            <strong>链接:</strong> https://kuangyue111.github.io/2026/08/21/2026-08-21-bms-insulation-detection-unbalanced-bridge/
+        </li>
+        <li>
+            <strong>
+                版权声明:
+            </strong>
+            
+
+            
+                本文章采用 <a class="license" target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0">CC BY-NC-SA 4.0</a> 进行许可。
+            
+        </li>
+    </ul>
+</div>
+
+		</div>
+		
+
+		
+		<ul class="post-tags-box text-lg mt-1.5 flex-wrap justify-center flex md:hidden">
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/BMS/">#BMS</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/S32K146/">#S32K146</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E5%AE%89%E5%85%A8%E4%BF%9D%E6%8A%A4/">#安全保护</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E5%82%A8%E8%83%BD%E7%B3%BB%E7%BB%9F/">#储能系统</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E7%BB%9D%E7%BC%98%E6%A3%80%E6%B5%8B/">#绝缘检测</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E4%B8%8D%E5%B9%B3%E8%A1%A1%E7%94%B5%E6%A1%A5/">#不平衡电桥</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/LTC2949/">#LTC2949</a>&nbsp;
+			</li>
+			
+		</ul>
+		
+
+		
+
+		
+		<div class="article-nav my-8 flex justify-between items-center px-2 sm:px-6 md:px-8">
+			
+			<div class="article-prev border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
+				<a class="prev" rel="prev" href="/2026/08/24/2026-08-24-agent-skills-writing-guide/">
+					<span class="left arrow-icon flex justify-center items-center">
+						<i class="fa-solid fa-chevron-left"></i>
+					</span>
+					<span class="title flex justify-center items-center">
+						<span class="post-nav-title-item truncate max-w-48">我是被现实教育之后，才明白 Skill 到底该怎么写</span>
+						<span class="post-nav-item">上一篇</span>
+					</span>
+				</a>
+			</div>
+			
+			
+			<div class="article-next border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
+				<a class="next" rel="next" href="/2026/08/17/2026-08-17-can-communication-abstraction-layer/">
+					<span class="title flex justify-center items-center">
+						<span class="post-nav-title-item truncate max-w-48">储能系统CAN通信抽象层深度解读</span>
+						<span class="post-nav-item">下一篇</span>
+					</span>
+					<span class="right arrow-icon flex justify-center items-center">
+						<i class="fa-solid fa-chevron-right"></i>
+					</span>
+				</a>
+			</div>
+			
+		</div>
+		
+
+
+		
+		<div class="comment-container px-2 sm:px-6 md:px-8 pb-8">
+			<div class="comments-container mt-10 w-full ">
+    <div id="comment-anchor" class="w-full h-2.5"></div>
+    <div class="comment-area-title w-full my-1.5 md:my-2.5 text-xl md:text-3xl font-bold">
+        评论
+    </div>
+    
+
+        
+            
+    <div id="waline"></div>
+    <script type="module" data-swup-reload-script>
+      import { init } from '/js/libs/waline.js';
+
+      (function() {
+        const startPath = location.pathname;
+        const startTime = Date.now();
+        const retryDelay = 200;
+        const retryLimit = 5000;
+
+        const runWaline = () => {
+          if (location.pathname !== startPath) {
+            return;
+          }
+
+          const container = document.getElementById('waline');
+          if (!container) {
+            if (Date.now() - startTime < retryLimit) {
+              setTimeout(runWaline, retryDelay);
+            }
+            return;
+          }
+
+          if (window.redefineWalineInstance?.destroy) {
+            window.redefineWalineInstance.destroy();
+          }
+
+          container.innerHTML = '';
+          window.redefineWalineInstance = init({
+            el: '#waline',
+            serverURL: 'https://example.example.com',
+            path: location.pathname,
+            dark: 'body[class~="dark-mode"]',
+            reaction: false,
+            requiredMeta: ['nick', 'mail'],
+            emoji: [],
+                      lang: 'zh-CN',
+          });
+        };
+
+        runWaline();
+      })();
+    </script>
+
+
+
+        
+    
+</div>
+
+		</div>
+		
+	</div>
+
+	
+	<div class="toc-content-container">
+		<div class="post-toc-wrap">
+	<div class="post-toc">
+		<div class="toc-title">目录</div>
+		<div class="page-title">储能 BMS 的绝缘检测，到底是怎么同时测出正、负两路绝缘电阻的</div>
+		<ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%82%A8%E8%83%BD-BMS-%E7%9A%84%E7%BB%9D%E7%BC%98%E6%A3%80%E6%B5%8B%EF%BC%8C%E5%88%B0%E5%BA%95%E6%98%AF%E6%80%8E%E4%B9%88%E5%90%8C%E6%97%B6%E6%B5%8B%E5%87%BA%E6%AD%A3%E3%80%81%E8%B4%9F%E4%B8%A4%E8%B7%AF%E7%BB%9D%E7%BC%98%E7%94%B5%E9%98%BB%E7%9A%84"><span class="nav-text">储能 BMS 的绝缘检测，到底是怎么同时测出正、负两路绝缘电阻的</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E5%85%88%E6%90%9E%E6%B8%85%E6%A5%9A%E8%A6%81%E6%B5%8B%E7%9A%84%E5%88%B0%E5%BA%95%E6%98%AF%E4%BB%80%E4%B9%88"><span class="nav-text">一、先搞清楚要测的到底是什么</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E5%B9%B3%E8%A1%A1%E7%94%B5%E6%A1%A5%E6%B3%95%EF%BC%8C%E4%BB%A5%E5%8F%8A%E5%AE%83%E7%9A%84%E8%87%B4%E5%91%BD%E7%9B%B2%E5%8C%BA"><span class="nav-text">二、平衡电桥法，以及它的致命盲区</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E4%B8%8D%E5%B9%B3%E8%A1%A1%E7%94%B5%E6%A1%A5%E6%B3%95%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3%EF%BC%9A%E4%B8%A4%E6%AC%A1%E6%B5%8B%E9%87%8F%EF%BC%8C%E4%B8%A4%E4%B8%AA%E6%96%B9%E7%A8%8B%EF%BC%8C%E4%B8%A4%E4%B8%AA%E6%9C%AA%E7%9F%A5%E6%95%B0"><span class="nav-text">三、不平衡电桥法的核心思想：两次测量，两个方程，两个未知数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E8%BF%99%E5%A5%97%E7%B3%BB%E7%BB%9F%E6%98%AF%E6%80%8E%E4%B9%88%E8%90%BD%E5%9C%B0%E7%9A%84%EF%BC%9ALTC2949-%E4%B8%A4%E4%B8%AA%E7%94%B5%E9%98%BB-%E4%B8%80%E4%B8%AA%E7%BB%A7%E7%94%B5%E5%99%A8"><span class="nav-text">四、这套系统是怎么落地的：LTC2949 + 两个电阻 + 一个继电器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E9%87%87%E6%A0%B7%E6%B5%81%E7%A8%8B%EF%BC%9A%E4%B8%80%E4%B8%AA%E4%BA%94%E6%AD%A5%E7%9A%84%E7%8A%B6%E6%80%81%E6%9C%BA"><span class="nav-text">五、采样流程：一个五步的状态机</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AD%E3%80%81%E4%BB%8E%E7%B3%BB%E6%95%B0%E5%88%B0%E7%BB%9D%E7%BC%98%E7%94%B5%E9%98%BB%EF%BC%9A%E4%B8%A4%E8%A1%8C%E5%85%AC%E5%BC%8F"><span class="nav-text">六、从系数到绝缘电阻：两行公式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%83%E3%80%81%E8%BE%B9%E7%95%8C%E6%9D%A1%E4%BB%B6%E4%B8%8E%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86%EF%BC%9A%E6%AF%94%E5%85%AC%E5%BC%8F%E6%9B%B4%E8%A7%81%E5%8A%9F%E5%8A%9B"><span class="nav-text">七、边界条件与异常处理：比公式更见功力</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AB%E3%80%81%E6%8A%A5%E8%AD%A6%E5%88%86%E7%BA%A7%EF%BC%9A%E6%8A%8A%E7%BB%9D%E7%BC%98%E7%94%B5%E9%98%BB%E7%BF%BB%E8%AF%91%E6%88%90%E5%AE%89%E5%85%A8%E7%AD%89%E7%BA%A7"><span class="nav-text">八、报警分级：把绝缘电阻翻译成安全等级</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B9%9D%E3%80%81%E4%BB%80%E4%B9%88%E6%97%B6%E5%80%99%E6%B5%8B%EF%BC%9A%E8%A7%A6%E5%8F%91%E6%9D%A1%E4%BB%B6%E7%9A%84%E8%AE%BE%E8%AE%A1"><span class="nav-text">九、什么时候测：触发条件的设计</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%81%E3%80%81%E5%86%99%E5%88%B0%E6%9C%80%E5%90%8E"><span class="nav-text">十、写到最后</span></a></li></ol></li></ol>
+
+	</div>
+</div>
+	</div>
+	
+</div>
+
+			</div>
+
+			
+		</div>
+
+		<div class="main-content-footer">
+			<footer class="footer mt-5 py-5 h-auto text-base text-third-text-color relative border-t-2 border-t-border-color">
+    <div class="info-container py-3 text-center">
+        
+        <div class="text-center">
+            &copy;
+            
+              <span>2022</span>
+              -
+            
+            2026&nbsp;&nbsp;<i class="fa-solid fa-heart fa-beat" style="--fa-animation-duration: 0.5s; color: #f54545"></i>&nbsp;&nbsp;<a href="/">kuangyue111</a>
+            
+                
+                <p class="post-count space-x-0.5">
+                    <span>
+                        共撰写了 45 篇文章
+                    </span>
+                    
+                </p>
+            
+        </div>
+        
+            <script data-swup-reload-script src="https://cn.vercount.one/js"></script>
+            <div class="relative text-center lg:absolute lg:right-[20px] lg:top-1/2 lg:-translate-y-1/2 lg:text-right">
+                
+                    <span id="busuanzi_container_site_uv" class="lg:!block">
+                        <span class="text-sm">访问人数</span>
+                        <span id="busuanzi_value_site_uv"></span>
+                    </span>
+                
+                
+                    <span id="busuanzi_container_site_pv" class="lg:!block">
+                        <span class="text-sm">总访问量</span>
+                        <span id="busuanzi_value_site_pv"></span>
+                    </span>
+                
+            </div>
+        
+        <div class="relative text-center lg:absolute lg:left-[20px] lg:top-1/2 lg:-translate-y-1/2 lg:text-left">
+            <span class="lg:block text-sm">由 <?xml version="1.0" encoding="utf-8"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg class="relative top-[2px] inline-block align-baseline" version="1.1" id="圖層_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="1rem" height="1rem" viewBox="0 0 512 512" enable-background="new 0 0 512 512" xml:space="preserve"><path fill="#0E83CD" d="M256.4,25.8l-200,115.5L56,371.5l199.6,114.7l200-115.5l0.4-230.2L256.4,25.8z M349,354.6l-18.4,10.7l-18.6-11V275H200v79.6l-18.4,10.7l-18.6-11v-197l18.5-10.6l18.5,10.8V237h112v-79.6l18.5-10.6l18.5,10.8V354.6z"/></svg><a target="_blank" class="text-base" href="https://hexo.io">Hexo</a> 驱动</span>
+            <span class="text-sm lg:block">主题&nbsp;<a class="text-base" target="_blank" href="https://github.com/EvanNotFound/hexo-theme-redefine">Redefine v2.9.0</a></span>
+        </div>
+        
+        
+            <div>
+                博客已运行 <span class="odometer" id="runtime_days" ></span> 天 <span class="odometer" id="runtime_hours"></span> 小时 <span class="odometer" id="runtime_minutes"></span> 分钟 <span class="odometer" id="runtime_seconds"></span> 秒
+            </div>
+        
+        
+            <script data-swup-reload-script>
+                try {
+                    function odometer_init() {
+                    const elements = document.querySelectorAll('.odometer');
+                    elements.forEach(el => {
+                        new Odometer({
+                            el,
+                            format: '( ddd).dd',
+                            duration: 200
+                        });
+                    });
+                    }
+                    odometer_init();
+                } catch (error) {}
+            </script>
+        
+        
+        
+    </div>  
+</footer>
+		</div>
+	</div>
+
+	
+	<div class="post-tools">
+		<div class="post-tools-container">
+	<ul class="article-tools-list">
+		<!-- TOC aside toggle -->
+		
+		<li class="right-bottom-tools page-aside-toggle">
+			<i class="fa-regular fa-outdent"></i>
+		</li>
+		
+
+		<!-- go comment -->
+		
+		<li class="go-comment">
+			<i class="fa-regular fa-comments"></i>
+		</li>
+		
+	</ul>
+</div>
+	</div>
+	
+
+	<div class="right-side-tools-container">
+		<div class="side-tools-container">
+	<ul class="hidden-tools-list">
+		<li class="right-bottom-tools tool-font-adjust-plus flex justify-center items-center">
+			<i class="fa-regular fa-magnifying-glass-plus"></i>
+		</li>
+
+		<li class="right-bottom-tools tool-font-adjust-minus flex justify-center items-center">
+			<i class="fa-regular fa-magnifying-glass-minus"></i>
+		</li>
+
+		<li class="right-bottom-tools tool-dark-light-toggle flex justify-center items-center">
+			<i class="fa-regular fa-moon"></i>
+		</li>
+
+		<!-- rss -->
+		
+
+		
+
+		<li class="right-bottom-tools tool-scroll-to-bottom flex justify-center items-center">
+			<i class="fa-regular fa-arrow-down"></i>
+		</li>
+	</ul>
+
+	<ul class="visible-tools-list">
+		<li class="right-bottom-tools toggle-tools-list flex justify-center items-center">
+			<i class="fa-regular fa-cog fa-spin"></i>
+		</li>
+		
+		<li class="right-bottom-tools tool-scroll-to-top flex justify-center items-center">
+			<i class="arrow-up fas fa-arrow-up"></i>
+			<span class="percent"></span>
+		</li>
+		
+		
+	</ul>
+</div>
+	</div>
+
+	<div class="image-viewer-container" role="dialog" aria-modal="true" aria-label="图片查看器">
+	<button class="image-viewer-close" type="button" aria-label="关闭">
+		<i class="fa-solid fa-xmark"></i>
+	</button>
+	<button class="image-viewer-prev" type="button" aria-label="上一页">
+		<i class="fa-solid fa-chevron-left"></i>
+	</button>
+	<div class="image-viewer-frame">
+		<img src="" alt="">
+	</div>
+	<div class="image-viewer-exif-panel hidden absolute left-1/2 bottom-20 -translate-x-1/2 w-[min(92vw,420px)] max-h-[60vh] overflow-hidden rounded-2xl bg-background-color-transparent-80 p-4 text-left shadow-redefine-flat backdrop-blur-md" role="dialog" aria-label="EXIF" aria-hidden="true">
+		<div class="flex items-center justify-between mb-3">
+			<span class="text-sm font-semibold text-first-text-color">EXIF</span>
+			<button class="image-viewer-exif-close flex h-8 w-8 items-center justify-center rounded-full bg-background-color-transparent-80 text-first-text-color transition hover:bg-background-color-transparent-40" type="button" aria-label="关闭">
+				<i class="fa-solid fa-xmark text-[0.65rem]"></i>
+			</button>
+		</div>
+		<div class="image-viewer-exif-cards grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto pr-1 scrollbar-hide"></div>
+		<template class="image-viewer-exif-card-template">
+			<div class="rounded-lg bg-background-color-transparent-40 px-3 py-2">
+				<div class="image-viewer-exif-card-header flex items-center gap-2 mb-1">
+					<i class="image-viewer-exif-card-icon fa-solid fa-circle-info text-xs text-third-text-color"></i>
+					<div class="image-viewer-exif-card-title text-xs font-semibold text-first-text-color"></div>
+				</div>
+				<div class="image-viewer-exif-card-items flex flex-col gap-1"></div>
+			</div>
+		</template>
+	</div>
+	<button class="image-viewer-exif-toggle flex items-center gap-2 hidden absolute left-1/2 bottom-6 -translate-x-1/2 rounded-full border border-border-color bg-background-color-transparent-80 px-4 py-2 text-first-text-color backdrop-blur-md transition hover:bg-background-color-transparent-40" type="button" aria-label="EXIF" aria-expanded="false">
+		<i class="fa-solid fa-circle-info text-xs"></i>
+		<span class="text-xs font-semibold uppercase tracking-wider">EXIF</span>
+	</button>
+	<button class="image-viewer-next" type="button" aria-label="下一页">
+		<i class="fa-solid fa-chevron-right"></i>
+	</button>
+</div>
+
+
+	
+
+</main>
+
+
+
+<script src="/js/build/libs/Swup.min.js"></script>
+
+<script src="/js/build/libs/SwupSlideTheme.min.js"></script>
+
+<script src="/js/build/libs/SwupScriptsPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupProgressPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupScrollPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupPreloadPlugin.min.js"></script>
+
+<script>
+    window.swup = new Swup({
+        plugins: [
+            new SwupScriptsPlugin({
+                optin: true,
+            }),
+            new SwupProgressPlugin(),
+            new SwupScrollPlugin({
+                offset: 80,
+            }),
+            new SwupSlideTheme({
+                mainElement: ".main-content-body",
+            }),
+            new SwupPreloadPlugin(),
+        ],
+        containers: ["#swup"],
+    });
+
+    window.dispatchEvent(
+        new CustomEvent("redefine:swup:ready", {
+            detail: {
+                swup: window.swup,
+            },
+        }),
+    );
+</script>
+
+
+
+
+	
+<script src="/js/build/main.js" type="module"></script>
+
+
+
+    
+<script src="/js/build/libs/odometer.min.js"></script>
+
+    
+<link rel="stylesheet" href="/assets/odometer-theme-minimal.css">
+
+
+
+
+
+
+
+  
+<script src="/js/build/libs/Typed.min.js"></script>
+
+
+
+
+
+
+
+
+
+
+<script src="/js/build/libs/moment-with-locales.min.js" data-swup-reload-script=""></script>
+
+
+
+	
+</body>
+
+</html>

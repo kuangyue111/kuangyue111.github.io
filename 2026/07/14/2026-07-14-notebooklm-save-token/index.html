@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="keywords" content="Hexo Theme Redefine">
+    
+    
+    <meta name="author" content="kuangyue111">
+    
+    <!-- Completely eliminate flash of wrong theme -->
+    <script>
+        (function() {
+            const THEME_KEY = "REDEFINE-THEME-STATUS";
+            const DARK = "dark", LIGHT = "light";
+            
+            // Get preferred theme
+            function getTheme() {
+                try {
+                    const saved = localStorage.getItem(THEME_KEY);
+                    if (saved) {
+                        const { isDark } = JSON.parse(saved);
+                        return isDark ? DARK : LIGHT;
+                    }
+                } catch (e) {}
+                
+                return matchMedia("(prefers-color-scheme: dark)").matches ? DARK : LIGHT;
+            }
+            
+            // Apply theme to document
+            function applyTheme(theme) {
+                const isDark = theme === DARK;
+                const root = document.documentElement;
+                
+                // Set classes for compatibility
+                root.classList.add(theme);
+                root.classList.remove(isDark ? LIGHT : DARK);
+                root.style.colorScheme = theme;
+            }
+            
+            // Initial application
+            const theme = getTheme();
+            applyTheme(theme);
+            
+            // Listen for system preference changes
+            matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ({ matches }) => {
+                // Only update if using system preference (no localStorage entry)
+                if (!localStorage.getItem(THEME_KEY)) {
+                    applyTheme(matches ? DARK : LIGHT);
+                }
+            });
+            
+            // Set body classes ASAP (before DOMContentLoaded)
+            (function() {
+                const addBodyClass = () => {
+                    const b = document.body;
+                    if (!b) return false;
+                    b.classList.add(theme + "-mode");
+                    return true;
+                };
+
+                // Try immediately
+                if (addBodyClass()) return;
+
+                // Observe until body exists
+                const mo = new MutationObserver(() => {
+                    if (addBodyClass()) mo.disconnect();
+                });
+                mo.observe(document.documentElement, { childList: true, subtree: true });
+            })();
+        })();
+    </script>
+    
+    <!-- preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    
+    <!--- Seo Part-->
+    
+    <link rel="canonical" href="https://kuangyue111.github.io/2026/07/14/2026-07-14-notebooklm-save-token/"/>
+    <meta name="robots" content="index,follow">
+    <meta name="googlebot" content="index,follow">
+    <meta name="revisit-after" content="1 days">
+    
+    
+        
+        <meta name="description" content="Hexo Theme Redefine, Redefine Your Hexo Journey.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="用好NotebookLM立省80%Token">
+<meta property="og:url" content="https://kuangyue111.github.io/2026/07/14/2026-07-14-notebooklm-save-token/index.html">
+<meta property="og:site_name" content="KuangYue&#39;s Blog">
+<meta property="og:description" content="Hexo Theme Redefine, Redefine Your Hexo Journey.">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://kuangyue111.github.io/images/redefine-og.webp">
+<meta property="article:published_time" content="2026-07-14T12:00:00.000Z">
+<meta property="article:modified_time" content="2026-07-14T11:31:29.360Z">
+<meta property="article:author" content="kuangyue111">
+<meta property="article:tag" content="Claude">
+<meta property="article:tag" content="NotebookLM">
+<meta property="article:tag" content="省钱">
+<meta property="article:tag" content="效率工具">
+<meta property="article:tag" content="AI工具">
+<meta property="article:tag" content="Google">
+<meta property="article:tag" content="AI工作流">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://kuangyue111.github.io/images/redefine-og.webp">
+    
+    
+    <!--- Icon Part-->
+    <link rel="icon" type="image/png" href="/images/redefine-favicon.svg" sizes="192x192">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/redefine-favicon.svg">
+    <meta name="theme-color" content="#A31F34">
+    <link rel="shortcut icon" href="/images/redefine-favicon.svg">
+    <!--- Page Info-->
+    
+    <title>
+        
+            用好NotebookLM立省80undefinedoken | KuangYue&#39;s Blog
+        
+    </title>
+
+    
+<link rel="stylesheet" href="/fonts/Chillax/chillax.css">
+
+
+    <!--- Inject Part-->
+    
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+        
+<link rel="stylesheet" href="/css/build/tailwind.css">
+
+    
+
+    
+<link rel="stylesheet" href="/fonts/GeistMono/geist-mono.css">
+
+    
+<link rel="stylesheet" href="/fonts/Geist/geist.css">
+
+    <!--- Font Part-->
+    
+    
+    
+    
+    
+    
+
+    <script id="hexo-configurations">
+    window.config = {"hostname":"kuangyue111.github.io","root":"/","language":"zh-CN"};
+    window.theme = {"articles":{"style":{"font_size":"16px","line_height":1.5,"image_border_radius":"14px","image_alignment":"center","image_caption":false,"link_icon":true,"delete_mask":false,"title_alignment":"left","headings_top_spacing":{"h1":"3.2rem","h2":"2.4rem","h3":"1.9rem","h4":"1.6rem","h5":"1.4rem","h6":"1.3rem"}},"word_count":{"enable":true,"count":true,"min2read":true},"author_label":{"enable":true,"auto":false,"list":[]},"code_block":{"copy":true,"style":"mac","highlight_theme":{"light":"github","dark":"vs2015"},"font":{"enable":false,"family":null,"url":null}},"toc":{"enable":true,"max_depth":3,"number":false,"expand":true,"init_open":true},"copyright":{"enable":true,"default":"cc_by_nc_sa"},"lazyload":true,"pangu_js":false,"recommendation":{"enable":false,"title":"推荐阅读","limit":3,"mobile_limit":2,"placeholder":"/images/wallhaven-wqery6-light.webp","skip_dirs":[]}},"colors":{"primary":"#A31F34","secondary":null,"default_mode":"light"},"global":{"fonts":{"chinese":{"enable":false,"family":null,"url":null},"english":{"enable":false,"family":null,"url":null},"title":{"enable":false,"family":null,"url":null}},"content_max_width":"1000px","sidebar_width":"210px","hover":{"shadow":true,"scale":false},"scroll_progress":{"bar":false,"percentage":true},"website_counter":{"url":"https://cn.vercount.one/js","enable":true,"site_pv":true,"site_uv":true,"post_pv":true},"single_page":true,"preloader":{"enable":false,"custom_message":null},"side_tools":{"gear_rotation":true,"auto_expand":false},"open_graph":{"enable":true,"image":"/images/redefine-og.webp","description":"Hexo Theme Redefine, Redefine Your Hexo Journey."},"google_analytics":{"enable":false,"id":null}},"home_banner":{"enable":true,"style":"fixed","image":{"light":"/images/wallhaven-wqery6-light.webp","dark":"/images/wallhaven-wqery6-dark.webp"},"title":"KuangYue's Blog","subtitle":{"text":["专注储能系统与嵌入式开发","记录 NCCU 控制单元架构演进","探索工业物联网与云端对接"],"hitokoto":{"enable":false,"show_author":false,"api":"https://v1.hitokoto.cn"},"typing_speed":100,"backing_speed":80,"starting_delay":500,"backing_delay":1500,"loop":true,"smart_backspace":true},"text_color":{"light":"#fff","dark":"#d1d1b6"},"text_style":{"title_size":"2.8rem","subtitle_size":"1.5rem","line_height":1.2},"custom_font":{"enable":false,"family":null,"url":null},"social_links":{"enable":true,"style":"default","links":[{"icon":"fa-brands fa-github","url":"https://github.com/kuangyue111"},{"icon":"fa-brands fa-twitter","url":null},{"icon":"fa-solid fa-at","url":"you@example.com"},{"icon":"fa-brands fa-telegram","url":null},{"icon":"/images/custom-icon.svg","url":null}],"qrs":[{"icon":"fa-brands fa-weixin","qr":null},{"icon":"/images/custom-icon.svg","qr":null}]}},"plugins":{"feed":{"enable":false},"aplayer":{"enable":false,"type":"fixed","audios":[{"name":null,"artist":null,"url":null,"cover":null,"lrc":null}]},"mermaid":{"theme":{"light":"default","dark":"dark"}},"katex":false,"chart":false},"version":"2.9.0","code_block":{"theme":"light","macStyle":false,"shrink":false,"copy_button":true,"language":true},"navbar":{"auto_hide":false,"color":{"left":"#f78736","right":"#367df7","transparency":35},"width":{"home":"1200px","pages":"1000px"},"links":{"Home":{"path":"/","icon":"fa-regular fa-house"},"Archives":{"path":"/archives/","icon":"fa-regular fa-archive"},"Tags":{"path":"/tags/","icon":"fa-regular fa-tags"},"Categories":{"path":"/categories/","icon":"fa-regular fa-folder"},"About":{"icon":"fa-regular fa-user","submenus":{"Me":"/about/","GitHub":"https://github.com/kuangyue111"}}},"search":{"enable":false,"preload":true}},"page_templates":{"friends_column":2,"tags_style":"blur","masonry":{"batch_size":12,"initial_batch_size":24}},"home":{"sidebar":{"enable":true,"position":"left","first_item":"menu","announcement":"专注于嵌入式与储能系统技术分享","show_on_mobile":true,"links":{"Archives":{"path":"/archives/","icon":"fa-regular fa-archive"},"Tags":{"path":"/tags/","icon":"fa-regular fa-tags"},"Categories":{"path":"/categories/","icon":"fa-regular fa-folder"}}},"article_date_format":"auto","excerpt_length":200,"categories":{"enable":true,"limit":3},"tags":{"enable":true,"limit":3}},"footer":{"runtime":true,"icon":"<i class=\"fa-solid fa-heart fa-beat\" style=\"--fa-animation-duration: 0.5s; color: #f54545\"></i>","start":"2022/8/17 11:45:14","statistics":true,"customize":null,"icp":{"enable":false,"number":null,"url":null},"since":2025,"custom":null,"copyright":true,"theme":{"enable":true},"counter":true},"footerStart":"2022/8/17 11:45:14","mermaid":{"style":{"light":"default","dark":"dark"}}};
+    window.lang_ago = {"second":"%s 秒前","minute":"%s 分钟前","hour":"%s 小时前","day":"%s 天前","week":"%s 周前","month":"%s 个月前","year":"%s 年前"};
+    window.i18n = {"search":"站内搜索您需要的内容...","toc":"目录","prev":"上一页","next":"下一页","prev_posts":"上一篇","next_posts":"下一篇","page":"第 %d 页","recent_posts":"最新文章","share":"分享","powered_by":"由 %s 驱动","theme":"主题","rss_feed":"RSS Feed","category":"分类","categories":"分类","tag":"标签","tags":"标签","post":"文章","posts":"文章","tagcloud":"标签云","comment":"评论","comments":"评论","top":"置顶","sticky":"置顶","go-back-home":"回到首页","masonry_loading":"照片加载中...","image_viewer":"图片查看器","close":"关闭","exif":{"title":"EXIF","cards":{"camera":"相机","lens":"镜头","exposure":"曝光","other":"其他"},"fields":{"make":"品牌","model":"机型","date_taken":"拍摄时间","lens_model":"镜头","focal_length":"焦距","focus_mode":"对焦模式","shutter":"快门","aperture":"光圈","iso":"感光度","exposure_program":"曝光程序","exposure_compensation":"曝光补偿","metering_mode":"测光模式","flash":"闪光灯","white_balance":"白平衡","latitude":"纬度","longitude":"经度","altitude":"海拔"},"status":{"loading":"加载中...","no_exif":"无 EXIF 信息","library_missing":"EXIF 库未加载","image_source_missing":"图片地址不可用","unavailable":"EXIF 不可用（可能被 CORS 阻止或缺少元数据）","flag_unavailable":"EXIF 不可用"}},"home":"首页","archive":"归档","archives":"归档","about":"关于","links":"链接","link":"链接","friends":"友情链接","friend":"友情链接","timeline":"时间轴","shuoshuo":"说说","bookmarks":"书签","site_uv":"访问人数","site_pv":"总访问量","read_more":"阅读全文","wordcount":"字","min2read":"分钟","changelog":"更新日志","status":"状态","runtime":"博客已运行","days":"天","hours":"小时","minutes":"分钟","seconds":"秒","optimized_by":"并由 Evan 进行优化","rights":"版权所有","site_posts":"共撰写了 %s 篇文章","site_wordcount":"共 %s 字","copyright":{"title":"标题","author":"作者","link":"链接","create_time":"创建于","update_time":"更新于","license_title":"版权声明","license_content":"本文章采用 %s 进行许可。","all_rights_reserved":"版权所有 &#169 %s，禁止转载。","public_domain":"本文为公有领域作品，可自由转载、引用。"},"ago":{"second":"%s 秒前","minute":"%s 分钟前","hour":"%s 小时前","day":"%s 天前","week":"%s 周前","month":"%s 个月前","year":"%s 年前"},"create_time":"创建","update_time":"更新","expired":"这篇文章最后更新于 %s 天前，内容可能已经过时。"};
+    window.data = {"masonry":false};
+  </script>
+    
+    <!--- Fontawesome Part-->
+    
+<link rel="stylesheet" href="/fontawesome/fontawesome.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/brands.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/solid.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/regular.min.css">
+
+    
+    
+    
+    
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+	<div class="progress-bar-container">
+	
+
+	
+	<span class="pjax-progress-bar"></span>
+	<!--        <span class="swup-progress-icon">-->
+	<!--            <i class="fa-solid fa-circle-notch fa-spin"></i>-->
+	<!--        </span>-->
+	
+</div>
+
+<main class="page-container" id="swup">
+
+	
+
+	<div class="main-content-container flex flex-col justify-between min-h-dvh">
+		<div class="main-content-header">
+			<header class="navbar-container px-6 md:px-12">
+    <div class="navbar-content transition-navbar ">
+        <div class="left">
+            
+            <a class="logo-title" href="/">
+                
+                KuangYue&#39;s Blog
+                
+            </a>
+        </div>
+
+        <div class="right">
+            <!-- PC -->
+            <div class="desktop">
+                <ul class="navbar-list">
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/"
+                                        >
+                                    <i class="fa-regular fa-house fa-fw"></i>
+                                    首页
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/archives/"
+                                        >
+                                    <i class="fa-regular fa-archive fa-fw"></i>
+                                    归档
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/tags/"
+                                        >
+                                    <i class="fa-regular fa-tags fa-fw"></i>
+                                    标签
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/categories/"
+                                        >
+                                    <i class="fa-regular fa-folder fa-fw"></i>
+                                    分类
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class="has-dropdown"
+                                   href="#"
+                                        onClick=&#34;return false;&#34;>
+                                    <i class="fa-regular fa-user fa-fw"></i>
+                                    关于
+                                    <i class="fa-solid fa-chevron-down fa-fw"></i>
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                                    <ul class="sub-menu">
+                                        
+                                            <li>
+                                                <a href="/about/">
+                                                    ME
+                                                </a>
+                                            </li>
+                                        
+                                            <li>
+                                                <a target="_blank" rel="noopener" href="https://github.com/kuangyue111">
+                                                    GITHUB
+                                                </a>
+                                            </li>
+                                        
+                                    </ul>
+                                
+                            </li>
+                    
+                    
+                </ul>
+            </div>
+            <!-- Mobile -->
+            <div class="mobile">
+                
+                <div class="icon-item navbar-bar">
+                    <div class="navbar-bar-middle"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile sheet -->
+    <div class="navbar-drawer h-dvh w-full absolute top-0 left-0 bg-background-color flex flex-col justify-between">
+        <ul class="drawer-navbar-list flex flex-col px-4 justify-center items-start">
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/"
+                        >
+                            <span>
+                                首页
+                            </span>
+                            
+                                <i class="fa-regular fa-house fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/archives/"
+                        >
+                            <span>
+                                归档
+                            </span>
+                            
+                                <i class="fa-regular fa-archive fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/tags/"
+                        >
+                            <span>
+                                标签
+                            </span>
+                            
+                                <i class="fa-regular fa-tags fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/categories/"
+                        >
+                            <span>
+                                分类
+                            </span>
+                            
+                                <i class="fa-regular fa-folder fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item-sub text-base my-1.5 flex flex-col w-full">
+                        
+                        <div class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary cursor-pointer text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                             navbar-data-toggle="submenu-About"
+                        >
+                            <span>
+                                关于
+                            </span>
+                            
+                                <i class="fa-solid fa-chevron-right fa-sm fa-fw transition-all"></i>
+                            
+                        </div>
+                        
+
+                        
+                            <div class="flex-col items-start px-2 py-2 hidden" data-target="submenu-About">
+                                
+                                    <div class="drawer-navbar-item text-base flex flex-col justify-center items-start hover:underline active:underline hover:underline-offset-1 rounded-3xl">
+                                        <a class=" text-third-text-color text-xl"
+                                           href="/about/">ME</a>
+                                    </div>
+                                
+                                    <div class="drawer-navbar-item text-base flex flex-col justify-center items-start hover:underline active:underline hover:underline-offset-1 rounded-3xl">
+                                        <a class=" text-third-text-color text-xl"
+                                           target="_blank" rel="noopener" href="https://github.com/kuangyue111">GITHUB</a>
+                                    </div>
+                                
+                            </div>
+                        
+                    </li>
+            
+
+            
+            
+                
+                    
+                    
+                    
+            
+        </ul>
+
+        <div class="statistics flex justify-around my-2.5">
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/tags">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">194</div>
+        <div class="label text-third-text-color text-sm">标签</div>
+    </a>
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/categories">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">16</div>
+        <div class="label text-third-text-color text-sm">分类</div>
+    </a>
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/archives">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">45</div>
+        <div class="label text-third-text-color text-sm">文章</div>
+    </a>
+</div>
+    </div>
+
+    <div class="window-mask"></div>
+
+</header>
+
+
+		</div>
+
+		<div class="main-content-body transition-fade-up">
+			
+
+			<div class="main-content">
+				<div class="post-page-container flex relative justify-between box-border w-full h-full">
+	<div class="article-content-container">
+
+		<div class="article-title relative w-full">
+			
+			<div class="w-full flex items-center pt-6 justify-start">
+				<h1 class="article-title-regular text-second-text-color tracking-tight text-4xl md:text-6xl font-semibold px-2 sm:px-6 md:px-8 py-3">用好NotebookLM立省80%Token</h1>
+			</div>
+			
+		</div>
+
+		
+		<div class="article-header flex flex-row gap-2 items-center px-2 sm:px-6 md:px-8">
+			<div class="avatar w-[46px] h-[46px] shrink-0 rounded-medium border border-border-color p-px">
+				<img src="/images/redefine-avatar.svg">
+			</div>
+			<div class="info flex flex-col justify-between">
+				<div class="author flex items-center">
+					<span class="name text-default-text-color text-lg font-semibold">kuangyue111</span>
+					
+					<span class="author-label ml-1.5 text-xs px-2 py-0.5 rounded-small text-third-text-color border border-shadow-color-1">Lv4</span>
+					
+				</div>
+				<div class="meta-info">
+					<div class="article-meta-info">
+    <span class="article-date article-meta-item">
+        <i class="fa-regular fa-pen-fancy"></i>&nbsp;
+        <span class="desktop">2026-07-14 20:00</span>
+        <span class="mobile">2026-07-14 20:00</span>
+        <span class="hover-info">创建</span>
+    </span>
+    
+        <span class="article-date article-meta-item">
+            <i class="fa-regular fa-wrench"></i>&nbsp;
+            <span class="desktop">2026-07-14 19:31:29</span>
+            <span class="mobile">2026-07-14 19:31:29</span>
+            <span class="hover-info">更新</span>
+        </span>
+    
+
+    
+        <span class="article-categories article-meta-item">
+            <i class="fa-regular fa-folders"></i>&nbsp;
+            <ul>
+                
+                
+                    
+                        
+                        <li>
+                            <a href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/">技术分享</a>&nbsp;
+                        </li>
+                    
+                    
+                
+                    
+                        
+                            <li>></li>
+                        
+                        <li>
+                            <a href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/AI%E5%B7%A5%E5%85%B7/">AI工具</a>&nbsp;
+                        </li>
+                    
+                    
+                
+            </ul>
+        </span>
+    
+    
+        <span class="article-tags article-meta-item">
+            <i class="fa-regular fa-tags"></i>&nbsp;
+            <ul>
+                
+                    <li>
+                        <a href="/tags/Claude/">Claude</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/NotebookLM/">NotebookLM</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E7%9C%81%E9%92%B1/">省钱</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E6%95%88%E7%8E%87%E5%B7%A5%E5%85%B7/">效率工具</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/AI%E5%B7%A5%E5%85%B7/">AI工具</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/Google/">Google</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/AI%E5%B7%A5%E4%BD%9C%E6%B5%81/">AI工作流</a>&nbsp;
+                    </li>
+                
+            </ul>
+        </span>
+    
+
+    
+    
+    
+    
+        <span class="article-pv article-meta-item">
+            <i class="fa-regular fa-eye"></i>&nbsp;<span id="busuanzi_value_page_pv"></span>
+        </span>
+    
+</div>
+
+				</div>
+			</div>
+		</div>
+		
+
+		
+
+
+		<div class="article-content markdown-body px-2 sm:px-6 md:px-8 pb-8">
+			<h1 id="用好NotebookLM立省80-Token"><a href="#用好NotebookLM立省80-Token" class="headerlink" title="用好NotebookLM立省80%Token"></a>用好NotebookLM立省80%Token</h1><p>用好NotebookLM立省80%Token</p>
+<hr>
+<p>上个月我把 Claude 从 Pro 升到 Max，$200 一个月，心想这下总该用够用了吧。</p>
+<p>第五天：本周额度已耗尽。</p>
+<p>翻使用日志我才看清楚钱花在哪。一次调研 47 篇论文的下午会话，单次就吃掉一周 10% 的额度。这种会话一周跑两三次，额度自然撑不住。</p>
+<p>·问题在我一直让 Claude 干它不擅长的事——当全文检索引擎。</p>
+<p>一坨 50k 字符的日志塞进对话，问一个问题，日志全文就要被算一次 input token；再问个，就算命中了 prompt cache（单价只剩 1&#x2F;10），主会话也会随轮次缓慢累加。更糟的是 cache 有 1h TTL，间隔久了就得重写一次全价。这就好比每次问律师问题，都让他把你 50 页的合同先朗读一遍再开口。</p>
+<p>Claude Code 擅长推理、编排、写代码。读原始语料这件事该让别的工具干，Claude 只看结论。顺着这个思路找下去，我想到了 NotebookLM。</p>
+<p>跟着这篇配置一遍，你 $20 的账号能干出 $200 的活。</p>
+<p>导读</p>
+<p>长文，按兴趣挑着看：</p>
+<p>• 一：NotebookLM 是什么 + 能干什么</p>
+<p>• 二：为什么要再套一层 Claude</p>
+<p>• 三：装 skill，10 分钟动手</p>
+<p>• 四：实测 token 账 + 原理拆解</p>
+<p>• 五：学者 &#x2F; 学生工作流</p>
+<p>• 六：打新股 &#x2F; 读招股书 工作流</p>
+<p>• 七：个人知识库工作流</p>
+<p>• 总结</p>
+<p>想先看工作流，直接跳到第五部分——找到你那一类看就行。</p>
+<p>一句话论点</p>
+<p>真正省 Claude token 的办法不是开 cache，是让重数据一开始就不进 Claude。</p>
+<p>具体做法：让 NotebookLM 存储语料和检索，Claude 只做推理和编排。两者分工清晰，用一个比喻概括——</p>
+<p>NotebookLM 是老师：你亲自采集进去的论文、财报、笔记形成它的知识库。你问它，它答经验，答案带引用，边界在源内，不乱外推。Claude 是助手：负责写代码、跑脚本、整理结果、编排工具。不懂就去问老师，拿到答案继续干活。你是课题负责人：只在关键决策点介入。</p>
+<p>关键原理，为什么这样分工省钱</p>
+<p>一、RAG vs 塞 context 是两种不同的成本模型。 把 50k 字符日志塞进 Claude 对话，这坨数据就被算进 input token。每问一次就要被”看”一次，成本随语料大小线性涨。走 RAG 则是 NotebookLM 内部用向量检索命中相关片段，Claude 只看到几百字的蒸馏答案，成本近乎常数。</p>
+<p>二、prompt cache 有 1h TTL，研究场景命中率很低。 很多人以为开了 cache 就万事大吉。实际 Anthropic 的 prompt cache 默认只存 1 小时，超时就自动失效；你思考几分钟、切去做别的、或者开新 session，下一次调用就得按全价把语料重写一次 cache_creation。研究性会话恰好是”问一下、想一会、再问一下”的节奏，命中率常常惨不忍睹。这是账单暴涨的真正原因。</p>
+<p>三、基于事实输出会更有效 NotebookLM 的答案被约束在你上传的源里，每句话带 [1][2] 引用，点回原文。不会胡编。Claude 拿这种答案做决策，不用反复让它”再确认一下”，省下的是更难量化的那部分时间成本。</p>
+<p>谁不用看下面了</p>
+<p>• 语料 &lt; 5k tokens、只查一两次——直接问 Claude，别折腾</p>
+<p>• 需求是纯 Q&amp;A、不嵌工作流——打开 notebooklm 网页用就够了</p>
+<p>• 在乎响应速度超过账单——慢 3 倍受不了</p>
+<p>• 要理解代码结构 &#x2F; 跳定义——NotebookLM 更加适合文本 RAG</p>
+<p>谁继续往下读</p>
+<p>• 想要具体的安装步骤和避坑</p>
+<p>• 想看几个场景怎么落地到指令层</p>
+<p>• 在用 Claude Code 想把 NotebookLM 变成一个 skill</p>
+<p>第一部分：先认识 NotebookLM</p>
+<p>第一次打开 NotebookLM 是因为一位朋友安利。她写论文的 reading list 有 60 多篇，以前在 PDF 阅读器里挨个 Ctrl-F，现在把全部论文丢进一个 notebook，问”谁支持 X 观点、谁反对、分歧集中在哪几个变量”——答案带 [1][2][3] 引用直接甩过来，点一下就跳回原文对应段落。</p>
+<p>她说一周能省十几个小时。</p>
+<p>我抱着怀疑态度试了一周，最后上瘾了。下面是这一周攒下的经验，下面是 NotebookLM 使用的优点：</p>
+<p>支持免费档 50 个源 &#x2F; Pro 档 300 个</p>
+<p>处理能力不要钱，上传、索引、生成、对话——全走 Google 的算力</p>
+<p>除了问答，它能把一整个 notebook 直接自动生成音频播客（通勤听最舒服）、思维导图、PPT、闪卡等等。</p>
+<p>播客尤其惊艳——你自己的资料，被两个陌生 AI 用你没想过的角度讲一遍，常常能听出新东西。</p>
+<p>格式从来不是问题：PDF、网页 URL、YouTube 字幕、Google Docs、纯文本粘贴、图片 OCR、音频转写——都能当源。</p>
+<p>光上面这些，NotebookLM 已经是一个非常强的独立工具。如果你的需求就是”坐下来问几个问题”，这篇文章到这里就够了，下面的都不用看。</p>
+<p>但我用着用着发现它卡在2个地方：</p>
+<p>一、心流被切 tab 切烂 调研一个课题：问一个问题 → 得到答案 → 点引用跳原文 → 读完一段 → 回 notebook 复制答案 → 切到 Claude Code 消费→ 做完实验 → 发现少一篇资料 → 切到 Google 搜 → 切到下载 → 切回 notebook 加源 → 继续问……一下午切 200 次 tab。</p>
+<p>二、跟本地工具是两个世界 我排查线上事故时把日志灌进 notebook 后能查。但我还要同时在终端 grep 本地配置、看 k8s events、起 pod 复现——网页不能帮我跑任何本地命令，每次都是”在网页看完 → 手动敲一遍 → 再切回网页”。</p>
+<p>NotebookLM 网页把自己定位成终点——你问它，它答你，结束。但我想让它成为流水线上的一环——被调度、被批处理、输出能流到下一步。</p>
+<p>这是 Claude 登场的地方。</p>
+<p>第二部分：再把 Claude 套上去</p>
+<p>把 NotebookLM 变成 Claude 的一个工具。一件事就够了——Claude 需要领域知识时，自己去问老师。</p>
+<p>流程的形状</p>
+<p>老师（NotebookLM）是只读的咨询台：你一次性把 47 篇论文灌进去就不用再管了，它就在那儿待着等你问。不用回灌、不用喂新笔记——论文本身的观点已经足够撑起所有查询。</p>
+<p>下面这个 prompt 把流程图的六步、工作纪律、具体 notebook ID 全编码进去了，贴进 Claude Code 就能跑（注意替换id）：</p>
+<p>几条线索</p>
+<p>• 47 篇论文原文一次都没进 Claude 对话——主会话 token 只花在推理和代码</p>
+<p>• 老师只被咨询、不参与执行——它的长处是带引用的领域检索</p>
+<p>• 你只在 ① 介入——中间要不要再问一次老师，Claude 自己判断</p>
+<p>• 老师知识库静止不变——47 篇论文就是 47 篇，够用了</p>
+<p>这是”串起来”比”单独用”强的根本原因：省掉的 tab 切换、省下的 token，都是附赠福利。下面讲福利有多大。</p>
+<p>第三部分：安装 NotebookLM Client &amp; skill，让 Claude 认识这个老师</p>
+<p>Google 官方没有提供 NotebookLM client，不过 @icebear0828 已经写了第三方 client 可以连接 NotebookLM，安装后，Agent可以通过命令行或者自然语言访问 NotebookLM。</p>
+<p><a class="link"   target="_blank" rel="noopener" href="https://github.com/icebear0828/notebooklm-client" >https://github.com/icebear0828/notebooklm-client<i class="fa-solid fa-arrow-up-right ml-[0.2em] font-light align-text-top text-[0.7em] link-icon"></i></a> 。</p>
+<p>基础安装：</p>
+<p>装完之后在对话里说”查一下那个 notebook 里 X 的部分”，Claude 会自动调——不用每次解释语法。</p>
+<p>第四部分：实测——到底省多少钱（Opus 4.7）</p>
+<p>下面这组数不是模拟的，是真实一轮研究会话，从 Claude Code 的 session log 里扒出来的。</p>
+<p>NotebookLM 侧那部分 token 上传、检索、生成——Google 全部免费，不进你的账单。下面所有数字只算 Opus 这边。</p>
+<p>测试设置</p>
+<p>• 语料：47 篇图像 + LiDAR SLAM 相关论文，一次性灌进同一个 NotebookLM notebook</p>
+<p>• 模型：Claude Opus 4.7</p>
+<p>• 轮数：5 轮深度问答（从”最适合做 SLAM 重建的方法”一路问到”3DGS vs NeRF 接 SLAM 后端的坑”）</p>
+<p>• 方式：Claude Code 里正常对话，每轮助手自己调 &#x2F;notecraft chat 去问老师</p>
+<p>实测结果（本文做法）</p>
+<p>真正决定账单的是 token input + cache_creation（往缓存写新内容）和 output（生成）。便宜档（cache_read + input）单价不到它们的 1&#x2F;10，这里忽略，只算贵档：</p>
+<p>5 轮贵档合计 $0.55，平均每轮约 $0.11。</p>
+<p>关键数字：cache_creation 只有 17,379</p>
+<p>cache_creation 是每次”往缓存写新内容”的 token，贵档里最容易爆的一档。这次 5 轮里写进缓存的只有每轮老师答案（~3-6k token）+ 少量系统增量——合计 1.7 万。</p>
+<p>47 篇论文的原文一个字都没进 Claude 的 cache_creation——这就是省钱的全部秘密。</p>
+<p>对比：如果把 47 篇论文直接塞 prompt</p>
+<p>47 篇论文实测 38.4 万 words ≈ 50 万 token（从 NotebookLM 官方统计字数算出来）。塞 prompt 的传统做法分两种场景：</p>
+<p>最公平的对比是和”单 session 多轮对话”第二行，——同一研究会话里首轮建 cache、后续复用，是传统做法的最优情况。即使这样，5 轮问答贵档差出 17 倍（$9.59 vs $0.55）。跨 session 场景只会更惨（86 倍）。</p>
+<p>为什么 cache 帮不了传统做法？很多人以为”开了 cache 就万事大吉”。实际 Anthropic 的 prompt cache 默认只有付费档 1 小时），超时就自动失效；加上每次 claude -p 新起 session、思考停顿、切换别的窗口，都会把上一轮 cache 挤出窗口。</p>
+<p>本文做法里论文压根不进 Claude，cache 命不命中都无所谓。</p>
+<p>语料再翻倍（100 篇、200 篇）差距继续线性拉开——传统做法 cache_creation 随论文数线性涨，本文做法基本不变（只随老师答案长度微涨）。</p>
+<p>用 Opus 跑研究的人：200 次研究会话一年就是小两千刀的差距——光”论文不进 Claude”这一个动作，一年省下的够再升一次 Max。</p>
+<p>代价：慢 3 倍</p>
+<p>操作 实测中位耗时     建 notebook + 加一个源 10-15 秒   NotebookLM chat 一次 16-48 秒（中位约 45 秒）   Claude Opus 单问（不过 NotebookLM） 20-35 秒</p>
+<p>如果你在乎每秒响应不是每月账单，这套不适合你。</p>
+<p>接下来的几个部分，作为抛砖引玉，写了三个适合NotbookLM的工作流</p>
+<p>五：学者 &#x2F; 学生工作流</p>
+<p>六：打新股 &#x2F; 读招股书 工作流</p>
+<p>七：个人知识库工作流</p>
+<p>第五部分：研究者 &#x2F; 学生工作流</p>
+<p>reading list 是天然的知识边界。</p>
+<p>痛点：一学期几十篇论文，同一批 PDF 要反复查几十次。以前 Ctrl-F 翻到眼花，问 ChatGPT 又怕它瞎编不带引用。</p>
+<p>语料配方（灌一次用一学期）：</p>
+<p>• 20-50 篇课题相关论文 PDF</p>
+<p>• 课程大纲、讲座字幕</p>
+<p>• 导师邮件、自己的章节草稿、读书笔记</p>
+<p>老师能回答的杀手问题：</p>
+<p>• “哪两篇结论互相冲突，冲突在哪一层假设？”</p>
+<p>• “X 方法在这个语料里出现过几次，各自怎么用的？”</p>
+<p>• “A 论文的公式 3 和 B 论文的公式 7 实际等价吗？”</p>
+<p>Claude 在链路里干嘛：按课题推进——问老师拿概念&#x2F;公式 → 写代码复现 → 跑实验 → 整理笔记。论文原文一次都不进 Claude 会话。</p>
+<p>第六部分：打新股 &#x2F; 读招股书工作流</p>
+<p>一本招股书 300-600 页，打新窗口就三天。靠人读完再决策根本来不及。</p>
+<p>痛点：港股&#x2F;A 股打新节奏快，新股上市前只有聆讯后资料集（港股）或招股意向书（A 股）能看，文档动辄 500 页+，里面有公司介绍、历史沿革、业务模式、财务数据、募资用途、风险因素、基石投资者等 20+ 章节。靠人读：</p>
+<p>• 一家看完至少 4 小时</p>
+<p>• 一周 5-8 家新股，根本来不及</p>
+<p>• 决策窗口就 72 小时，错过就只能下期再打</p>
+<p>而且招股书最有信息量的不是”公司怎么夸自己”，是藏在风险因素、关联交易、历次融资估值里的那些红旗。这部分人眼最容易漏。</p>
+<p>语料配方（一家公司一个 notebook）：</p>
+<p>• 招股书全本（聆讯后资料集 &#x2F; 招股意向书）——必灌，最核心</p>
+<p>• 基石投资者披露表——看谁背书、锁定期多久</p>
+<p>• 同行可比公司最新财报——估值对标的锚</p>
+<p>• 保荐人&#x2F;承销商研报（能搞到的话）——官方定价逻辑</p>
+<p>• 管理层过往访谈、公司过去融资轮估值表——看估值跳涨节奏</p>
+<p>• 行业监管政策文件（如医药的 NMPA、科技的相关新规）——决定行业天花板的外部变量</p>
+<p>老师能回答的杀手问题：</p>
+<p>判断要不要打，通常就问这 8 个——每个都是 200 页招股书里找半天的那种：</p>
+<p>“核心产品&#x2F;业务是什么？近 3 年收入结构变化如何？客户集中度？”</p>
+<p>“这家和同行（A、B、C）在毛利率、营收增速、研发占比上的差异在哪？”</p>
+<p>“基石投资者是谁、认购金额、锁定期？基石里有没有知名产业资本？”</p>
+<p>“此次募资用途按比例拆，哪部分最大？募资完成后控股股东持股稀释到多少？”</p>
+<p>“风险因素里，哪些是行业共性（可以对照同行打折看），哪些是公司特有（必须警惕）？”</p>
+<p>“过往融资估值：上一轮估值 &#x2F; IPO 估值的跳涨倍数？上轮投资人锁定期多久？”</p>
+<p>“历史财务有没有一次性收益把利润做高的痕迹？过去 3 年经营现金流和净利润是否匹配？”</p>
+<p>“关联交易占营收比多少？前五大客户里有没有关联方？”</p>
+<p>每个问题都带 [页码] 引用——老师会直接把招股书里对应的那段甩给你，不用再翻 PDF。</p>
+<p>Claude 在链路里干嘛：</p>
+<p>批处理就是这个工作流的灵魂:</p>
+<p>一周打新池 &#x3D; [新股A, 新股B, 新股C, …]</p>
+<p>最后 Claude 把 8 家的一页汇总成一张 markdown 决策表 → 你 15 分钟扫完下单。</p>
+<p>一周打新池 5-8 家 &#x3D; 40-64 次查询，全程论文（这里是招股书）不进 Claude 对话——单本招股书 150-250k token，5 家就是 100 万 token 的语料量，传统做法光这一项一周就能烧掉 $50+。走本文做法 $2 以内。</p>
+<p>真实打新场景的增量价值：</p>
+<p>• 压缩决策时长：4 小时&#x2F;家 → 20 分钟&#x2F;家</p>
+<p>• 红旗不会漏：8 个问题里第 5、7、8 项（风险、财务调整、关联交易）是散户最常忽略的，老师会逐条抠</p>
+<p>• 跨家对比：港股同一周常有 3 家同行业公司同时招股，用同一套模板跑完直接能排序</p>
+<p>第七部分：个人知识库工作流</p>
+<p>给自己建”第二大脑”。</p>
+<p>痛点：Obsidian 搜索只认关键词，答不出”我对 X 的看法这三年变过没”。所有笔记都是自己写的，合规上没顾虑，但体量散、格式杂，本地没工具能跨文件做语义检索。</p>
+<p>语料配方（一股脑全灌，之后增量补）：</p>
+<p>• Obsidian &#x2F; Notion 全量导出</p>
+<p>• Kindle 高亮、Readwise 剪藏</p>
+<p>• 工作日记、会议纪要、复盘文档</p>
+<p>老师能回答的杀手问题：</p>
+<p>• “我这三年对’专注力’写过什么？观点变了吗？”</p>
+<p>• “《原则》和《思考快与慢》对认知偏差的说法，哪里重叠哪里冲突？”</p>
+<p>• “过去一个月所有会议纪要里，X 项目各人的态度分别是什么？”</p>
+<p>Claude 在链路里干嘛：主题演进类问题本来就需要对话式 AI + 全量语料。Claude 负责把老师的多轮答案合成结构化总结（时间轴、观点对比表、待跟进清单）。</p>
+<p>三个工作流的共同点：反复查、跨文档、私有边界——占任何一条，建库 15 秒成本一周内摊平。</p>
+<p>最后</p>
+<p>有一些值得注意的：</p>
+<p>storage_state.json 里面是你 Google 的活 session。注意保管。</p>
+<p>notebooklm-client 是逆向 NotebookLM 内部协议做出来的。Google 不认账，随时可能改后端让你的命令突然报错。</p>
+<p>这套东西的核心就一句话——分工：</p>
+<p>• NotebookLM 当老师：答领域知识，带引用，不乱外推</p>
+<p>• Claude 当助手：编排工具、写代码、整理结果，不懂就问老师</p>
+<p>• 你当课题负责人：只在关键决策点介入</p>
+<p>我用了一个月，省下来的钱够再吃好几顿大餐。但更重要的是，调研十几篇论文不再让我心疼额度了——这种”不用算账”的爽，比省钱本身还上瘾。</p>
+<hr>
+<p>Source added by Web Clipper for NotebookLM Chrome Extension</p>
+
+		</div>
+
+		
+		<div class="post-copyright-info w-full my-8 px-2 sm:px-6 md:px-8">
+			<div class="article-copyright-info-container">
+    <ul>
+        <li><strong>标题:</strong> 用好NotebookLM立省80%Token</li>
+        <li><strong>作者:</strong> kuangyue111</li>
+        <li><strong>创建于
+                :</strong> 2026-07-14 20:00:00</li>
+        
+            <li>
+                <strong>更新于
+                    :</strong> 2026-07-14 19:31:29
+            </li>
+        
+        <li>
+            <strong>链接:</strong> https://kuangyue111.github.io/2026/07/14/2026-07-14-notebooklm-save-token/
+        </li>
+        <li>
+            <strong>
+                版权声明:
+            </strong>
+            
+
+            
+                本文章采用 <a class="license" target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0">CC BY-NC-SA 4.0</a> 进行许可。
+            
+        </li>
+    </ul>
+</div>
+
+		</div>
+		
+
+		
+		<ul class="post-tags-box text-lg mt-1.5 flex-wrap justify-center flex md:hidden">
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/Claude/">#Claude</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/NotebookLM/">#NotebookLM</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E7%9C%81%E9%92%B1/">#省钱</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E6%95%88%E7%8E%87%E5%B7%A5%E5%85%B7/">#效率工具</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/AI%E5%B7%A5%E5%85%B7/">#AI工具</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/Google/">#Google</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/AI%E5%B7%A5%E4%BD%9C%E6%B5%81/">#AI工作流</a>&nbsp;
+			</li>
+			
+		</ul>
+		
+
+		
+
+		
+		<div class="article-nav my-8 flex justify-between items-center px-2 sm:px-6 md:px-8">
+			
+			<div class="article-prev border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
+				<a class="prev" rel="prev" href="/2026/07/24/2026-07-24-amber-modbus-tcp-charger-troubleshooting/">
+					<span class="left arrow-icon flex justify-center items-center">
+						<i class="fa-solid fa-chevron-left"></i>
+					</span>
+					<span class="title flex justify-center items-center">
+						<span class="post-nav-title-item truncate max-w-48">充电桩Modbus TCP采集模块踩坑实录：从Too many data到并发死锁的完整修复</span>
+						<span class="post-nav-item">上一篇</span>
+					</span>
+				</a>
+			</div>
+			
+			
+			<div class="article-next border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
+				<a class="next" rel="next" href="/2026/07/14/2026-07-14-peak-valley-economic-model/">
+					<span class="title flex justify-center items-center">
+						<span class="post-nav-title-item truncate max-w-48">工商储能峰谷套利的经济模型与工程实现——从 EMS 代码看储能收益</span>
+						<span class="post-nav-item">下一篇</span>
+					</span>
+					<span class="right arrow-icon flex justify-center items-center">
+						<i class="fa-solid fa-chevron-right"></i>
+					</span>
+				</a>
+			</div>
+			
+		</div>
+		
+
+
+		
+		<div class="comment-container px-2 sm:px-6 md:px-8 pb-8">
+			<div class="comments-container mt-10 w-full ">
+    <div id="comment-anchor" class="w-full h-2.5"></div>
+    <div class="comment-area-title w-full my-1.5 md:my-2.5 text-xl md:text-3xl font-bold">
+        评论
+    </div>
+    
+
+        
+            
+    <div id="waline"></div>
+    <script type="module" data-swup-reload-script>
+      import { init } from '/js/libs/waline.js';
+
+      (function() {
+        const startPath = location.pathname;
+        const startTime = Date.now();
+        const retryDelay = 200;
+        const retryLimit = 5000;
+
+        const runWaline = () => {
+          if (location.pathname !== startPath) {
+            return;
+          }
+
+          const container = document.getElementById('waline');
+          if (!container) {
+            if (Date.now() - startTime < retryLimit) {
+              setTimeout(runWaline, retryDelay);
+            }
+            return;
+          }
+
+          if (window.redefineWalineInstance?.destroy) {
+            window.redefineWalineInstance.destroy();
+          }
+
+          container.innerHTML = '';
+          window.redefineWalineInstance = init({
+            el: '#waline',
+            serverURL: 'https://example.example.com',
+            path: location.pathname,
+            dark: 'body[class~="dark-mode"]',
+            reaction: false,
+            requiredMeta: ['nick', 'mail'],
+            emoji: [],
+                      lang: 'zh-CN',
+          });
+        };
+
+        runWaline();
+      })();
+    </script>
+
+
+
+        
+    
+</div>
+
+		</div>
+		
+	</div>
+
+	
+	<div class="toc-content-container">
+		<div class="post-toc-wrap">
+	<div class="post-toc">
+		<div class="toc-title">目录</div>
+		<div class="page-title">用好NotebookLM立省80%Token</div>
+		<ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%94%A8%E5%A5%BDNotebookLM%E7%AB%8B%E7%9C%8180-Token"><span class="nav-text">用好NotebookLM立省80%Token</span></a></li></ol>
+
+	</div>
+</div>
+	</div>
+	
+</div>
+
+			</div>
+
+			
+		</div>
+
+		<div class="main-content-footer">
+			<footer class="footer mt-5 py-5 h-auto text-base text-third-text-color relative border-t-2 border-t-border-color">
+    <div class="info-container py-3 text-center">
+        
+        <div class="text-center">
+            &copy;
+            
+              <span>2022</span>
+              -
+            
+            2026&nbsp;&nbsp;<i class="fa-solid fa-heart fa-beat" style="--fa-animation-duration: 0.5s; color: #f54545"></i>&nbsp;&nbsp;<a href="/">kuangyue111</a>
+            
+                
+                <p class="post-count space-x-0.5">
+                    <span>
+                        共撰写了 45 篇文章
+                    </span>
+                    
+                </p>
+            
+        </div>
+        
+            <script data-swup-reload-script src="https://cn.vercount.one/js"></script>
+            <div class="relative text-center lg:absolute lg:right-[20px] lg:top-1/2 lg:-translate-y-1/2 lg:text-right">
+                
+                    <span id="busuanzi_container_site_uv" class="lg:!block">
+                        <span class="text-sm">访问人数</span>
+                        <span id="busuanzi_value_site_uv"></span>
+                    </span>
+                
+                
+                    <span id="busuanzi_container_site_pv" class="lg:!block">
+                        <span class="text-sm">总访问量</span>
+                        <span id="busuanzi_value_site_pv"></span>
+                    </span>
+                
+            </div>
+        
+        <div class="relative text-center lg:absolute lg:left-[20px] lg:top-1/2 lg:-translate-y-1/2 lg:text-left">
+            <span class="lg:block text-sm">由 <?xml version="1.0" encoding="utf-8"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg class="relative top-[2px] inline-block align-baseline" version="1.1" id="圖層_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="1rem" height="1rem" viewBox="0 0 512 512" enable-background="new 0 0 512 512" xml:space="preserve"><path fill="#0E83CD" d="M256.4,25.8l-200,115.5L56,371.5l199.6,114.7l200-115.5l0.4-230.2L256.4,25.8z M349,354.6l-18.4,10.7l-18.6-11V275H200v79.6l-18.4,10.7l-18.6-11v-197l18.5-10.6l18.5,10.8V237h112v-79.6l18.5-10.6l18.5,10.8V354.6z"/></svg><a target="_blank" class="text-base" href="https://hexo.io">Hexo</a> 驱动</span>
+            <span class="text-sm lg:block">主题&nbsp;<a class="text-base" target="_blank" href="https://github.com/EvanNotFound/hexo-theme-redefine">Redefine v2.9.0</a></span>
+        </div>
+        
+        
+            <div>
+                博客已运行 <span class="odometer" id="runtime_days" ></span> 天 <span class="odometer" id="runtime_hours"></span> 小时 <span class="odometer" id="runtime_minutes"></span> 分钟 <span class="odometer" id="runtime_seconds"></span> 秒
+            </div>
+        
+        
+            <script data-swup-reload-script>
+                try {
+                    function odometer_init() {
+                    const elements = document.querySelectorAll('.odometer');
+                    elements.forEach(el => {
+                        new Odometer({
+                            el,
+                            format: '( ddd).dd',
+                            duration: 200
+                        });
+                    });
+                    }
+                    odometer_init();
+                } catch (error) {}
+            </script>
+        
+        
+        
+    </div>  
+</footer>
+		</div>
+	</div>
+
+	
+	<div class="post-tools">
+		<div class="post-tools-container">
+	<ul class="article-tools-list">
+		<!-- TOC aside toggle -->
+		
+		<li class="right-bottom-tools page-aside-toggle">
+			<i class="fa-regular fa-outdent"></i>
+		</li>
+		
+
+		<!-- go comment -->
+		
+		<li class="go-comment">
+			<i class="fa-regular fa-comments"></i>
+		</li>
+		
+	</ul>
+</div>
+	</div>
+	
+
+	<div class="right-side-tools-container">
+		<div class="side-tools-container">
+	<ul class="hidden-tools-list">
+		<li class="right-bottom-tools tool-font-adjust-plus flex justify-center items-center">
+			<i class="fa-regular fa-magnifying-glass-plus"></i>
+		</li>
+
+		<li class="right-bottom-tools tool-font-adjust-minus flex justify-center items-center">
+			<i class="fa-regular fa-magnifying-glass-minus"></i>
+		</li>
+
+		<li class="right-bottom-tools tool-dark-light-toggle flex justify-center items-center">
+			<i class="fa-regular fa-moon"></i>
+		</li>
+
+		<!-- rss -->
+		
+
+		
+
+		<li class="right-bottom-tools tool-scroll-to-bottom flex justify-center items-center">
+			<i class="fa-regular fa-arrow-down"></i>
+		</li>
+	</ul>
+
+	<ul class="visible-tools-list">
+		<li class="right-bottom-tools toggle-tools-list flex justify-center items-center">
+			<i class="fa-regular fa-cog fa-spin"></i>
+		</li>
+		
+		<li class="right-bottom-tools tool-scroll-to-top flex justify-center items-center">
+			<i class="arrow-up fas fa-arrow-up"></i>
+			<span class="percent"></span>
+		</li>
+		
+		
+	</ul>
+</div>
+	</div>
+
+	<div class="image-viewer-container" role="dialog" aria-modal="true" aria-label="图片查看器">
+	<button class="image-viewer-close" type="button" aria-label="关闭">
+		<i class="fa-solid fa-xmark"></i>
+	</button>
+	<button class="image-viewer-prev" type="button" aria-label="上一页">
+		<i class="fa-solid fa-chevron-left"></i>
+	</button>
+	<div class="image-viewer-frame">
+		<img src="" alt="">
+	</div>
+	<div class="image-viewer-exif-panel hidden absolute left-1/2 bottom-20 -translate-x-1/2 w-[min(92vw,420px)] max-h-[60vh] overflow-hidden rounded-2xl bg-background-color-transparent-80 p-4 text-left shadow-redefine-flat backdrop-blur-md" role="dialog" aria-label="EXIF" aria-hidden="true">
+		<div class="flex items-center justify-between mb-3">
+			<span class="text-sm font-semibold text-first-text-color">EXIF</span>
+			<button class="image-viewer-exif-close flex h-8 w-8 items-center justify-center rounded-full bg-background-color-transparent-80 text-first-text-color transition hover:bg-background-color-transparent-40" type="button" aria-label="关闭">
+				<i class="fa-solid fa-xmark text-[0.65rem]"></i>
+			</button>
+		</div>
+		<div class="image-viewer-exif-cards grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto pr-1 scrollbar-hide"></div>
+		<template class="image-viewer-exif-card-template">
+			<div class="rounded-lg bg-background-color-transparent-40 px-3 py-2">
+				<div class="image-viewer-exif-card-header flex items-center gap-2 mb-1">
+					<i class="image-viewer-exif-card-icon fa-solid fa-circle-info text-xs text-third-text-color"></i>
+					<div class="image-viewer-exif-card-title text-xs font-semibold text-first-text-color"></div>
+				</div>
+				<div class="image-viewer-exif-card-items flex flex-col gap-1"></div>
+			</div>
+		</template>
+	</div>
+	<button class="image-viewer-exif-toggle flex items-center gap-2 hidden absolute left-1/2 bottom-6 -translate-x-1/2 rounded-full border border-border-color bg-background-color-transparent-80 px-4 py-2 text-first-text-color backdrop-blur-md transition hover:bg-background-color-transparent-40" type="button" aria-label="EXIF" aria-expanded="false">
+		<i class="fa-solid fa-circle-info text-xs"></i>
+		<span class="text-xs font-semibold uppercase tracking-wider">EXIF</span>
+	</button>
+	<button class="image-viewer-next" type="button" aria-label="下一页">
+		<i class="fa-solid fa-chevron-right"></i>
+	</button>
+</div>
+
+
+	
+
+</main>
+
+
+
+<script src="/js/build/libs/Swup.min.js"></script>
+
+<script src="/js/build/libs/SwupSlideTheme.min.js"></script>
+
+<script src="/js/build/libs/SwupScriptsPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupProgressPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupScrollPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupPreloadPlugin.min.js"></script>
+
+<script>
+    window.swup = new Swup({
+        plugins: [
+            new SwupScriptsPlugin({
+                optin: true,
+            }),
+            new SwupProgressPlugin(),
+            new SwupScrollPlugin({
+                offset: 80,
+            }),
+            new SwupSlideTheme({
+                mainElement: ".main-content-body",
+            }),
+            new SwupPreloadPlugin(),
+        ],
+        containers: ["#swup"],
+    });
+
+    window.dispatchEvent(
+        new CustomEvent("redefine:swup:ready", {
+            detail: {
+                swup: window.swup,
+            },
+        }),
+    );
+</script>
+
+
+
+
+	
+<script src="/js/build/main.js" type="module"></script>
+
+
+
+    
+<script src="/js/build/libs/odometer.min.js"></script>
+
+    
+<link rel="stylesheet" href="/assets/odometer-theme-minimal.css">
+
+
+
+
+
+
+
+  
+<script src="/js/build/libs/Typed.min.js"></script>
+
+
+
+
+
+
+
+
+
+
+<script src="/js/build/libs/moment-with-locales.min.js" data-swup-reload-script=""></script>
+
+
+
+	
+</body>
+
+</html>

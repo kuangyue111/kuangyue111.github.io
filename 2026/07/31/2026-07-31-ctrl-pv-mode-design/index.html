@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="keywords" content="Hexo Theme Redefine">
+    
+    
+    <meta name="author" content="kuangyue111">
+    
+    <!-- Completely eliminate flash of wrong theme -->
+    <script>
+        (function() {
+            const THEME_KEY = "REDEFINE-THEME-STATUS";
+            const DARK = "dark", LIGHT = "light";
+            
+            // Get preferred theme
+            function getTheme() {
+                try {
+                    const saved = localStorage.getItem(THEME_KEY);
+                    if (saved) {
+                        const { isDark } = JSON.parse(saved);
+                        return isDark ? DARK : LIGHT;
+                    }
+                } catch (e) {}
+                
+                return matchMedia("(prefers-color-scheme: dark)").matches ? DARK : LIGHT;
+            }
+            
+            // Apply theme to document
+            function applyTheme(theme) {
+                const isDark = theme === DARK;
+                const root = document.documentElement;
+                
+                // Set classes for compatibility
+                root.classList.add(theme);
+                root.classList.remove(isDark ? LIGHT : DARK);
+                root.style.colorScheme = theme;
+            }
+            
+            // Initial application
+            const theme = getTheme();
+            applyTheme(theme);
+            
+            // Listen for system preference changes
+            matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ({ matches }) => {
+                // Only update if using system preference (no localStorage entry)
+                if (!localStorage.getItem(THEME_KEY)) {
+                    applyTheme(matches ? DARK : LIGHT);
+                }
+            });
+            
+            // Set body classes ASAP (before DOMContentLoaded)
+            (function() {
+                const addBodyClass = () => {
+                    const b = document.body;
+                    if (!b) return false;
+                    b.classList.add(theme + "-mode");
+                    return true;
+                };
+
+                // Try immediately
+                if (addBodyClass()) return;
+
+                // Observe until body exists
+                const mo = new MutationObserver(() => {
+                    if (addBodyClass()) mo.disconnect();
+                });
+                mo.observe(document.documentElement, { childList: true, subtree: true });
+            })();
+        })();
+    </script>
+    
+    <!-- preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    
+    <!--- Seo Part-->
+    
+    <link rel="canonical" href="https://kuangyue111.github.io/2026/07/31/2026-07-31-ctrl-pv-mode-design/"/>
+    <meta name="robots" content="index,follow">
+    <meta name="googlebot" content="index,follow">
+    <meta name="revisit-after" content="1 days">
+    
+    
+        
+        <meta name="description" content="Hexo Theme Redefine, Redefine Your Hexo Journey.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="光储系统 AEMS 模块的光伏控制模式设计——从 ctrlPVMode 说起">
+<meta property="og:url" content="https://kuangyue111.github.io/2026/07/31/2026-07-31-ctrl-pv-mode-design/index.html">
+<meta property="og:site_name" content="KuangYue&#39;s Blog">
+<meta property="og:description" content="Hexo Theme Redefine, Redefine Your Hexo Journey.">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://kuangyue111.github.io/images/redefine-og.webp">
+<meta property="article:published_time" content="2026-07-31T01:30:00.000Z">
+<meta property="article:modified_time" content="2026-07-31T01:34:13.653Z">
+<meta property="article:author" content="kuangyue111">
+<meta property="article:tag" content="嵌入式">
+<meta property="article:tag" content="储能">
+<meta property="article:tag" content="光伏">
+<meta property="article:tag" content="AEMS">
+<meta property="article:tag" content="逆变器">
+<meta property="article:tag" content="控制策略">
+<meta property="article:tag" content="防逆流">
+<meta property="article:tag" content="BESS">
+<meta property="article:tag" content="能量管理">
+<meta property="article:tag" content="DAQ">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://kuangyue111.github.io/images/redefine-og.webp">
+    
+    
+    <!--- Icon Part-->
+    <link rel="icon" type="image/png" href="/images/redefine-favicon.svg" sizes="192x192">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/redefine-favicon.svg">
+    <meta name="theme-color" content="#A31F34">
+    <link rel="shortcut icon" href="/images/redefine-favicon.svg">
+    <!--- Page Info-->
+    
+    <title>
+        
+            光储系统 AEMS 模块的光伏控制模式设计——从 ctrlPVMode 说起 | KuangYue&#39;s Blog
+        
+    </title>
+
+    
+<link rel="stylesheet" href="/fonts/Chillax/chillax.css">
+
+
+    <!--- Inject Part-->
+    
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+        
+<link rel="stylesheet" href="/css/build/tailwind.css">
+
+    
+
+    
+<link rel="stylesheet" href="/fonts/GeistMono/geist-mono.css">
+
+    
+<link rel="stylesheet" href="/fonts/Geist/geist.css">
+
+    <!--- Font Part-->
+    
+    
+    
+    
+    
+    
+
+    <script id="hexo-configurations">
+    window.config = {"hostname":"kuangyue111.github.io","root":"/","language":"zh-CN"};
+    window.theme = {"articles":{"style":{"font_size":"16px","line_height":1.5,"image_border_radius":"14px","image_alignment":"center","image_caption":false,"link_icon":true,"delete_mask":false,"title_alignment":"left","headings_top_spacing":{"h1":"3.2rem","h2":"2.4rem","h3":"1.9rem","h4":"1.6rem","h5":"1.4rem","h6":"1.3rem"}},"word_count":{"enable":true,"count":true,"min2read":true},"author_label":{"enable":true,"auto":false,"list":[]},"code_block":{"copy":true,"style":"mac","highlight_theme":{"light":"github","dark":"vs2015"},"font":{"enable":false,"family":null,"url":null}},"toc":{"enable":true,"max_depth":3,"number":false,"expand":true,"init_open":true},"copyright":{"enable":true,"default":"cc_by_nc_sa"},"lazyload":true,"pangu_js":false,"recommendation":{"enable":false,"title":"推荐阅读","limit":3,"mobile_limit":2,"placeholder":"/images/wallhaven-wqery6-light.webp","skip_dirs":[]}},"colors":{"primary":"#A31F34","secondary":null,"default_mode":"light"},"global":{"fonts":{"chinese":{"enable":false,"family":null,"url":null},"english":{"enable":false,"family":null,"url":null},"title":{"enable":false,"family":null,"url":null}},"content_max_width":"1000px","sidebar_width":"210px","hover":{"shadow":true,"scale":false},"scroll_progress":{"bar":false,"percentage":true},"website_counter":{"url":"https://cn.vercount.one/js","enable":true,"site_pv":true,"site_uv":true,"post_pv":true},"single_page":true,"preloader":{"enable":false,"custom_message":null},"side_tools":{"gear_rotation":true,"auto_expand":false},"open_graph":{"enable":true,"image":"/images/redefine-og.webp","description":"Hexo Theme Redefine, Redefine Your Hexo Journey."},"google_analytics":{"enable":false,"id":null}},"home_banner":{"enable":true,"style":"fixed","image":{"light":"/images/wallhaven-wqery6-light.webp","dark":"/images/wallhaven-wqery6-dark.webp"},"title":"KuangYue's Blog","subtitle":{"text":["专注储能系统与嵌入式开发","记录 NCCU 控制单元架构演进","探索工业物联网与云端对接"],"hitokoto":{"enable":false,"show_author":false,"api":"https://v1.hitokoto.cn"},"typing_speed":100,"backing_speed":80,"starting_delay":500,"backing_delay":1500,"loop":true,"smart_backspace":true},"text_color":{"light":"#fff","dark":"#d1d1b6"},"text_style":{"title_size":"2.8rem","subtitle_size":"1.5rem","line_height":1.2},"custom_font":{"enable":false,"family":null,"url":null},"social_links":{"enable":true,"style":"default","links":[{"icon":"fa-brands fa-github","url":"https://github.com/kuangyue111"},{"icon":"fa-brands fa-twitter","url":null},{"icon":"fa-solid fa-at","url":"you@example.com"},{"icon":"fa-brands fa-telegram","url":null},{"icon":"/images/custom-icon.svg","url":null}],"qrs":[{"icon":"fa-brands fa-weixin","qr":null},{"icon":"/images/custom-icon.svg","qr":null}]}},"plugins":{"feed":{"enable":false},"aplayer":{"enable":false,"type":"fixed","audios":[{"name":null,"artist":null,"url":null,"cover":null,"lrc":null}]},"mermaid":{"theme":{"light":"default","dark":"dark"}},"katex":false,"chart":false},"version":"2.9.0","code_block":{"theme":"light","macStyle":false,"shrink":false,"copy_button":true,"language":true},"navbar":{"auto_hide":false,"color":{"left":"#f78736","right":"#367df7","transparency":35},"width":{"home":"1200px","pages":"1000px"},"links":{"Home":{"path":"/","icon":"fa-regular fa-house"},"Archives":{"path":"/archives/","icon":"fa-regular fa-archive"},"Tags":{"path":"/tags/","icon":"fa-regular fa-tags"},"Categories":{"path":"/categories/","icon":"fa-regular fa-folder"},"About":{"icon":"fa-regular fa-user","submenus":{"Me":"/about/","GitHub":"https://github.com/kuangyue111"}}},"search":{"enable":false,"preload":true}},"page_templates":{"friends_column":2,"tags_style":"blur","masonry":{"batch_size":12,"initial_batch_size":24}},"home":{"sidebar":{"enable":true,"position":"left","first_item":"menu","announcement":"专注于嵌入式与储能系统技术分享","show_on_mobile":true,"links":{"Archives":{"path":"/archives/","icon":"fa-regular fa-archive"},"Tags":{"path":"/tags/","icon":"fa-regular fa-tags"},"Categories":{"path":"/categories/","icon":"fa-regular fa-folder"}}},"article_date_format":"auto","excerpt_length":200,"categories":{"enable":true,"limit":3},"tags":{"enable":true,"limit":3}},"footer":{"runtime":true,"icon":"<i class=\"fa-solid fa-heart fa-beat\" style=\"--fa-animation-duration: 0.5s; color: #f54545\"></i>","start":"2022/8/17 11:45:14","statistics":true,"customize":null,"icp":{"enable":false,"number":null,"url":null},"since":2025,"custom":null,"copyright":true,"theme":{"enable":true},"counter":true},"footerStart":"2022/8/17 11:45:14","mermaid":{"style":{"light":"default","dark":"dark"}}};
+    window.lang_ago = {"second":"%s 秒前","minute":"%s 分钟前","hour":"%s 小时前","day":"%s 天前","week":"%s 周前","month":"%s 个月前","year":"%s 年前"};
+    window.i18n = {"search":"站内搜索您需要的内容...","toc":"目录","prev":"上一页","next":"下一页","prev_posts":"上一篇","next_posts":"下一篇","page":"第 %d 页","recent_posts":"最新文章","share":"分享","powered_by":"由 %s 驱动","theme":"主题","rss_feed":"RSS Feed","category":"分类","categories":"分类","tag":"标签","tags":"标签","post":"文章","posts":"文章","tagcloud":"标签云","comment":"评论","comments":"评论","top":"置顶","sticky":"置顶","go-back-home":"回到首页","masonry_loading":"照片加载中...","image_viewer":"图片查看器","close":"关闭","exif":{"title":"EXIF","cards":{"camera":"相机","lens":"镜头","exposure":"曝光","other":"其他"},"fields":{"make":"品牌","model":"机型","date_taken":"拍摄时间","lens_model":"镜头","focal_length":"焦距","focus_mode":"对焦模式","shutter":"快门","aperture":"光圈","iso":"感光度","exposure_program":"曝光程序","exposure_compensation":"曝光补偿","metering_mode":"测光模式","flash":"闪光灯","white_balance":"白平衡","latitude":"纬度","longitude":"经度","altitude":"海拔"},"status":{"loading":"加载中...","no_exif":"无 EXIF 信息","library_missing":"EXIF 库未加载","image_source_missing":"图片地址不可用","unavailable":"EXIF 不可用（可能被 CORS 阻止或缺少元数据）","flag_unavailable":"EXIF 不可用"}},"home":"首页","archive":"归档","archives":"归档","about":"关于","links":"链接","link":"链接","friends":"友情链接","friend":"友情链接","timeline":"时间轴","shuoshuo":"说说","bookmarks":"书签","site_uv":"访问人数","site_pv":"总访问量","read_more":"阅读全文","wordcount":"字","min2read":"分钟","changelog":"更新日志","status":"状态","runtime":"博客已运行","days":"天","hours":"小时","minutes":"分钟","seconds":"秒","optimized_by":"并由 Evan 进行优化","rights":"版权所有","site_posts":"共撰写了 %s 篇文章","site_wordcount":"共 %s 字","copyright":{"title":"标题","author":"作者","link":"链接","create_time":"创建于","update_time":"更新于","license_title":"版权声明","license_content":"本文章采用 %s 进行许可。","all_rights_reserved":"版权所有 &#169 %s，禁止转载。","public_domain":"本文为公有领域作品，可自由转载、引用。"},"ago":{"second":"%s 秒前","minute":"%s 分钟前","hour":"%s 小时前","day":"%s 天前","week":"%s 周前","month":"%s 个月前","year":"%s 年前"},"create_time":"创建","update_time":"更新","expired":"这篇文章最后更新于 %s 天前，内容可能已经过时。"};
+    window.data = {"masonry":false};
+  </script>
+    
+    <!--- Fontawesome Part-->
+    
+<link rel="stylesheet" href="/fontawesome/fontawesome.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/brands.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/solid.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/regular.min.css">
+
+    
+    
+    
+    
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+	<div class="progress-bar-container">
+	
+
+	
+	<span class="pjax-progress-bar"></span>
+	<!--        <span class="swup-progress-icon">-->
+	<!--            <i class="fa-solid fa-circle-notch fa-spin"></i>-->
+	<!--        </span>-->
+	
+</div>
+
+<main class="page-container" id="swup">
+
+	
+
+	<div class="main-content-container flex flex-col justify-between min-h-dvh">
+		<div class="main-content-header">
+			<header class="navbar-container px-6 md:px-12">
+    <div class="navbar-content transition-navbar ">
+        <div class="left">
+            
+            <a class="logo-title" href="/">
+                
+                KuangYue&#39;s Blog
+                
+            </a>
+        </div>
+
+        <div class="right">
+            <!-- PC -->
+            <div class="desktop">
+                <ul class="navbar-list">
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/"
+                                        >
+                                    <i class="fa-regular fa-house fa-fw"></i>
+                                    首页
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/archives/"
+                                        >
+                                    <i class="fa-regular fa-archive fa-fw"></i>
+                                    归档
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/tags/"
+                                        >
+                                    <i class="fa-regular fa-tags fa-fw"></i>
+                                    标签
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/categories/"
+                                        >
+                                    <i class="fa-regular fa-folder fa-fw"></i>
+                                    分类
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class="has-dropdown"
+                                   href="#"
+                                        onClick=&#34;return false;&#34;>
+                                    <i class="fa-regular fa-user fa-fw"></i>
+                                    关于
+                                    <i class="fa-solid fa-chevron-down fa-fw"></i>
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                                    <ul class="sub-menu">
+                                        
+                                            <li>
+                                                <a href="/about/">
+                                                    ME
+                                                </a>
+                                            </li>
+                                        
+                                            <li>
+                                                <a target="_blank" rel="noopener" href="https://github.com/kuangyue111">
+                                                    GITHUB
+                                                </a>
+                                            </li>
+                                        
+                                    </ul>
+                                
+                            </li>
+                    
+                    
+                </ul>
+            </div>
+            <!-- Mobile -->
+            <div class="mobile">
+                
+                <div class="icon-item navbar-bar">
+                    <div class="navbar-bar-middle"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile sheet -->
+    <div class="navbar-drawer h-dvh w-full absolute top-0 left-0 bg-background-color flex flex-col justify-between">
+        <ul class="drawer-navbar-list flex flex-col px-4 justify-center items-start">
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/"
+                        >
+                            <span>
+                                首页
+                            </span>
+                            
+                                <i class="fa-regular fa-house fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/archives/"
+                        >
+                            <span>
+                                归档
+                            </span>
+                            
+                                <i class="fa-regular fa-archive fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/tags/"
+                        >
+                            <span>
+                                标签
+                            </span>
+                            
+                                <i class="fa-regular fa-tags fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/categories/"
+                        >
+                            <span>
+                                分类
+                            </span>
+                            
+                                <i class="fa-regular fa-folder fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item-sub text-base my-1.5 flex flex-col w-full">
+                        
+                        <div class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary cursor-pointer text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                             navbar-data-toggle="submenu-About"
+                        >
+                            <span>
+                                关于
+                            </span>
+                            
+                                <i class="fa-solid fa-chevron-right fa-sm fa-fw transition-all"></i>
+                            
+                        </div>
+                        
+
+                        
+                            <div class="flex-col items-start px-2 py-2 hidden" data-target="submenu-About">
+                                
+                                    <div class="drawer-navbar-item text-base flex flex-col justify-center items-start hover:underline active:underline hover:underline-offset-1 rounded-3xl">
+                                        <a class=" text-third-text-color text-xl"
+                                           href="/about/">ME</a>
+                                    </div>
+                                
+                                    <div class="drawer-navbar-item text-base flex flex-col justify-center items-start hover:underline active:underline hover:underline-offset-1 rounded-3xl">
+                                        <a class=" text-third-text-color text-xl"
+                                           target="_blank" rel="noopener" href="https://github.com/kuangyue111">GITHUB</a>
+                                    </div>
+                                
+                            </div>
+                        
+                    </li>
+            
+
+            
+            
+                
+                    
+                    
+                    
+            
+        </ul>
+
+        <div class="statistics flex justify-around my-2.5">
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/tags">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">194</div>
+        <div class="label text-third-text-color text-sm">标签</div>
+    </a>
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/categories">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">16</div>
+        <div class="label text-third-text-color text-sm">分类</div>
+    </a>
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/archives">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">45</div>
+        <div class="label text-third-text-color text-sm">文章</div>
+    </a>
+</div>
+    </div>
+
+    <div class="window-mask"></div>
+
+</header>
+
+
+		</div>
+
+		<div class="main-content-body transition-fade-up">
+			
+
+			<div class="main-content">
+				<div class="post-page-container flex relative justify-between box-border w-full h-full">
+	<div class="article-content-container">
+
+		<div class="article-title relative w-full">
+			
+			<div class="w-full flex items-center pt-6 justify-start">
+				<h1 class="article-title-regular text-second-text-color tracking-tight text-4xl md:text-6xl font-semibold px-2 sm:px-6 md:px-8 py-3">光储系统 AEMS 模块的光伏控制模式设计——从 ctrlPVMode 说起</h1>
+			</div>
+			
+		</div>
+
+		
+		<div class="article-header flex flex-row gap-2 items-center px-2 sm:px-6 md:px-8">
+			<div class="avatar w-[46px] h-[46px] shrink-0 rounded-medium border border-border-color p-px">
+				<img src="/images/redefine-avatar.svg">
+			</div>
+			<div class="info flex flex-col justify-between">
+				<div class="author flex items-center">
+					<span class="name text-default-text-color text-lg font-semibold">kuangyue111</span>
+					
+					<span class="author-label ml-1.5 text-xs px-2 py-0.5 rounded-small text-third-text-color border border-shadow-color-1">Lv4</span>
+					
+				</div>
+				<div class="meta-info">
+					<div class="article-meta-info">
+    <span class="article-date article-meta-item">
+        <i class="fa-regular fa-pen-fancy"></i>&nbsp;
+        <span class="desktop">2026-07-31 09:30</span>
+        <span class="mobile">2026-07-31 09:30</span>
+        <span class="hover-info">创建</span>
+    </span>
+    
+        <span class="article-date article-meta-item">
+            <i class="fa-regular fa-wrench"></i>&nbsp;
+            <span class="desktop">2026-07-31 09:34:13</span>
+            <span class="mobile">2026-07-31 09:34:13</span>
+            <span class="hover-info">更新</span>
+        </span>
+    
+
+    
+        <span class="article-categories article-meta-item">
+            <i class="fa-regular fa-folders"></i>&nbsp;
+            <ul>
+                
+                
+                    
+                        
+                        <li>
+                            <a href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/">技术分享</a>&nbsp;
+                        </li>
+                    
+                    
+                
+                    
+                        
+                            <li>></li>
+                        
+                        <li>
+                            <a href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/%E5%B5%8C%E5%85%A5%E5%BC%8F%E5%BC%80%E5%8F%91/">嵌入式开发</a>&nbsp;
+                        </li>
+                    
+                    
+                
+            </ul>
+        </span>
+    
+    
+        <span class="article-tags article-meta-item">
+            <i class="fa-regular fa-tags"></i>&nbsp;
+            <ul>
+                
+                    <li>
+                        <a href="/tags/%E5%B5%8C%E5%85%A5%E5%BC%8F/">嵌入式</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E5%82%A8%E8%83%BD/">储能</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E5%85%89%E4%BC%8F/">光伏</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/AEMS/">AEMS</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E9%80%86%E5%8F%98%E5%99%A8/">逆变器</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E6%8E%A7%E5%88%B6%E7%AD%96%E7%95%A5/">控制策略</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E9%98%B2%E9%80%86%E6%B5%81/">防逆流</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/BESS/">BESS</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E8%83%BD%E9%87%8F%E7%AE%A1%E7%90%86/">能量管理</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/DAQ/">DAQ</a>&nbsp;
+                    </li>
+                
+            </ul>
+        </span>
+    
+
+    
+    
+    
+    
+        <span class="article-pv article-meta-item">
+            <i class="fa-regular fa-eye"></i>&nbsp;<span id="busuanzi_value_page_pv"></span>
+        </span>
+    
+</div>
+
+				</div>
+			</div>
+		</div>
+		
+
+		
+
+
+		<div class="article-content markdown-body px-2 sm:px-6 md:px-8 pb-8">
+			<p>光储系统 AEMS 模块的光伏控制模式设计——从 ctrlPVMode 说起</p>
+<p>  一、先说背景</p>
+<p>  在做这个光储一体化项目的过程中，光伏逆变器的控制策略是反复改动最多的模块之一。不是因为逻辑复杂，而是因为现场情况千变万化——有时候储能满了，有时候储能在放电，有时候电网侧功率已经开始往外倒送，什么情况下该让光伏全力输出，什么情况下该收一收，不同的时间节点答案是不一样的。</p>
+<p>  最终我们沉淀出了 ctrlPVMode 这个核心控制模式枚举，用它来统一调度光伏逆变器的出力方式。今天就以这段代码为主线，把整个控制链路的思路说清楚。</p>
+<hr>
+<h1 id="二、三种模式的设计动机"><a href="#二、三种模式的设计动机" class="headerlink" title="二、三种模式的设计动机"></a>二、三种模式的设计动机</h1><p>  代码里枚举的定义非常简洁：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">enum</span> <span class="title">tagCtrlPVMode</span> &#123;</span></span><br><span class="line">    CtrlPVMode_Auto, <span class="comment">// 自动</span></span><br><span class="line">    CtrlPVMode_DAQ,  <span class="comment">// 数采控制</span></span><br><span class="line">    CtrlPVMode_AEMS, <span class="comment">// AEMS控制</span></span><br><span class="line">    CtrlPVMode_MAX</span><br><span class="line">&#125; CtrlPVMode;</span><br></pre></td></tr></table></figure></div>
+<p>  三个值，但背后对应的是两种截然不同的控制哲学。</p>
+<p>  <strong>DAQ（数采控制）</strong>的本质是”放权”。把逆变器交还给本地数采系统，让它自己维持当前的实际输出功率。这在什么时候有意义？——当储能完全不参与、电网也没有明显的倒送风险时，集中式AEMS的介入反而是多余的。给逆变器下一个和它当前输出一模一样的功率指令，等于告诉它”你现在做的就是对的，继续”。</p>
+<p>  AEMS 控制则是另一个极端。AEMS 要全程接管：根据负载功率、储能SOC、电网表计、逆变器额定功率，实时计算出一个最优目标出力值，通过Modbus&#x2F;内部总线写给逆变器。优点是精确，代价是逻辑复杂、参数多。</p>
+<p>  <strong>Auto（自动）</strong>是工程实践里的折中——让DAQ 先判断是否需要接管，不需要的时候交给 AEMS精细控制。这个思路在代码注释里有一句话可以印证：</p>
+<p>  ▎ 光伏自动控制模式：储能充满了且没有放电计划。上级控制模式：其他：储能未充满或者有放电计划。</p>
+<hr>
+<h1 id="三、初始化与热更新"><a href="#三、初始化与热更新" class="headerlink" title="三、初始化与热更新"></a>三、初始化与热更新</h1><p>  ctrlPVMode 的初始化发生在 Initialize() 函数里：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">err = pDPR-&gt;Get(pAEMS-&gt;hSampler, GETTYPE_ST_VAR, <span class="number">991</span>, <span class="number">990</span>, &amp;varV,<span class="number">4</span>);</span><br><span class="line">pAEMS-&gt;ctrlPVMode = (CtrlPVMode)((err==ERR_DPR_OK) ? varV.emValue : CtrlPVMode_Auto);</span><br></pre></td></tr></table></figure></div>
+<p>  设备节点 991&#x2F;990 存储的是配置值，读不到就默认Auto。这个设计体现了一个原则：控制策略在运行时可以被上层系统写入覆盖，也就是”热更新”。</p>
+<p>  在 Control() 函数里，case990 对应这个参数的实时更新：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">case</span> <span class="number">990</span>:</span><br><span class="line">    pAEMS-&gt;ctrlPVMode = (CtrlPVMode)pVarVal-&gt;emValue;</span><br><span class="line">    <span class="keyword">break</span>;</span><br></pre></td></tr></table></figure></div>
+<p>  同一批热更新的参数还包括：</p>
+<ul>
+<li>991&#x2F;992 → fPStep_PV（每次步进功率）</li>
+<li>991&#x2F;993 → uMsStep_PV（步进时间间隔）</li>
+<li>991&#x2F;994 → uMaxPBackflow（允许最大逆流功率）</li>
+<li>991&#x2F;995 → uMaxMsBackflow（允许最长逆流时长）</li>
+</ul>
+<p>  参数全部通过 DPR（数据处理器）下发，前端 Web 界面改一次配置，运行中的 AEMS进程马上生效，不需要重启。这是工程项目里很实用的一点，现场调试时能省不少事。</p>
+<hr>
+<h1 id="四、调度入口：Sample-里的-switch"><a href="#四、调度入口：Sample-里的-switch" class="headerlink" title="四、调度入口：Sample() 里的 switch"></a>四、调度入口：Sample() 里的 switch</h1><p>  每次采样周期，Sample() 函数会先做一批关键变量的预计算：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// BESS 最大可充电能力</span></span><br><span class="line">pAEMS-&gt;fMax_Chrg_PwrAbility_AEMS = (pAEMS-&gt;bAutoChrgEnable? pBessInfo-&gt;fMax_Chrg_PwrAbilitySumA</span><br><span class="line">    : (pBessInfo-&gt;emACDC_WorkStatuSum == STATU_ACDC_RECTIFY ? pBessInfo-&gt;fMax_Chrg_PwrAbilitySum : <span class="number">0</span>));</span><br><span class="line"></span><br><span class="line"><span class="comment">// BESS 还能消纳多少</span></span><br><span class="line">pAEMS-&gt;fRemainChrgAbl_Bess = pAEMS-&gt;fMax_Chrg_PwrAbility_AEMS - pBessInfo-&gt;f_PcabMeterSum;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 负载功率（光伏出力 + 放电侧交流负载）</span></span><br><span class="line">pAEMS-&gt;fPLoad_AC = pPvInfo-&gt;fTotalPVOutputActPower + pBessInfo-&gt;fPacload4DischgSum;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 总消纳能力（负载 + BESS 充电能力）</span></span><br><span class="line">pAEMS-&gt;fPLoad_AndBess = pAEMS-&gt;fPLoad_AC + pAEMS-&gt;fMax_Chrg_PwrAbility_AEMS;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 跟随负载的基准控制功率</span></span><br><span class="line">pAEMS-&gt;fCtrlPV_4PLoad_AC = pAEMS-&gt;fPLoad_AC - pAEMS-&gt;fProtBackflow_PV_AEMS;</span><br></pre></td></tr></table></figure></div>
+<p>  这几个中间量是后续所有判断的数据基础。注意 fPLoad_AC 的计算方式——它不是直接读电表，而是用”光伏实际出力 + 放电侧负载”来估算，因为这样更能反映系统当前真实的消纳能力。</p>
+<h2 id="预计算完成后，才进入模式调度：-Auto-模式下的这两行是整个设计里我认为最有意思的地方：DAQ-作为安全网，AEMS-作为主控。CtrlByDAQ-返回-TRUE-时，代表-DAQ认为当前情况它来接管更合适，AEMS-就不再介入。只有-DAQ-判断”这不是我该管的场景”（返回-FALSE），AEMS-才出手。"><a href="#预计算完成后，才进入模式调度：-Auto-模式下的这两行是整个设计里我认为最有意思的地方：DAQ-作为安全网，AEMS-作为主控。CtrlByDAQ-返回-TRUE-时，代表-DAQ认为当前情况它来接管更合适，AEMS-就不再介入。只有-DAQ-判断”这不是我该管的场景”（返回-FALSE），AEMS-才出手。" class="headerlink" title="  预计算完成后，才进入模式调度：  Auto 模式下的这两行是整个设计里我认为最有意思的地方：DAQ 作为安全网，AEMS 作为主控。CtrlByDAQ 返回 TRUE 时，代表 DAQ认为当前情况它来接管更合适，AEMS 就不再介入。只有 DAQ 判断”这不是我该管的场景”（返回 FALSE），AEMS 才出手。"></a>  预计算完成后，才进入模式调度：<br><div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">switch</span> (pAEMS-&gt;ctrlPVMode)</span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">case</span> CtrlPVMode_DAQ:</span><br><span class="line">    CtrlByDAQ(pAEMS);</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line"><span class="keyword">case</span> CtrlPVMode_AEMS:</span><br><span class="line">    CtrlByAEMS(pAEMS);</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line"><span class="keyword">default</span>: <span class="comment">// Auto</span></span><br><span class="line">    <span class="keyword">if</span> (!CtrlByDAQ(pAEMS)) </span><br><span class="line">    &#123;</span><br><span class="line">        CtrlByAEMS(pAEMS);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div><br>  Auto 模式下的这两行是整个设计里我认为最有意思的地方：DAQ 作为安全网，AEMS 作为主控。CtrlByDAQ 返回 TRUE 时，代表 DAQ认为当前情况它来接管更合适，AEMS 就不再介入。只有 DAQ 判断”这不是我该管的场景”（返回 FALSE），AEMS 才出手。<br><div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">                           │</span><br><span class="line">               ┌───────────┴───────────┐</span><br><span class="line">         ctrlPVMode                = DAQ     </span><br><span class="line">         =   AEMS          │      CtrlByDAQ()CtrlByAEMS()Auto</span><br><span class="line">(default)</span><br><span class="line">                           │</span><br><span class="line">                     CtrlByDAQ() 返回?</span><br><span class="line">                     ┌─────┴─────┐</span><br><span class="line">                   TRUEFALSE</span><br><span class="line">                  (DAQ接管)   CtrlByAEMS()</span><br></pre></td></tr></table></figure></div></h2><h1 id="五、CtrlByDAQ：什么情况下-DAQ-要接管？"><a href="#五、CtrlByDAQ：什么情况下-DAQ-要接管？" class="headerlink" title="五、CtrlByDAQ：什么情况下 DAQ 要接管？"></a>五、CtrlByDAQ：什么情况下 DAQ 要接管？</h1><p>  函数定义，进入条件有四个，必须同时成立：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (pAEMS-&gt;bAntiBackflow_PV           <span class="comment">// [A] PV 配置了防逆流功能</span></span><br><span class="line">    &amp;&amp; pBessInfo-&gt;emACDC_WorkStatuSum != STATU_ACDC_INVERTER  <span class="comment">// [B] 储能没在放电</span></span><br><span class="line">    &amp;&amp; pBessInfo-&gt;emACDC_WorkStatuSum != STATU_ACDC_RECTIFY   <span class="comment">// [C] 储能没在充电</span></span><br><span class="line">    &amp;&amp; pBessInfo-&gt;fACDC_RealTime_CurrSum &lt; <span class="number">2</span>                  <span class="comment">// [D] 储能实时电流 &lt; 2A（近似空转）</span></span><br><span class="line">    &amp;&amp; pAEMS-&gt;fMax_Chrg_PwrAbility_AEMS &lt; MIN_PWR_CHRG_4START <span class="comment">// [E] 储能没有消纳能力</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure></div>
+<p>  翻译成人话：储能完全静止、没有任何充放电行为、且没有消纳逆流功率的能力时，DAQ 接管光伏。</p>
+<p>  为什么要这样设计？因为在储能空转的场景下，如果 AEMS 主动推送一个较大的光伏功率指令，多余的功率无处可去，会直接往电网倒送，触发防逆流保护甚至导致并网违规。这时最安全的做法是让逆变器维持当前状态——DAQ读取当前实际输出功率并原样写回：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">pPvCtrl-&gt;fActivePower = pPvInfo-&gt;fTotalPVOutputActPower;</span><br><span class="line">pPvCtrl-&gt;CtrlMode = CTRL_BY_DATA_ACQUISITION;</span><br></pre></td></tr></table></figure></div>
+<p>  下发之前还有一个死区过滤，只有以下任一条件成立才真正发送 Modbus 帧：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (fCtrlPwr_Diff &gt; MAX_CtrlPwr_Diff || ElapseS(pPV-&gt;tmCtrlPwr_Last) &gt; <span class="number">1</span>)</span><br></pre></td></tr></table></figure></div>
+<p>  即功率偏差足够大，或者距离上次下发超过 1 秒，才触发写操作。这个防抖逻辑很关键，能有效降低 Modbus 总线的写频率，在多台逆变器并联的场景下尤其重要。</p>
+<hr>
+<h1 id="六、CtrlByAEMS：五个阶段的控制链路"><a href="#六、CtrlByAEMS：五个阶段的控制链路" class="headerlink" title="六、CtrlByAEMS：五个阶段的控制链路"></a>六、CtrlByAEMS：五个阶段的控制链路</h1><p>  这是整个模块里逻辑最密集的部分，我把它分成五个阶段逐一分析。</p>
+<p>  阶段 2.1：关机保护</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (pAEMS-&gt;fPLoad_AndBess &lt; pAEMS-&gt;fProtBackflow_PV_AEMS)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span> (pPvInfo-&gt;fRecvActivePower &gt;<span class="number">0</span> || pPvInfo-&gt;fTotalPVOutputActPower &gt; <span class="number">1</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        pPvCtrl-&gt;fActivePower = <span class="number">0</span>;</span><br><span class="line">        CtrlPV_AEMS(pAEMS, FALSE);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> TRUE;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+<p>  fPLoad_AndBess（负载 + BESS充电能力之和）如果连防逆流保护值都不够，说明光伏出任何功率都会往电网倒送。这时候最正确的选择是关机。</p>
+<p>  注意有个小细节：只有在逆变器当前仍有出力（fRecvActivePower &gt; 0 || fTotalPVOutputActPower &gt; 1）时才下指令，避免重复向已经关机的逆变器写 0 功率。</p>
+<p>  阶段 2.2：防逆流降功率</p>
+<p>  这是代码里最复杂的一段，处理的是电网已经出现逆流但还不需要关机的情况。</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 逆流判断</span></span><br><span class="line">pAEMS-&gt;fPBackflow = (pBessInfo-&gt;f_PgridMeterSum &lt; <span class="number">0</span></span><br><span class="line">    ? ABS(pBessInfo-&gt;f_PgridMeterSum) : <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">pAEMS-&gt;bPwrDown_PV = (</span><br><span class="line">    (pAEMS-&gt;msBackflow &gt; MAX_MS_Backflow &amp;&amp; (</span><br><span class="line">        pBessInfo-&gt;emACDC_WorkStatuSum == STATU_ACDC_IDLE<span class="comment">// BESS停止</span></span><br><span class="line">        || !pAEMS-&gt;bChrgAbl_Bess                            <span class="comment">// BESS无法消纳</span></span><br><span class="line">        || (pBessInfo-&gt;f_PcabMeterSum &lt; <span class="number">0</span> &amp;&amp;</span><br><span class="line">            (pAEMS-&gt;fPBackflow + pBessInfo-&gt;f_PcabMeterSum &gt; pAEMS-&gt;uMaxPBackflow))</span><br><span class="line">    ))</span><br><span class="line">    || (pAEMS-&gt;fPBackflow &gt; <span class="number">0</span> &amp;&amp; pAEMS-&gt;msBackflow &gt; pAEMS-&gt;uMaxMsBackflow)</span><br><span class="line">);</span><br></pre></td></tr></table></figure></div>
+<p>  bPwrDown_PV 的触发条件体现了一个分层容忍逻辑：</p>
+<ul>
+<li>短暂逆流（&lt; MAX_MS_Backflow）：允许存在，BESS 有消纳能力时不干预，因为 BESS 本身就能把多余的光伏功率吃掉</li>
+<li>逆流持续超时且BESS 消纳不了：触发降功率</li>
+<li>逆流量超过阈值 uMaxPBackflow 或持续超过 uMaxMsBackflow：无论原因，必须降</li>
+</ul>
+<p>  触发降功率后，功率目标的计算方式：</p>
+<p>  &#x2F;&#x2F; 逆流太大 || 逆流太久：降到”跟随负载+BESS功率”的水平pPvCtrl-&gt;fActivePower &#x3D; pAEMS-&gt;fCtrlPV_4PLoad_AC + pBessInfo-&gt;f_PcabMeterSum- pAEMS-&gt;fProtBackflow_PV_AEMS;</p>
+<p>  这里有个值得关注的设计演进。旧版本（被注释掉的old 代码）直接将功率降到 0，后来改成了”降到负载功率+BESS 当前功率 - 防逆流保护值”。这个改法更合理：与其激进地完全停光伏，不如降到恰好不产生逆流的水平，减少发电量损失。从注释 &#x2F;&#x2F; old pPvCtrl-&gt;fActivePower &#x3D; 0; 可以看出这是一次迭代优化，现场测试后发现直接归零太激进了。</p>
+<p>  阶段 3.1 &#x2F; 3.2：满功率输出</p>
+<p>  通过了防逆流检查之后，进入正向控制阶段。</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 3.1 负载功率超过 PV 额定，直接拉满</span></span><br><span class="line"><span class="keyword">if</span> ((<span class="type">float</span>)pPvInfo-&gt;iTotalRatedPower_Set * CTRL_ALLPOWER_ADDED &lt; pAEMS-&gt;fPLoad_AC)</span><br><span class="line">&#123;</span><br><span class="line">    pPvCtrl-&gt;fActivePower = (<span class="type">float</span>)pPvInfo-&gt;iTotalRatedPower_Set * CTRL_ALLPOWER_ADDED;</span><br><span class="line">    <span class="comment">// bRampup = FALSE，不需要斜坡，负载能全消纳</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 3.2 BESS 在运行且负载+BESS总消纳 &gt; PV 额定</span></span><br><span class="line"><span class="keyword">else</span> <span class="keyword">if</span> (pBessInfo-&gt;emACDC_WorkStatuSum != STATU_ACDC_IDLE</span><br><span class="line">    &amp;&amp; (<span class="type">float</span>)pPvInfo-&gt;iTotalRatedPower_Set * CTRL_ALLPOWER_ADDED &lt; pAEMS-&gt;fPLoad_AndBess)</span><br><span class="line">&#123;</span><br><span class="line">    bRampup = pAEMS-&gt;bRampup_PV;</span><br><span class="line">    pPvCtrl-&gt;fActivePower = (<span class="type">float</span>)pPvInfo-&gt;iTotalRatedPower_Set * CTRL_ALLPOWER_ADDED;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+<p>  3.1 和 3.2 的区别：3.1 里负载单独就能消纳全部额定功率，不需要 BESS 协助，所以不开bRampup，可以一步到位。3.2 里需要BESS 来帮忙消纳，因此是否开爬坡由配置项bRampup_PV（参数991&#x2F;987）决定——毕竟 BESS的充电能力也有响应时间，激进爬坡会导致短暂的逆流。</p>
+<p>  阶段 4.1：步进式升功率</p>
+<p>  到了else 分支，说明当前的光伏额定功率超过了负载+BESS 的总消纳能力，需要谨慎一步步往上试：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">pAEMS-&gt;bPwrUpStep_PV = (</span><br><span class="line">    ElapseMS(pPV-&gt;dtmRetry_Last) &gt; pAEMS-&gt;uMsStep_PV        <span class="comment">// 调节时间步长</span></span><br><span class="line">    &amp;&amp; (</span><br><span class="line">        pBessInfo-&gt;f_PgridMeterSum &gt; (pAEMS-&gt;fProtBackflow_PV_AEMS + pAEMS-&gt;fPStep_PV / <span class="number">2</span>)  <span class="comment">// 电网还有裕量</span></span><br><span class="line">        || pAEMS-&gt;fRemainChrgAbl_Bess &gt; (pAEMS-&gt;fProtBackflow_PV_AEMS + pAEMS-&gt;fPStep_PV / <span class="number">2</span>) <span class="comment">// 储能还能充</span></span><br><span class="line">    )</span><br><span class="line">);</span><br></pre></td></tr></table></figure></div>
+<p>  时间条件和功率条件都满足，才往上步进一格（fPStep_PV，通过参数 991&#x2F;992 配置）；如果逆变器当前出力已接近额定（超过iTotalRatedPower_Set * MAX_RATIO_RATEDPWR），就直接跳到额定值，不再一步一步爬。</p>
+<p>  这个设计思路的核心是时间节流。每次上调之间必须等待 uMsStep_PV 毫秒（配置参数991&#x2F;993），这样既能防止调节频率太高导致逆变器振荡，也能给电网表计和储能系统留出响应时间。</p>
+<p>  阶段 5.1：SOC 近满限功率</p>
+<p>  在最终调用 CtrlPV_AEMS 下发之前，还有一个特殊处理：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (pBessInfo-&gt;fSOCSum &gt;= (<span class="type">float</span>)pAEMS-&gt;uLmtPwrIfSOCGe_PV)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">float</span> fPbess_Chrg =<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">if</span> (pBessInfo-&gt;emACDC_WorkStatuSum == STATU_ACDC_RECTIFY</span><br><span class="line">        || pBessInfo-&gt;emACDC_WorkStatuSum == STATU_ACDC_STANDBY)</span><br><span class="line">    &#123;</span><br><span class="line">        fPbess_Chrg = MIN((<span class="type">float</span>)pAEMS-&gt;uMaxChrgAbl4BESS_PV,          pAEMS-&gt;fMax_Chrg_PwrAbility_AEMS);</span><br><span class="line">    &#125;</span><br><span class="line">    pPvCtrl-&gt;fActivePower = pAEMS-&gt;fPLoad_AC + fPbess_Chrg;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+<p>  储能 SOC 到达 uLmtPwrIfSOCGe_PV（配置参数 991&#x2F;988，单位 %）时，光伏的目标功率被限制为”负载 +少量充电功率”。如果储能处于充电或待机状态，还会留一点充电余量（上限 uMaxChrgAbl4BESS_PV），否则就只跟随负载。</p>
+<p>  这段代码的注释里有一行储能快充满，跟随负载+Bess，和注释掉的旧逻辑 降光伏功率对比，可以看出旧版本是”强制限功率”，新版本是”智能跟随”。前者会导致储能充满后光伏大幅削减，发电量损失较大；后者则是动态跟随实时负载，最大化利用光伏出力。</p>
+<h2 id="完整的-CtrlByAEMS-执行流程"><a href="#完整的-CtrlByAEMS-执行流程" class="headerlink" title="  完整的 CtrlByAEMS 执行流程"></a>  完整的 CtrlByAEMS 执行流程<br><div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">    ┌────────────┴────────────┐</span><br><span class="line">    │  计算 fPBackflow,        │</span><br><span class="line">    │  bChrgAbl_Bess          │</span><br><span class="line">    └────────────┬────────────┘</span><br><span class="line">                 │</span><br><span class="line">         fPLoad_AndBess &lt; fProtBackflow_PV_AEMS?</span><br><span class="line">                YES → 关机，返回│ NOf_PgridMeterSum &lt; fProtBackflow_PV_AEMS (逆流)?</span><br><span class="line">                YES → 计算 msBackflow,判断 bPwrDown_PV│ bPwrDown_PV=TRUE├→</span><br><span class="line">功率=fCtrlPV_4PLoad_AC+f_PcabMeterSum-保护值</span><br><span class="line">                         └→CtrlPV_AEMS(FALSE), 返回</span><br><span class="line">                 │ NO（无逆流）</span><br><span class="line">         ┌───────┴──────────────────────┐</span><br><span class="line">         │  额定 &lt; fPLoad_AC?           │</span><br><span class="line">         YES                NO3.1 满功率，无斜坡            额定 &lt; fPLoad_AndBess?</span><br><span class="line">                               YES                NO3.2 满功率          4.1 步进升功率</span><br><span class="line">                             有斜坡         (条件允许时+fPStep)│┌───────┴──────────────────────┐</span><br><span class="line">         │  fSOCSum &gt;= uLmtPwrIfSOCGe?│</span><br><span class="line">         YES                            NO</span><br><span class="line">    5.1 功率=fPLoad_AC+fPbess_Chrg  维持上面的目标值</span><br><span class="line">                 │</span><br><span class="line">         CtrlPV_AEMS(bRampup)</span><br></pre></td></tr></table></figure></div></h2><h1 id="七、CtrlPV-AEMS：最后一公里"><a href="#七、CtrlPV-AEMS：最后一公里" class="headerlink" title="七、CtrlPV_AEMS：最后一公里"></a>七、CtrlPV_AEMS：最后一公里</h1><p>  前面所有的计算都是在确定目标功率 pPvCtrl-&gt;fActivePower，真正把指令发出去的是 CtrlPV_AEMS()。</p>
+<p>  这个函数做了三件事：</p>
+<h2 id="1-斜坡限制（Rampup）"><a href="#1-斜坡限制（Rampup）" class="headerlink" title="1. 斜坡限制（Rampup）"></a>1. 斜坡限制（Rampup）</h2><div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (bRampup)</span><br><span class="line">&#123;</span><br><span class="line">    pPvCtrl-&gt;fActivePower = MIN(</span><br><span class="line">        pPvInfo-&gt;fRecvActivePower + pAEMS-&gt;fPStep_PV,</span><br><span class="line">        pPvCtrl-&gt;fActivePower</span><br><span class="line">    );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+<p>  bRampup&#x3D;TRUE 时，本次实际下发的功率不能超过”当前反馈功率 + 一个步进量”。即使目标功率是 500kW，当前只有100kW，也只能先发 100+ fPStep_PV。这样做是为了避免逆变器功率突变，特别是 BESS协助消纳的场景里，储能的响应比光伏慢，激进爬坡会短暂超出消纳能力。</p>
+<h2 id="2-负载跟随下界（fCtrlPV-4PLoad-AC）"><a href="#2-负载跟随下界（fCtrlPV-4PLoad-AC）" class="headerlink" title="2. 负载跟随下界（fCtrlPV_4PLoad_AC）"></a>2. 负载跟随下界（fCtrlPV_4PLoad_AC）</h2><div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (pPvCtrl-&gt;fActivePower &lt; pAEMS-&gt;fCtrlPV_4PLoad_AC)</span><br><span class="line">&#123;</span><br><span class="line">    pPvCtrl-&gt;fActivePower = MAX(pAEMS-&gt;fCtrlPV_4PLoad_AC, pPvCtrl-&gt;fActivePower);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+<p>  fCtrlPV_4PLoad_AC &#x3D; fPLoad_AC - fProtBackflow_PV_AEMS，是”跟随当前负载的最低出力基准”。如果经过斜坡限制后目标功率低于这个值，说明光伏出力不足以覆盖负载，这时候不应该被斜坡拖着往下走，而是应该立刻拉到基准值——注释写得直白：负载马上到位。注意这个逻辑，旧版本没有这个下界保护，会导致在负载较大时光伏恢复输出的速度过慢，储能要额外放电补缺口。</p>
+<h2 id="3-死区过滤与实际下发"><a href="#3-死区过滤与实际下发" class="headerlink" title="3. 死区过滤与实际下发"></a>3. 死区过滤与实际下发</h2><div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">pPvCtrl-&gt;fActivePower = MIN(</span><br><span class="line">    (<span class="type">float</span>)pPvInfo-&gt;iTotalRatedPower_Set * CTRL_ALLPOWER_ADDED,</span><br><span class="line">    pPvCtrl-&gt;fActivePower</span><br><span class="line">);</span><br><span class="line">pPvCtrl-&gt;fActivePower = MAX(<span class="number">0</span>, pPvCtrl-&gt;fActivePower);</span><br><span class="line"></span><br><span class="line"><span class="type">float</span> fCtrlPwr_Diff = ABS(pPvCtrl-&gt;fActivePower - pPvInfo-&gt;fRecvActivePower);</span><br><span class="line"><span class="keyword">if</span> (pPvCtrl-&gt;CtrlMode != CTRL_BY_AEMS</span><br><span class="line">    || pPvInfo-&gt;RecvCtrlMode != CTRL_BY_AEMS</span><br><span class="line">    || fCtrlPwr_Diff &gt; MAX_CtrlPwr_Diff</span><br><span class="line">    || ElapseS(pPV-&gt;tmCtrlPwr_Last) &gt; <span class="number">1</span>)</span><br><span class="line">&#123;</span><br><span class="line">    pPvCtrl-&gt;CtrlMode = CTRL_BY_AEMS;</span><br><span class="line">    pPV-&gt;tmCtrlPwr_Last = _NOW_;Push_BlobValue(SETTYPE_RAW_SP, pAEMS-&gt;hSampler, <span class="number">1050</span>, <span class="number">3752</span>,(<span class="type">void</span>*)pPvCtrl,</span><br><span class="line"><span class="keyword">sizeof</span>(A_BLOB_PV_CTRL_BY_AEMS), BLOB_TYPE_PV_SRTTING_BY_AEMS);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+<p>  先把功率值夹紧在[0, 额定 × CTRL_ALLPOWER_ADDED] 区间内，再判断是否有必要真的发Modbus。有四种情况必须发：控制模式不对、逆变器反馈的控制模式不对、功率偏差超过死区、或者距离上次下发超过 1 秒（心跳保活）。</p>
+<p>  这个1 秒心跳的意义：逆变器本地控制器如果长时间收不到 AEMS 指令，可能会因为通信超时切换回本地模式。每隔 1秒强制重发一次，确保控制权不丢。</p>
+<hr>
+<h1 id="八、Auto模式里的-DAQ-优先级究竟意味着什么"><a href="#八、Auto模式里的-DAQ-优先级究竟意味着什么" class="headerlink" title="八、Auto模式里的 DAQ 优先级究竟意味着什么"></a>八、Auto模式里的 DAQ 优先级究竟意味着什么</h1><p>  回过头来看这段代码，DAQ 模式的触发条件再仔细看一遍：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (pAEMS-&gt;bAntiBackflow_PV</span><br><span class="line">    &amp;&amp; pBessInfo-&gt;emACDC_WorkStatuSum != STATU_ACDC_INVERTER</span><br><span class="line">    &amp;&amp; pBessInfo-&gt;emACDC_WorkStatuSum != STATU_ACDC_RECTIFY</span><br><span class="line">    &amp;&amp; pBessInfo-&gt;fACDC_RealTime_CurrSum&lt; <span class="number">2</span></span><br><span class="line">    &amp;&amp; pAEMS-&gt;fMax_Chrg_PwrAbility_AEMS &lt; MIN_PWR_CHRG_4START)</span><br></pre></td></tr></table></figure></div>
+<p>  条件 C、D 是判断储能是否真的空转的双重保险——光靠状态机（emACDC_WorkStatuSum）不够可靠，状态切换有滞后，所以再加一个实时电流判断（fACDC_RealTime_CurrSum &lt; 2A）。这是从现场踩坑里来的经验：储能状态刚从放电切到待机，CCU的状态字还没来得及更新，但电流表计已经到0 了，用电流来兜底更实时。</p>
+<p>  在 Auto 模式下，整个逻辑链可以理解成：</p>
+<p>  储能空转 + PV配了防逆流?YES → DAQ接管（维持现状，防止乱发功率）<br>      NO  → AEMS接管（主动优化出力）</p>
+<p>  本质上是把”是否有能力消纳额外的光伏功率”作为模式切换的核心判据。有能力消纳，AEMS来帮你用好每一度电；没能力消纳，让逆变器自己维持，别添乱。</p>
+<hr>
+<h1 id="九、待机控制的联动"><a href="#九、待机控制的联动" class="headerlink" title="九、待机控制的联动"></a>九、待机控制的联动</h1><p>  ctrlPVMode 调度完成后，Sample() 还有一段待机逻辑：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">bNeedStandby = (</span><br><span class="line">    (pPvInfo-&gt;fTotalPVPowerAbility &gt; MIN_PWR_LMT|| pPvInfo-&gt;fTotalPVOutputActPower &gt; MIN_PWR_LMT)</span><br><span class="line">    &amp;&amp; pAEMS-&gt;fMax_Chrg_PwrAbility_AEMS &gt; MIN_PWR_CHRG_4START</span><br><span class="line">    &amp;&amp; (</span><br><span class="line">        pPvCtrl-&gt;fActivePower &lt; pPvInfo-&gt;iTotalRatedPower_Set</span><br><span class="line">        || pPvInfo-&gt;fTotalPVOutputActPower &gt;= pAEMS-&gt;fPLoad_AC</span><br><span class="line">        || pBessInfo-&gt;fPacload4DischgSum&lt; pAEMS-&gt;fLtPwr2Standby_PV</span><br><span class="line">        || pBessInfo-&gt;emACDC_WorkStatuSum == STATU_ACDC_INVERTER</span><br><span class="line">    )</span><br><span class="line">);</span><br></pre></td></tr></table></figure></div>
+<p>  翻译：光伏有出力能力 + BESS 有消纳能力 + （光伏出力未满额定，或光伏出力已超过负载，或负载偏低，或储能在放电）→ 让BESS进入待机模式。</p>
+<p>  待机不是关机，是让 CCU降低自放电损耗、进入浅休眠。这个逻辑是光伏控制策略的”下游”，只有在光伏功率分配确定之后，才能判断是否需要 BESS待机。这也是为什么待机逻辑放在 ctrlPVMode switch 后面而不是前面。</p>
+<p>  停止待机有一个延时保护 uDelayStandby_PV（参数 1001&#x2F;3318），防止待机状态在临界条件附近反复振荡。</p>
+<hr>
+<h1 id="十、整体设计回顾"><a href="#十、整体设计回顾" class="headerlink" title="十、整体设计回顾"></a>十、整体设计回顾</h1><p>  把整个 ctrlPVMode 的链路重新串一遍：</p>
+<div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">配置读取（991/990）</span><br><span class="line">        │Initialize()</span><br><span class="line">        │</span><br><span class="line"> ┌──────┴────────────────────────────────────────────┐</span><br><span class="line"> │                Sample() 周期调用                   │</span><br><span class="line"> │                │                                  │</span><br><span class="line"> │  1. 读BESS 状态 (1001/3900)                       │</span><br><span class="line"> │  2. 读 PV 状态  (1050/3697)                       │</span><br><span class="line"> │  3. 预计算 fPLoad_AC / fPLoad_AndBess 等           │</span><br><span class="line"> │  4. ctrlPVMode switch───────────────────────────  │</span><br><span class="line"> │         ├── DAQ  →CtrlByDAQ()                     │</span><br><span class="line"> │         ├── AEMS → CtrlByAEMS()                   │</span><br><span class="line"> │         └── Auto → CtrlByDAQ() || CtrlByAEMS()    │</span><br><span class="line"> │                         │                          │</span><br><span class="line"> │              CtrlPV_AEMS()死区过滤后下发            │</span><br><span class="line"> │                         │                          │</span><br><span class="line"> │  5. BESS 待机联动判断                               │</span><br><span class="line"> │  6. Do_Charger_EM() 充电桩能量管理                  │</span><br><span class="line"> └────────────────────────────────────────────────────┘</span><br><span class="line">         │</span><br><span class="line">   Control() 热更新（任意时刻）</span><br><span class="line">         │</span><br><span class="line">   参数写入 pAEMS-&gt;ctrlPVMode 等</span><br></pre></td></tr></table></figure></div>
+<p>  几个我认为设计得比较扎实的地方：</p>
+<p>  <strong>分层容忍，而不是硬阈值关机。</strong>逆流从出现到触发降功率，中间有MAX_MS_Backflow 的宽容窗口，BESS有时候能在这个窗口里把逆流吃掉，完全不需要降光伏。只有 BESS真的没能力、或者逆流时间过长，才强制干预。旧版本直接降到0，新版本改成”降到跟随负载的水平”，保留了更多发电量。</p>
+<p>  斜坡与跟随的平衡。 bRampup 只在特定场景开启（3.2 满功率+BESS 协助时），防止爬坡时逆变器和储能之间的响应时差产生逆流。但在纯负载消纳场景（3.1）或主动降功率场景（2.2），不开斜坡，响应更快。同时下界保护 fCtrlPV_4PLoad_AC确保恢复时不会被斜坡拖累太久。</p>
+<p>  热更新全覆盖。 从控制模式到步进量、时间间隔、最大逆流值，所有关键参数都可以在不重启的情况下通过 DPR 下发修改。这对现场调试非常实用——不同项目的变压器容量、储能容量差异很大，参数需要反复调整，热更新能省掉很多重启等待时间。</p>
+<p>  双重防抖。 CtrlByDAQ 里有 5秒的条件防抖，CtrlPV_AEMS 里有 1秒的心跳+死区过滤。两层保护确保既不会因状态短暂抖动频繁切换控制模式，也不会因控制模式频繁切换产生功率振荡。</p>
+<hr>
+<p>  唯一觉得有点绕的地方是 fPLoad_AC 的计算方式——用”光伏实际出力 +放电侧负载”来估算系统负载，而不是直接读一个独立的负载电表。这是受限于硬件配置（部分项目没有单独的负载表），但在光伏出力变化剧烈时，这个估算值会跟着抖，进而影响fPLoad_AndBess 和 fCtrlPV_4PLoad_AC 的稳定性。这是后续可以优化的地方：如果有独立的负载电表数据，优先使用。</p>
+<p>  代码里标注的那些历史改动记录（260416、260518、260605……）说明这套逻辑经历了相当多的现场迭代。能看到它从”粗暴降0”演化到”智能跟随”，从”无斜坡”到”有条件斜坡”，从”固定阈值”到”带滞后的容忍窗口”，每一步改动背后都对应着一类实际踩到的坑。这大概是嵌入式能量管理系统最真实的样子。</p>
+
+		</div>
+
+		
+		<div class="post-copyright-info w-full my-8 px-2 sm:px-6 md:px-8">
+			<div class="article-copyright-info-container">
+    <ul>
+        <li><strong>标题:</strong> 光储系统 AEMS 模块的光伏控制模式设计——从 ctrlPVMode 说起</li>
+        <li><strong>作者:</strong> kuangyue111</li>
+        <li><strong>创建于
+                :</strong> 2026-07-31 09:30:00</li>
+        
+            <li>
+                <strong>更新于
+                    :</strong> 2026-07-31 09:34:13
+            </li>
+        
+        <li>
+            <strong>链接:</strong> https://kuangyue111.github.io/2026/07/31/2026-07-31-ctrl-pv-mode-design/
+        </li>
+        <li>
+            <strong>
+                版权声明:
+            </strong>
+            
+
+            
+                本文章采用 <a class="license" target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0">CC BY-NC-SA 4.0</a> 进行许可。
+            
+        </li>
+    </ul>
+</div>
+
+		</div>
+		
+
+		
+		<ul class="post-tags-box text-lg mt-1.5 flex-wrap justify-center flex md:hidden">
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E5%B5%8C%E5%85%A5%E5%BC%8F/">#嵌入式</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E5%82%A8%E8%83%BD/">#储能</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E5%85%89%E4%BC%8F/">#光伏</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/AEMS/">#AEMS</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E9%80%86%E5%8F%98%E5%99%A8/">#逆变器</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E6%8E%A7%E5%88%B6%E7%AD%96%E7%95%A5/">#控制策略</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E9%98%B2%E9%80%86%E6%B5%81/">#防逆流</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/BESS/">#BESS</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E8%83%BD%E9%87%8F%E7%AE%A1%E7%90%86/">#能量管理</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/DAQ/">#DAQ</a>&nbsp;
+			</li>
+			
+		</ul>
+		
+
+		
+
+		
+		<div class="article-nav my-8 flex justify-between items-center px-2 sm:px-6 md:px-8">
+			
+			<div class="article-prev border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
+				<a class="prev" rel="prev" href="/2026/08/07/2026-08-07-ems-uncontrolled-power-analysis/">
+					<span class="left arrow-icon flex justify-center items-center">
+						<i class="fa-solid fa-chevron-left"></i>
+					</span>
+					<span class="title flex justify-center items-center">
+						<span class="post-nav-title-item truncate max-w-48">多机并联储能 EMS 失控功率问题的完整分析与解决</span>
+						<span class="post-nav-item">上一篇</span>
+					</span>
+				</a>
+			</div>
+			
+			
+			<div class="article-next border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
+				<a class="next" rel="next" href="/2026/07/24/2026-07-24-amber-modbus-tcp-charger-troubleshooting/">
+					<span class="title flex justify-center items-center">
+						<span class="post-nav-title-item truncate max-w-48">充电桩Modbus TCP采集模块踩坑实录：从Too many data到并发死锁的完整修复</span>
+						<span class="post-nav-item">下一篇</span>
+					</span>
+					<span class="right arrow-icon flex justify-center items-center">
+						<i class="fa-solid fa-chevron-right"></i>
+					</span>
+				</a>
+			</div>
+			
+		</div>
+		
+
+
+		
+		<div class="comment-container px-2 sm:px-6 md:px-8 pb-8">
+			<div class="comments-container mt-10 w-full ">
+    <div id="comment-anchor" class="w-full h-2.5"></div>
+    <div class="comment-area-title w-full my-1.5 md:my-2.5 text-xl md:text-3xl font-bold">
+        评论
+    </div>
+    
+
+        
+            
+    <div id="waline"></div>
+    <script type="module" data-swup-reload-script>
+      import { init } from '/js/libs/waline.js';
+
+      (function() {
+        const startPath = location.pathname;
+        const startTime = Date.now();
+        const retryDelay = 200;
+        const retryLimit = 5000;
+
+        const runWaline = () => {
+          if (location.pathname !== startPath) {
+            return;
+          }
+
+          const container = document.getElementById('waline');
+          if (!container) {
+            if (Date.now() - startTime < retryLimit) {
+              setTimeout(runWaline, retryDelay);
+            }
+            return;
+          }
+
+          if (window.redefineWalineInstance?.destroy) {
+            window.redefineWalineInstance.destroy();
+          }
+
+          container.innerHTML = '';
+          window.redefineWalineInstance = init({
+            el: '#waline',
+            serverURL: 'https://example.example.com',
+            path: location.pathname,
+            dark: 'body[class~="dark-mode"]',
+            reaction: false,
+            requiredMeta: ['nick', 'mail'],
+            emoji: [],
+                      lang: 'zh-CN',
+          });
+        };
+
+        runWaline();
+      })();
+    </script>
+
+
+
+        
+    
+</div>
+
+		</div>
+		
+	</div>
+
+	
+	<div class="toc-content-container">
+		<div class="post-toc-wrap">
+	<div class="post-toc">
+		<div class="toc-title">目录</div>
+		<div class="page-title">光储系统 AEMS 模块的光伏控制模式设计——从 ctrlPVMode 说起</div>
+		<ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E4%B8%89%E7%A7%8D%E6%A8%A1%E5%BC%8F%E7%9A%84%E8%AE%BE%E8%AE%A1%E5%8A%A8%E6%9C%BA"><span class="nav-text">二、三种模式的设计动机</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B8%8E%E7%83%AD%E6%9B%B4%E6%96%B0"><span class="nav-text">三、初始化与热更新</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E8%B0%83%E5%BA%A6%E5%85%A5%E5%8F%A3%EF%BC%9ASample-%E9%87%8C%E7%9A%84-switch"><span class="nav-text">四、调度入口：Sample() 里的 switch</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A2%84%E8%AE%A1%E7%AE%97%E5%AE%8C%E6%88%90%E5%90%8E%EF%BC%8C%E6%89%8D%E8%BF%9B%E5%85%A5%E6%A8%A1%E5%BC%8F%E8%B0%83%E5%BA%A6%EF%BC%9A-Auto-%E6%A8%A1%E5%BC%8F%E4%B8%8B%E7%9A%84%E8%BF%99%E4%B8%A4%E8%A1%8C%E6%98%AF%E6%95%B4%E4%B8%AA%E8%AE%BE%E8%AE%A1%E9%87%8C%E6%88%91%E8%AE%A4%E4%B8%BA%E6%9C%80%E6%9C%89%E6%84%8F%E6%80%9D%E7%9A%84%E5%9C%B0%E6%96%B9%EF%BC%9ADAQ-%E4%BD%9C%E4%B8%BA%E5%AE%89%E5%85%A8%E7%BD%91%EF%BC%8CAEMS-%E4%BD%9C%E4%B8%BA%E4%B8%BB%E6%8E%A7%E3%80%82CtrlByDAQ-%E8%BF%94%E5%9B%9E-TRUE-%E6%97%B6%EF%BC%8C%E4%BB%A3%E8%A1%A8-DAQ%E8%AE%A4%E4%B8%BA%E5%BD%93%E5%89%8D%E6%83%85%E5%86%B5%E5%AE%83%E6%9D%A5%E6%8E%A5%E7%AE%A1%E6%9B%B4%E5%90%88%E9%80%82%EF%BC%8CAEMS-%E5%B0%B1%E4%B8%8D%E5%86%8D%E4%BB%8B%E5%85%A5%E3%80%82%E5%8F%AA%E6%9C%89-DAQ-%E5%88%A4%E6%96%AD%E2%80%9D%E8%BF%99%E4%B8%8D%E6%98%AF%E6%88%91%E8%AF%A5%E7%AE%A1%E7%9A%84%E5%9C%BA%E6%99%AF%E2%80%9D%EF%BC%88%E8%BF%94%E5%9B%9E-FALSE%EF%BC%89%EF%BC%8CAEMS-%E6%89%8D%E5%87%BA%E6%89%8B%E3%80%82"><span class="nav-text">  预计算完成后，才进入模式调度：123456789101112131415switch (pAEMS-&gt;ctrlPVMode){case CtrlPVMode_DAQ:    CtrlByDAQ(pAEMS);    break;case CtrlPVMode_AEMS:    CtrlByAEMS(pAEMS);    break;default: &#x2F;&#x2F; Auto    if (!CtrlByDAQ(pAEMS))     {        CtrlByAEMS(pAEMS);    }    break;}  Auto 模式下的这两行是整个设计里我认为最有意思的地方：DAQ 作为安全网，AEMS 作为主控。CtrlByDAQ 返回 TRUE 时，代表 DAQ认为当前情况它来接管更合适，AEMS 就不再介入。只有 DAQ 判断”这不是我该管的场景”（返回 FALSE），AEMS 才出手。12345678910                           │               ┌───────────┴───────────┐         ctrlPVMode                &#x3D; DAQ              &#x3D;   AEMS          │      CtrlByDAQ()CtrlByAEMS()Auto(default)                           │                     CtrlByDAQ() 返回?                     ┌─────┴─────┐                   TRUEFALSE                  (DAQ接管)   CtrlByAEMS()</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%94%E3%80%81CtrlByDAQ%EF%BC%9A%E4%BB%80%E4%B9%88%E6%83%85%E5%86%B5%E4%B8%8B-DAQ-%E8%A6%81%E6%8E%A5%E7%AE%A1%EF%BC%9F"><span class="nav-text">五、CtrlByDAQ：什么情况下 DAQ 要接管？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%AD%E3%80%81CtrlByAEMS%EF%BC%9A%E4%BA%94%E4%B8%AA%E9%98%B6%E6%AE%B5%E7%9A%84%E6%8E%A7%E5%88%B6%E9%93%BE%E8%B7%AF"><span class="nav-text">六、CtrlByAEMS：五个阶段的控制链路</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%8C%E6%95%B4%E7%9A%84-CtrlByAEMS-%E6%89%A7%E8%A1%8C%E6%B5%81%E7%A8%8B"><span class="nav-text">  完整的 CtrlByAEMS 执行流程123456789101112131415161718192021    ┌────────────┴────────────┐    │  计算 fPBackflow,        │    │  bChrgAbl_Bess          │    └────────────┬────────────┘                 │         fPLoad_AndBess &lt; fProtBackflow_PV_AEMS?                YES → 关机，返回│ NOf_PgridMeterSum &lt; fProtBackflow_PV_AEMS (逆流)?                YES → 计算 msBackflow,判断 bPwrDown_PV│ bPwrDown_PV&#x3D;TRUE├→功率&#x3D;fCtrlPV_4PLoad_AC+f_PcabMeterSum-保护值                         └→CtrlPV_AEMS(FALSE), 返回                 │ NO（无逆流）         ┌───────┴──────────────────────┐         │  额定 &lt; fPLoad_AC?           │         YES                NO3.1 满功率，无斜坡            额定 &lt; fPLoad_AndBess?                               YES                NO3.2 满功率          4.1 步进升功率                             有斜坡         (条件允许时+fPStep)│┌───────┴──────────────────────┐         │  fSOCSum &gt;&#x3D; uLmtPwrIfSOCGe?│         YES                            NO    5.1 功率&#x3D;fPLoad_AC+fPbess_Chrg  维持上面的目标值                 │         CtrlPV_AEMS(bRampup)</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%83%E3%80%81CtrlPV-AEMS%EF%BC%9A%E6%9C%80%E5%90%8E%E4%B8%80%E5%85%AC%E9%87%8C"><span class="nav-text">七、CtrlPV_AEMS：最后一公里</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E6%96%9C%E5%9D%A1%E9%99%90%E5%88%B6%EF%BC%88Rampup%EF%BC%89"><span class="nav-text">1. 斜坡限制（Rampup）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E8%B4%9F%E8%BD%BD%E8%B7%9F%E9%9A%8F%E4%B8%8B%E7%95%8C%EF%BC%88fCtrlPV-4PLoad-AC%EF%BC%89"><span class="nav-text">2. 负载跟随下界（fCtrlPV_4PLoad_AC）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E6%AD%BB%E5%8C%BA%E8%BF%87%E6%BB%A4%E4%B8%8E%E5%AE%9E%E9%99%85%E4%B8%8B%E5%8F%91"><span class="nav-text">3. 死区过滤与实际下发</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%AB%E3%80%81Auto%E6%A8%A1%E5%BC%8F%E9%87%8C%E7%9A%84-DAQ-%E4%BC%98%E5%85%88%E7%BA%A7%E7%A9%B6%E7%AB%9F%E6%84%8F%E5%91%B3%E7%9D%80%E4%BB%80%E4%B9%88"><span class="nav-text">八、Auto模式里的 DAQ 优先级究竟意味着什么</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B9%9D%E3%80%81%E5%BE%85%E6%9C%BA%E6%8E%A7%E5%88%B6%E7%9A%84%E8%81%94%E5%8A%A8"><span class="nav-text">九、待机控制的联动</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8D%81%E3%80%81%E6%95%B4%E4%BD%93%E8%AE%BE%E8%AE%A1%E5%9B%9E%E9%A1%BE"><span class="nav-text">十、整体设计回顾</span></a></li></ol>
+
+	</div>
+</div>
+	</div>
+	
+</div>
+
+			</div>
+
+			
+		</div>
+
+		<div class="main-content-footer">
+			<footer class="footer mt-5 py-5 h-auto text-base text-third-text-color relative border-t-2 border-t-border-color">
+    <div class="info-container py-3 text-center">
+        
+        <div class="text-center">
+            &copy;
+            
+              <span>2022</span>
+              -
+            
+            2026&nbsp;&nbsp;<i class="fa-solid fa-heart fa-beat" style="--fa-animation-duration: 0.5s; color: #f54545"></i>&nbsp;&nbsp;<a href="/">kuangyue111</a>
+            
+                
+                <p class="post-count space-x-0.5">
+                    <span>
+                        共撰写了 45 篇文章
+                    </span>
+                    
+                </p>
+            
+        </div>
+        
+            <script data-swup-reload-script src="https://cn.vercount.one/js"></script>
+            <div class="relative text-center lg:absolute lg:right-[20px] lg:top-1/2 lg:-translate-y-1/2 lg:text-right">
+                
+                    <span id="busuanzi_container_site_uv" class="lg:!block">
+                        <span class="text-sm">访问人数</span>
+                        <span id="busuanzi_value_site_uv"></span>
+                    </span>
+                
+                
+                    <span id="busuanzi_container_site_pv" class="lg:!block">
+                        <span class="text-sm">总访问量</span>
+                        <span id="busuanzi_value_site_pv"></span>
+                    </span>
+                
+            </div>
+        
+        <div class="relative text-center lg:absolute lg:left-[20px] lg:top-1/2 lg:-translate-y-1/2 lg:text-left">
+            <span class="lg:block text-sm">由 <?xml version="1.0" encoding="utf-8"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg class="relative top-[2px] inline-block align-baseline" version="1.1" id="圖層_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="1rem" height="1rem" viewBox="0 0 512 512" enable-background="new 0 0 512 512" xml:space="preserve"><path fill="#0E83CD" d="M256.4,25.8l-200,115.5L56,371.5l199.6,114.7l200-115.5l0.4-230.2L256.4,25.8z M349,354.6l-18.4,10.7l-18.6-11V275H200v79.6l-18.4,10.7l-18.6-11v-197l18.5-10.6l18.5,10.8V237h112v-79.6l18.5-10.6l18.5,10.8V354.6z"/></svg><a target="_blank" class="text-base" href="https://hexo.io">Hexo</a> 驱动</span>
+            <span class="text-sm lg:block">主题&nbsp;<a class="text-base" target="_blank" href="https://github.com/EvanNotFound/hexo-theme-redefine">Redefine v2.9.0</a></span>
+        </div>
+        
+        
+            <div>
+                博客已运行 <span class="odometer" id="runtime_days" ></span> 天 <span class="odometer" id="runtime_hours"></span> 小时 <span class="odometer" id="runtime_minutes"></span> 分钟 <span class="odometer" id="runtime_seconds"></span> 秒
+            </div>
+        
+        
+            <script data-swup-reload-script>
+                try {
+                    function odometer_init() {
+                    const elements = document.querySelectorAll('.odometer');
+                    elements.forEach(el => {
+                        new Odometer({
+                            el,
+                            format: '( ddd).dd',
+                            duration: 200
+                        });
+                    });
+                    }
+                    odometer_init();
+                } catch (error) {}
+            </script>
+        
+        
+        
+    </div>  
+</footer>
+		</div>
+	</div>
+
+	
+	<div class="post-tools">
+		<div class="post-tools-container">
+	<ul class="article-tools-list">
+		<!-- TOC aside toggle -->
+		
+		<li class="right-bottom-tools page-aside-toggle">
+			<i class="fa-regular fa-outdent"></i>
+		</li>
+		
+
+		<!-- go comment -->
+		
+		<li class="go-comment">
+			<i class="fa-regular fa-comments"></i>
+		</li>
+		
+	</ul>
+</div>
+	</div>
+	
+
+	<div class="right-side-tools-container">
+		<div class="side-tools-container">
+	<ul class="hidden-tools-list">
+		<li class="right-bottom-tools tool-font-adjust-plus flex justify-center items-center">
+			<i class="fa-regular fa-magnifying-glass-plus"></i>
+		</li>
+
+		<li class="right-bottom-tools tool-font-adjust-minus flex justify-center items-center">
+			<i class="fa-regular fa-magnifying-glass-minus"></i>
+		</li>
+
+		<li class="right-bottom-tools tool-dark-light-toggle flex justify-center items-center">
+			<i class="fa-regular fa-moon"></i>
+		</li>
+
+		<!-- rss -->
+		
+
+		
+
+		<li class="right-bottom-tools tool-scroll-to-bottom flex justify-center items-center">
+			<i class="fa-regular fa-arrow-down"></i>
+		</li>
+	</ul>
+
+	<ul class="visible-tools-list">
+		<li class="right-bottom-tools toggle-tools-list flex justify-center items-center">
+			<i class="fa-regular fa-cog fa-spin"></i>
+		</li>
+		
+		<li class="right-bottom-tools tool-scroll-to-top flex justify-center items-center">
+			<i class="arrow-up fas fa-arrow-up"></i>
+			<span class="percent"></span>
+		</li>
+		
+		
+	</ul>
+</div>
+	</div>
+
+	<div class="image-viewer-container" role="dialog" aria-modal="true" aria-label="图片查看器">
+	<button class="image-viewer-close" type="button" aria-label="关闭">
+		<i class="fa-solid fa-xmark"></i>
+	</button>
+	<button class="image-viewer-prev" type="button" aria-label="上一页">
+		<i class="fa-solid fa-chevron-left"></i>
+	</button>
+	<div class="image-viewer-frame">
+		<img src="" alt="">
+	</div>
+	<div class="image-viewer-exif-panel hidden absolute left-1/2 bottom-20 -translate-x-1/2 w-[min(92vw,420px)] max-h-[60vh] overflow-hidden rounded-2xl bg-background-color-transparent-80 p-4 text-left shadow-redefine-flat backdrop-blur-md" role="dialog" aria-label="EXIF" aria-hidden="true">
+		<div class="flex items-center justify-between mb-3">
+			<span class="text-sm font-semibold text-first-text-color">EXIF</span>
+			<button class="image-viewer-exif-close flex h-8 w-8 items-center justify-center rounded-full bg-background-color-transparent-80 text-first-text-color transition hover:bg-background-color-transparent-40" type="button" aria-label="关闭">
+				<i class="fa-solid fa-xmark text-[0.65rem]"></i>
+			</button>
+		</div>
+		<div class="image-viewer-exif-cards grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto pr-1 scrollbar-hide"></div>
+		<template class="image-viewer-exif-card-template">
+			<div class="rounded-lg bg-background-color-transparent-40 px-3 py-2">
+				<div class="image-viewer-exif-card-header flex items-center gap-2 mb-1">
+					<i class="image-viewer-exif-card-icon fa-solid fa-circle-info text-xs text-third-text-color"></i>
+					<div class="image-viewer-exif-card-title text-xs font-semibold text-first-text-color"></div>
+				</div>
+				<div class="image-viewer-exif-card-items flex flex-col gap-1"></div>
+			</div>
+		</template>
+	</div>
+	<button class="image-viewer-exif-toggle flex items-center gap-2 hidden absolute left-1/2 bottom-6 -translate-x-1/2 rounded-full border border-border-color bg-background-color-transparent-80 px-4 py-2 text-first-text-color backdrop-blur-md transition hover:bg-background-color-transparent-40" type="button" aria-label="EXIF" aria-expanded="false">
+		<i class="fa-solid fa-circle-info text-xs"></i>
+		<span class="text-xs font-semibold uppercase tracking-wider">EXIF</span>
+	</button>
+	<button class="image-viewer-next" type="button" aria-label="下一页">
+		<i class="fa-solid fa-chevron-right"></i>
+	</button>
+</div>
+
+
+	
+
+</main>
+
+
+
+<script src="/js/build/libs/Swup.min.js"></script>
+
+<script src="/js/build/libs/SwupSlideTheme.min.js"></script>
+
+<script src="/js/build/libs/SwupScriptsPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupProgressPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupScrollPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupPreloadPlugin.min.js"></script>
+
+<script>
+    window.swup = new Swup({
+        plugins: [
+            new SwupScriptsPlugin({
+                optin: true,
+            }),
+            new SwupProgressPlugin(),
+            new SwupScrollPlugin({
+                offset: 80,
+            }),
+            new SwupSlideTheme({
+                mainElement: ".main-content-body",
+            }),
+            new SwupPreloadPlugin(),
+        ],
+        containers: ["#swup"],
+    });
+
+    window.dispatchEvent(
+        new CustomEvent("redefine:swup:ready", {
+            detail: {
+                swup: window.swup,
+            },
+        }),
+    );
+</script>
+
+
+
+
+	
+<script src="/js/build/main.js" type="module"></script>
+
+
+
+    
+<script src="/js/build/libs/odometer.min.js"></script>
+
+    
+<link rel="stylesheet" href="/assets/odometer-theme-minimal.css">
+
+
+
+
+
+
+
+  
+<script src="/js/build/libs/Typed.min.js"></script>
+
+
+
+
+
+
+
+
+
+
+<script src="/js/build/libs/moment-with-locales.min.js" data-swup-reload-script=""></script>
+
+
+
+	
+</body>
+
+</html>

@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="keywords" content="Hexo Theme Redefine">
+    
+    
+    <meta name="author" content="kuangyue111">
+    
+    <!-- Completely eliminate flash of wrong theme -->
+    <script>
+        (function() {
+            const THEME_KEY = "REDEFINE-THEME-STATUS";
+            const DARK = "dark", LIGHT = "light";
+            
+            // Get preferred theme
+            function getTheme() {
+                try {
+                    const saved = localStorage.getItem(THEME_KEY);
+                    if (saved) {
+                        const { isDark } = JSON.parse(saved);
+                        return isDark ? DARK : LIGHT;
+                    }
+                } catch (e) {}
+                
+                return matchMedia("(prefers-color-scheme: dark)").matches ? DARK : LIGHT;
+            }
+            
+            // Apply theme to document
+            function applyTheme(theme) {
+                const isDark = theme === DARK;
+                const root = document.documentElement;
+                
+                // Set classes for compatibility
+                root.classList.add(theme);
+                root.classList.remove(isDark ? LIGHT : DARK);
+                root.style.colorScheme = theme;
+            }
+            
+            // Initial application
+            const theme = getTheme();
+            applyTheme(theme);
+            
+            // Listen for system preference changes
+            matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ({ matches }) => {
+                // Only update if using system preference (no localStorage entry)
+                if (!localStorage.getItem(THEME_KEY)) {
+                    applyTheme(matches ? DARK : LIGHT);
+                }
+            });
+            
+            // Set body classes ASAP (before DOMContentLoaded)
+            (function() {
+                const addBodyClass = () => {
+                    const b = document.body;
+                    if (!b) return false;
+                    b.classList.add(theme + "-mode");
+                    return true;
+                };
+
+                // Try immediately
+                if (addBodyClass()) return;
+
+                // Observe until body exists
+                const mo = new MutationObserver(() => {
+                    if (addBodyClass()) mo.disconnect();
+                });
+                mo.observe(document.documentElement, { childList: true, subtree: true });
+            })();
+        })();
+    </script>
+    
+    <!-- preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    
+    <!--- Seo Part-->
+    
+    <link rel="canonical" href="https://kuangyue111.github.io/2026/06/27/2026-06-27-bms-soc-smooth-display/"/>
+    <meta name="robots" content="index,follow">
+    <meta name="googlebot" content="index,follow">
+    <meta name="revisit-after" content="1 days">
+    
+    
+        
+        <meta name="description" content="Hexo Theme Redefine, Redefine Your Hexo Journey.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="BMS SOC显示平滑算法：让百分比变化符合用户直觉">
+<meta property="og:url" content="https://kuangyue111.github.io/2026/06/27/2026-06-27-bms-soc-smooth-display/index.html">
+<meta property="og:site_name" content="KuangYue&#39;s Blog">
+<meta property="og:description" content="Hexo Theme Redefine, Redefine Your Hexo Journey.">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://kuangyue111.github.io/images/redefine-og.webp">
+<meta property="article:published_time" content="2026-06-27T07:00:00.000Z">
+<meta property="article:modified_time" content="2026-06-27T09:54:26.878Z">
+<meta property="article:author" content="kuangyue111">
+<meta property="article:tag" content="嵌入式">
+<meta property="article:tag" content="BMS">
+<meta property="article:tag" content="SOC">
+<meta property="article:tag" content="显示平滑">
+<meta property="article:tag" content="FreeRTOS">
+<meta property="article:tag" content="S32K146">
+<meta property="article:tag" content="算法">
+<meta property="article:tag" content="用户体验">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://kuangyue111.github.io/images/redefine-og.webp">
+    
+    
+    <!--- Icon Part-->
+    <link rel="icon" type="image/png" href="/images/redefine-favicon.svg" sizes="192x192">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/redefine-favicon.svg">
+    <meta name="theme-color" content="#A31F34">
+    <link rel="shortcut icon" href="/images/redefine-favicon.svg">
+    <!--- Page Info-->
+    
+    <title>
+        
+            BMS SOC显示平滑算法：让百分比变化符合用户直觉 | KuangYue&#39;s Blog
+        
+    </title>
+
+    
+<link rel="stylesheet" href="/fonts/Chillax/chillax.css">
+
+
+    <!--- Inject Part-->
+    
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+        
+<link rel="stylesheet" href="/css/build/tailwind.css">
+
+    
+
+    
+<link rel="stylesheet" href="/fonts/GeistMono/geist-mono.css">
+
+    
+<link rel="stylesheet" href="/fonts/Geist/geist.css">
+
+    <!--- Font Part-->
+    
+    
+    
+    
+    
+    
+
+    <script id="hexo-configurations">
+    window.config = {"hostname":"kuangyue111.github.io","root":"/","language":"zh-CN"};
+    window.theme = {"articles":{"style":{"font_size":"16px","line_height":1.5,"image_border_radius":"14px","image_alignment":"center","image_caption":false,"link_icon":true,"delete_mask":false,"title_alignment":"left","headings_top_spacing":{"h1":"3.2rem","h2":"2.4rem","h3":"1.9rem","h4":"1.6rem","h5":"1.4rem","h6":"1.3rem"}},"word_count":{"enable":true,"count":true,"min2read":true},"author_label":{"enable":true,"auto":false,"list":[]},"code_block":{"copy":true,"style":"mac","highlight_theme":{"light":"github","dark":"vs2015"},"font":{"enable":false,"family":null,"url":null}},"toc":{"enable":true,"max_depth":3,"number":false,"expand":true,"init_open":true},"copyright":{"enable":true,"default":"cc_by_nc_sa"},"lazyload":true,"pangu_js":false,"recommendation":{"enable":false,"title":"推荐阅读","limit":3,"mobile_limit":2,"placeholder":"/images/wallhaven-wqery6-light.webp","skip_dirs":[]}},"colors":{"primary":"#A31F34","secondary":null,"default_mode":"light"},"global":{"fonts":{"chinese":{"enable":false,"family":null,"url":null},"english":{"enable":false,"family":null,"url":null},"title":{"enable":false,"family":null,"url":null}},"content_max_width":"1000px","sidebar_width":"210px","hover":{"shadow":true,"scale":false},"scroll_progress":{"bar":false,"percentage":true},"website_counter":{"url":"https://cn.vercount.one/js","enable":true,"site_pv":true,"site_uv":true,"post_pv":true},"single_page":true,"preloader":{"enable":false,"custom_message":null},"side_tools":{"gear_rotation":true,"auto_expand":false},"open_graph":{"enable":true,"image":"/images/redefine-og.webp","description":"Hexo Theme Redefine, Redefine Your Hexo Journey."},"google_analytics":{"enable":false,"id":null}},"home_banner":{"enable":true,"style":"fixed","image":{"light":"/images/wallhaven-wqery6-light.webp","dark":"/images/wallhaven-wqery6-dark.webp"},"title":"KuangYue's Blog","subtitle":{"text":["专注储能系统与嵌入式开发","记录 NCCU 控制单元架构演进","探索工业物联网与云端对接"],"hitokoto":{"enable":false,"show_author":false,"api":"https://v1.hitokoto.cn"},"typing_speed":100,"backing_speed":80,"starting_delay":500,"backing_delay":1500,"loop":true,"smart_backspace":true},"text_color":{"light":"#fff","dark":"#d1d1b6"},"text_style":{"title_size":"2.8rem","subtitle_size":"1.5rem","line_height":1.2},"custom_font":{"enable":false,"family":null,"url":null},"social_links":{"enable":true,"style":"default","links":[{"icon":"fa-brands fa-github","url":"https://github.com/kuangyue111"},{"icon":"fa-brands fa-twitter","url":null},{"icon":"fa-solid fa-at","url":"you@example.com"},{"icon":"fa-brands fa-telegram","url":null},{"icon":"/images/custom-icon.svg","url":null}],"qrs":[{"icon":"fa-brands fa-weixin","qr":null},{"icon":"/images/custom-icon.svg","qr":null}]}},"plugins":{"feed":{"enable":false},"aplayer":{"enable":false,"type":"fixed","audios":[{"name":null,"artist":null,"url":null,"cover":null,"lrc":null}]},"mermaid":{"theme":{"light":"default","dark":"dark"}},"katex":false,"chart":false},"version":"2.9.0","code_block":{"theme":"light","macStyle":false,"shrink":false,"copy_button":true,"language":true},"navbar":{"auto_hide":false,"color":{"left":"#f78736","right":"#367df7","transparency":35},"width":{"home":"1200px","pages":"1000px"},"links":{"Home":{"path":"/","icon":"fa-regular fa-house"},"Archives":{"path":"/archives/","icon":"fa-regular fa-archive"},"Tags":{"path":"/tags/","icon":"fa-regular fa-tags"},"Categories":{"path":"/categories/","icon":"fa-regular fa-folder"},"About":{"icon":"fa-regular fa-user","submenus":{"Me":"/about/","GitHub":"https://github.com/kuangyue111"}}},"search":{"enable":false,"preload":true}},"page_templates":{"friends_column":2,"tags_style":"blur","masonry":{"batch_size":12,"initial_batch_size":24}},"home":{"sidebar":{"enable":true,"position":"left","first_item":"menu","announcement":"专注于嵌入式与储能系统技术分享","show_on_mobile":true,"links":{"Archives":{"path":"/archives/","icon":"fa-regular fa-archive"},"Tags":{"path":"/tags/","icon":"fa-regular fa-tags"},"Categories":{"path":"/categories/","icon":"fa-regular fa-folder"}}},"article_date_format":"auto","excerpt_length":200,"categories":{"enable":true,"limit":3},"tags":{"enable":true,"limit":3}},"footer":{"runtime":true,"icon":"<i class=\"fa-solid fa-heart fa-beat\" style=\"--fa-animation-duration: 0.5s; color: #f54545\"></i>","start":"2022/8/17 11:45:14","statistics":true,"customize":null,"icp":{"enable":false,"number":null,"url":null},"since":2025,"custom":null,"copyright":true,"theme":{"enable":true},"counter":true},"footerStart":"2022/8/17 11:45:14","mermaid":{"style":{"light":"default","dark":"dark"}}};
+    window.lang_ago = {"second":"%s 秒前","minute":"%s 分钟前","hour":"%s 小时前","day":"%s 天前","week":"%s 周前","month":"%s 个月前","year":"%s 年前"};
+    window.i18n = {"search":"站内搜索您需要的内容...","toc":"目录","prev":"上一页","next":"下一页","prev_posts":"上一篇","next_posts":"下一篇","page":"第 %d 页","recent_posts":"最新文章","share":"分享","powered_by":"由 %s 驱动","theme":"主题","rss_feed":"RSS Feed","category":"分类","categories":"分类","tag":"标签","tags":"标签","post":"文章","posts":"文章","tagcloud":"标签云","comment":"评论","comments":"评论","top":"置顶","sticky":"置顶","go-back-home":"回到首页","masonry_loading":"照片加载中...","image_viewer":"图片查看器","close":"关闭","exif":{"title":"EXIF","cards":{"camera":"相机","lens":"镜头","exposure":"曝光","other":"其他"},"fields":{"make":"品牌","model":"机型","date_taken":"拍摄时间","lens_model":"镜头","focal_length":"焦距","focus_mode":"对焦模式","shutter":"快门","aperture":"光圈","iso":"感光度","exposure_program":"曝光程序","exposure_compensation":"曝光补偿","metering_mode":"测光模式","flash":"闪光灯","white_balance":"白平衡","latitude":"纬度","longitude":"经度","altitude":"海拔"},"status":{"loading":"加载中...","no_exif":"无 EXIF 信息","library_missing":"EXIF 库未加载","image_source_missing":"图片地址不可用","unavailable":"EXIF 不可用（可能被 CORS 阻止或缺少元数据）","flag_unavailable":"EXIF 不可用"}},"home":"首页","archive":"归档","archives":"归档","about":"关于","links":"链接","link":"链接","friends":"友情链接","friend":"友情链接","timeline":"时间轴","shuoshuo":"说说","bookmarks":"书签","site_uv":"访问人数","site_pv":"总访问量","read_more":"阅读全文","wordcount":"字","min2read":"分钟","changelog":"更新日志","status":"状态","runtime":"博客已运行","days":"天","hours":"小时","minutes":"分钟","seconds":"秒","optimized_by":"并由 Evan 进行优化","rights":"版权所有","site_posts":"共撰写了 %s 篇文章","site_wordcount":"共 %s 字","copyright":{"title":"标题","author":"作者","link":"链接","create_time":"创建于","update_time":"更新于","license_title":"版权声明","license_content":"本文章采用 %s 进行许可。","all_rights_reserved":"版权所有 &#169 %s，禁止转载。","public_domain":"本文为公有领域作品，可自由转载、引用。"},"ago":{"second":"%s 秒前","minute":"%s 分钟前","hour":"%s 小时前","day":"%s 天前","week":"%s 周前","month":"%s 个月前","year":"%s 年前"},"create_time":"创建","update_time":"更新","expired":"这篇文章最后更新于 %s 天前，内容可能已经过时。"};
+    window.data = {"masonry":false};
+  </script>
+    
+    <!--- Fontawesome Part-->
+    
+<link rel="stylesheet" href="/fontawesome/fontawesome.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/brands.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/solid.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/regular.min.css">
+
+    
+    
+    
+    
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+	<div class="progress-bar-container">
+	
+
+	
+	<span class="pjax-progress-bar"></span>
+	<!--        <span class="swup-progress-icon">-->
+	<!--            <i class="fa-solid fa-circle-notch fa-spin"></i>-->
+	<!--        </span>-->
+	
+</div>
+
+<main class="page-container" id="swup">
+
+	
+
+	<div class="main-content-container flex flex-col justify-between min-h-dvh">
+		<div class="main-content-header">
+			<header class="navbar-container px-6 md:px-12">
+    <div class="navbar-content transition-navbar ">
+        <div class="left">
+            
+            <a class="logo-title" href="/">
+                
+                KuangYue&#39;s Blog
+                
+            </a>
+        </div>
+
+        <div class="right">
+            <!-- PC -->
+            <div class="desktop">
+                <ul class="navbar-list">
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/"
+                                        >
+                                    <i class="fa-regular fa-house fa-fw"></i>
+                                    首页
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/archives/"
+                                        >
+                                    <i class="fa-regular fa-archive fa-fw"></i>
+                                    归档
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/tags/"
+                                        >
+                                    <i class="fa-regular fa-tags fa-fw"></i>
+                                    标签
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/categories/"
+                                        >
+                                    <i class="fa-regular fa-folder fa-fw"></i>
+                                    分类
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class="has-dropdown"
+                                   href="#"
+                                        onClick=&#34;return false;&#34;>
+                                    <i class="fa-regular fa-user fa-fw"></i>
+                                    关于
+                                    <i class="fa-solid fa-chevron-down fa-fw"></i>
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                                    <ul class="sub-menu">
+                                        
+                                            <li>
+                                                <a href="/about/">
+                                                    ME
+                                                </a>
+                                            </li>
+                                        
+                                            <li>
+                                                <a target="_blank" rel="noopener" href="https://github.com/kuangyue111">
+                                                    GITHUB
+                                                </a>
+                                            </li>
+                                        
+                                    </ul>
+                                
+                            </li>
+                    
+                    
+                </ul>
+            </div>
+            <!-- Mobile -->
+            <div class="mobile">
+                
+                <div class="icon-item navbar-bar">
+                    <div class="navbar-bar-middle"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile sheet -->
+    <div class="navbar-drawer h-dvh w-full absolute top-0 left-0 bg-background-color flex flex-col justify-between">
+        <ul class="drawer-navbar-list flex flex-col px-4 justify-center items-start">
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/"
+                        >
+                            <span>
+                                首页
+                            </span>
+                            
+                                <i class="fa-regular fa-house fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/archives/"
+                        >
+                            <span>
+                                归档
+                            </span>
+                            
+                                <i class="fa-regular fa-archive fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/tags/"
+                        >
+                            <span>
+                                标签
+                            </span>
+                            
+                                <i class="fa-regular fa-tags fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/categories/"
+                        >
+                            <span>
+                                分类
+                            </span>
+                            
+                                <i class="fa-regular fa-folder fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item-sub text-base my-1.5 flex flex-col w-full">
+                        
+                        <div class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary cursor-pointer text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                             navbar-data-toggle="submenu-About"
+                        >
+                            <span>
+                                关于
+                            </span>
+                            
+                                <i class="fa-solid fa-chevron-right fa-sm fa-fw transition-all"></i>
+                            
+                        </div>
+                        
+
+                        
+                            <div class="flex-col items-start px-2 py-2 hidden" data-target="submenu-About">
+                                
+                                    <div class="drawer-navbar-item text-base flex flex-col justify-center items-start hover:underline active:underline hover:underline-offset-1 rounded-3xl">
+                                        <a class=" text-third-text-color text-xl"
+                                           href="/about/">ME</a>
+                                    </div>
+                                
+                                    <div class="drawer-navbar-item text-base flex flex-col justify-center items-start hover:underline active:underline hover:underline-offset-1 rounded-3xl">
+                                        <a class=" text-third-text-color text-xl"
+                                           target="_blank" rel="noopener" href="https://github.com/kuangyue111">GITHUB</a>
+                                    </div>
+                                
+                            </div>
+                        
+                    </li>
+            
+
+            
+            
+                
+                    
+                    
+                    
+            
+        </ul>
+
+        <div class="statistics flex justify-around my-2.5">
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/tags">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">194</div>
+        <div class="label text-third-text-color text-sm">标签</div>
+    </a>
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/categories">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">16</div>
+        <div class="label text-third-text-color text-sm">分类</div>
+    </a>
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/archives">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">45</div>
+        <div class="label text-third-text-color text-sm">文章</div>
+    </a>
+</div>
+    </div>
+
+    <div class="window-mask"></div>
+
+</header>
+
+
+		</div>
+
+		<div class="main-content-body transition-fade-up">
+			
+
+			<div class="main-content">
+				<div class="post-page-container flex relative justify-between box-border w-full h-full">
+	<div class="article-content-container">
+
+		<div class="article-title relative w-full">
+			
+			<div class="w-full flex items-center pt-6 justify-start">
+				<h1 class="article-title-regular text-second-text-color tracking-tight text-4xl md:text-6xl font-semibold px-2 sm:px-6 md:px-8 py-3">BMS SOC显示平滑算法：让百分比变化符合用户直觉</h1>
+			</div>
+			
+		</div>
+
+		
+		<div class="article-header flex flex-row gap-2 items-center px-2 sm:px-6 md:px-8">
+			<div class="avatar w-[46px] h-[46px] shrink-0 rounded-medium border border-border-color p-px">
+				<img src="/images/redefine-avatar.svg">
+			</div>
+			<div class="info flex flex-col justify-between">
+				<div class="author flex items-center">
+					<span class="name text-default-text-color text-lg font-semibold">kuangyue111</span>
+					
+					<span class="author-label ml-1.5 text-xs px-2 py-0.5 rounded-small text-third-text-color border border-shadow-color-1">Lv4</span>
+					
+				</div>
+				<div class="meta-info">
+					<div class="article-meta-info">
+    <span class="article-date article-meta-item">
+        <i class="fa-regular fa-pen-fancy"></i>&nbsp;
+        <span class="desktop">2026-06-27 15:00</span>
+        <span class="mobile">2026-06-27 15:00</span>
+        <span class="hover-info">创建</span>
+    </span>
+    
+        <span class="article-date article-meta-item">
+            <i class="fa-regular fa-wrench"></i>&nbsp;
+            <span class="desktop">2026-06-27 17:54:26</span>
+            <span class="mobile">2026-06-27 17:54:26</span>
+            <span class="hover-info">更新</span>
+        </span>
+    
+
+    
+        <span class="article-categories article-meta-item">
+            <i class="fa-regular fa-folders"></i>&nbsp;
+            <ul>
+                
+                
+                    
+                        
+                        <li>
+                            <a href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/">技术分享</a>&nbsp;
+                        </li>
+                    
+                    
+                
+                    
+                        
+                            <li>></li>
+                        
+                        <li>
+                            <a href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/%E5%B5%8C%E5%85%A5%E5%BC%8F%E5%BC%80%E5%8F%91/">嵌入式开发</a>&nbsp;
+                        </li>
+                    
+                    
+                
+            </ul>
+        </span>
+    
+    
+        <span class="article-tags article-meta-item">
+            <i class="fa-regular fa-tags"></i>&nbsp;
+            <ul>
+                
+                    <li>
+                        <a href="/tags/%E5%B5%8C%E5%85%A5%E5%BC%8F/">嵌入式</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/BMS/">BMS</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/SOC/">SOC</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E6%98%BE%E7%A4%BA%E5%B9%B3%E6%BB%91/">显示平滑</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/FreeRTOS/">FreeRTOS</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/S32K146/">S32K146</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E7%AE%97%E6%B3%95/">算法</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E7%94%A8%E6%88%B7%E4%BD%93%E9%AA%8C/">用户体验</a>&nbsp;
+                    </li>
+                
+            </ul>
+        </span>
+    
+
+    
+    
+    
+    
+        <span class="article-pv article-meta-item">
+            <i class="fa-regular fa-eye"></i>&nbsp;<span id="busuanzi_value_page_pv"></span>
+        </span>
+    
+</div>
+
+				</div>
+			</div>
+		</div>
+		
+
+		
+
+
+		<div class="article-content markdown-body px-2 sm:px-6 md:px-8 pb-8">
+			<h1 id="BMS-SOC显示平滑算法：让百分比变化符合用户直觉"><a href="#BMS-SOC显示平滑算法：让百分比变化符合用户直觉" class="headerlink" title="BMS SOC显示平滑算法：让百分比变化符合用户直觉"></a>BMS SOC显示平滑算法：让百分比变化符合用户直觉</h1><hr>
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在储能BMS系统里，SOC（State of Charge，荷电状态）是用户最直接感知的核心指标。从EMS大屏到HMI触摸屏，SOC百分比就是电池的”油表”。</p>
+<p>然而，算法层计算出来的SOC是一个不断跳变的原始值。把它直接推给显示层，用户看到的将是一个毫无规律、时快时慢、甚至会”倒退”的数字——这在工程上是不可接受的。</p>
+<p>这套S32K146 BMS工程实现了一套完整的 <strong>SOC显示平滑系统</strong>，涉及速度自适应跟踪、端点加速、边界锁定、强制修正四个机制，总代码约350行，集中在 <code>SocDisplay.c</code> 一个文件中。本文将逐层拆解其实现逻辑。</p>
+<hr>
+<h2 id="一、为什么需要显示平滑"><a href="#一、为什么需要显示平滑" class="headerlink" title="一、为什么需要显示平滑"></a>一、为什么需要显示平滑</h2><p>理解”为什么做”比”怎么做”更重要。SOC显示不平滑的根源有三类：</p>
+<h3 id="1-1-安时积分的固有噪声"><a href="#1-1-安时积分的固有噪声" class="headerlink" title="1.1 安时积分的固有噪声"></a>1.1 安时积分的固有噪声</h3><p>安时积分法（Coulomb Counting）是这套工程的核心SOC算法。其原理是对电流采样值持续积分：</p>
+<div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SOC(t) = SOC(t₀) + ∫I·dt / C_total</span><br></pre></td></tr></table></figure></div>
+
+<p>ADC采样的电流值本身存在噪声，微小的电流偏差经过积分累积后，会在SOC计算值上产生肉眼可见的抖动。即使实际电流完全稳定，电流传感器的零漂（几十mA量级）也会让SOC以微小但不规律的步长漂移。</p>
+<h3 id="1-2-保护触发时的强制修正"><a href="#1-2-保护触发时的强制修正" class="headerlink" title="1.2 保护触发时的强制修正"></a>1.2 保护触发时的强制修正</h3><p>BMS的诊断层在检测到过充、过放保护时，会对SOC进行强制修正。例如：</p>
+<ul>
+<li>过充保护触发 → SOC强制跳至100%</li>
+<li>单体电压跌破低压阈值 → SOC强制修正至3%</li>
+</ul>
+<p>这种修正对算法层是正确的，但从显示层看，就是一个瞬间的几十个百分点跳变。用户会看到：刚才还显示75%，下一秒突然变成100%。</p>
+<h3 id="1-3-充放电末期的收敛加速"><a href="#1-3-充放电末期的收敛加速" class="headerlink" title="1.3 充放电末期的收敛加速"></a>1.3 充放电末期的收敛加速</h3><p>充电末期，电流逐渐减小，安时积分的变化量也随之减小，SOC的实际增长越来越慢。但此时电池真实容量已经很高，显示值必须”加速追上”真实值，否则充满了电却显示不到100%，用户会误认为电池坏了。</p>
+<p>这三类问题，决定了显示平滑算法必须是<strong>有状态的、方向感知的、速度自适应的</strong>，而不是简单的低通滤波。</p>
+<hr>
+<h2 id="二、整体架构：三层函数调用"><a href="#二、整体架构：三层函数调用" class="headerlink" title="二、整体架构：三层函数调用"></a>二、整体架构：三层函数调用</h2><p>在 <code>GroupSocDisplayTask()</code>（100ms周期调用）中，整个显示平滑流程分为三个步骤：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">GroupSocDisplayTask</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    u16 aimSoc = <span class="number">0</span>;</span><br><span class="line">    u16 slowSoc = <span class="number">0</span>;</span><br><span class="line">    </span><br><span class="line">    aimSoc = GetGRealSocTenThousAPI();       <span class="comment">// 第一步：取算法层真实SOC</span></span><br><span class="line">    </span><br><span class="line">    aimSoc = CalcSocChgDhgEndCorr(aimSoc);  <span class="comment">// 第二步：充放电末端修正</span></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">if</span>(<span class="number">0xffff</span> == sSlowDisplaySoc)</span><br><span class="line">    &#123;</span><br><span class="line">        slowSoc = aimSoc;                    <span class="comment">// 首次初始化：直接等于真实值</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    &#123;</span><br><span class="line">        slowSoc = CalcSocSlowChang(aimSoc); <span class="comment">// 第三步：平滑变化计算</span></span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    UpdateSocSlowDisplay(slowSoc);           <span class="comment">// 第四步：端点锁定并更新输出</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p><strong>数值单位说明</strong>：整个模块内部使用”<strong>万分之一</strong>“作为SOC精度单位（10000 &#x3D; 100%，9750 &#x3D; 97.50%）。最终输出时转换为”千分之一”（1&#x2F;1000）推给上层：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// UpdateSocSlowDisplay内部</span></span><br><span class="line">gGSysCapInfo_61[eSysCapInfo61_SOC] = (sSlowDisplaySoc + <span class="number">5</span>) / <span class="number">10</span>;</span><br><span class="line"><span class="comment">//                                    ^^^^^^^^^^^^^^ 四舍五入，转换为0.1%精度</span></span><br></pre></td></tr></table></figure></div>
+
+<p>核心状态变量只有一个：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> u16 sSlowDisplaySoc = <span class="number">0xffff</span>;   <span class="comment">// 平滑显示SOC中间变量（万分之一）</span></span><br></pre></td></tr></table></figure></div>
+
+<p><code>0xffff</code> 是未初始化标志，首次运行时直接用真实SOC赋值，避免从0缓慢爬升的冷启动问题。</p>
+<hr>
+<h2 id="三、速度自适应的单向跟踪"><a href="#三、速度自适应的单向跟踪" class="headerlink" title="三、速度自适应的单向跟踪"></a>三、速度自适应的单向跟踪</h2><h3 id="3-1-核心设计思想"><a href="#3-1-核心设计思想" class="headerlink" title="3.1 核心设计思想"></a>3.1 核心设计思想</h3><p><code>CalcSocSlowChang()</code> 是整个平滑算法的核心。它的设计原则只有两条：</p>
+<ol>
+<li><strong>方向感知</strong>：充电时显示值只能增加，放电时只能减少，不允许逆向变化</li>
+<li><strong>步进叠加</strong>：每个周期的显示变化量 &#x3D; 本周期真实SOC变化量 + 强制步进量（stepSoc）</li>
+</ol>
+<p>这个”步进叠加”是关键。仅靠安时积分的变化量驱动显示，在充电末期电流极小时会完全停滞。强制步进保证了显示值一定在向目标值靠拢。</p>
+<h3 id="3-2-充电状态下的跟踪逻辑"><a href="#3-2-充电状态下的跟踪逻辑" class="headerlink" title="3.2 充电状态下的跟踪逻辑"></a>3.2 充电状态下的跟踪逻辑</h3><div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 判断当前状态：电流&lt;0为充电</span></span><br><span class="line"><span class="keyword">if</span>(GetGSampOutCurrAPI() &lt; <span class="number">0</span>)</span><br><span class="line">&#123;</span><br><span class="line">    state = <span class="number">1</span>;  <span class="comment">// 充电</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>充电时（<code>state==1</code> 且 <code>sHisState==1</code>），计算本周期容量变化：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">changCap = ABS(sHisCap, inteCap);               <span class="comment">// 本周期充入电量（mAh）</span></span><br><span class="line">changSoc = (u16)(changCap * <span class="number">10000</span> / totalCap);  <span class="comment">// 换算为SOC变化量（万分之一）</span></span><br></pre></td></tr></table></figure></div>
+
+<blockquote>
+<p><strong>设计细节</strong>：<code>sHisCap</code> 记录上一次调用时的积分电量，<code>inteCap</code> 是当前值，差值就是本100ms内充入的电量。若差值为0（噪声消抖），保持上次的积分基准点不动。</p>
+</blockquote>
+<p>当显示值落后于真实SOC（<code>copySoc &lt; aimSoc</code>），叠加步进量：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">changSoc += stepSoc;   <span class="comment">// 实际变化量 + 强制步进量</span></span><br><span class="line">copySoc += changSoc;   <span class="comment">// 本次显示变化</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span>(copySoc &gt; aimSoc)   <span class="comment">// 防止追过头</span></span><br><span class="line">&#123;</span><br><span class="line">    copySoc = aimSoc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<h3 id="3-3-放电状态下的跟踪逻辑"><a href="#3-3-放电状态下的跟踪逻辑" class="headerlink" title="3.3 放电状态下的跟踪逻辑"></a>3.3 放电状态下的跟踪逻辑</h3><p>放电时（<code>state==2</code> 且 <code>sHisState==2</code>），逻辑完全镜像：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">changSoc += stepSoc;         <span class="comment">// 变化量+步进量</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span>(copySoc &gt; changSoc)</span><br><span class="line">&#123;</span><br><span class="line">    copySoc -= changSoc;     <span class="comment">// 显示值下降</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">&#123;</span><br><span class="line">    copySoc = <span class="number">0</span>;             <span class="comment">// 防止下溢</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span>(copySoc &lt; aimSoc)         <span class="comment">// 防止降过头</span></span><br><span class="line">&#123;</span><br><span class="line">    copySoc = aimSoc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<h3 id="3-4-显示值超前时的降速处理"><a href="#3-4-显示值超前时的降速处理" class="headerlink" title="3.4 显示值超前时的降速处理"></a>3.4 显示值超前时的降速处理</h3><p>如果显示值<strong>超过</strong>了真实SOC（例如充电过程中算法SOC被向下修正），不能直接让显示跳回，而是以真实变化量除以 <code>SOC_SLOW_SPEED</code>（&#x3D; 5）的速度缓慢回落：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 充电时 copySoc &gt; aimSoc（显示超前）</span></span><br><span class="line">changSoc = changSoc / SOC_SLOW_SPEED;   <span class="comment">// 降速到真实速度的1/5</span></span><br><span class="line">copySoc += changSoc;                     <span class="comment">// 继续缓慢增加（等待真实值追上）</span></span><br></pre></td></tr></table></figure></div>
+
+<p>这里有一个微妙处：充电时即使显示值超前，<code>copySoc</code> 仍然是加法（因为是充电状态，方向不变），只是速度放慢了，等待真实SOC追上来。这保证了”充电时SOC绝对不会在显示上减小”这一原则。</p>
+<hr>
+<h2 id="四、接近端点时加速显示"><a href="#四、接近端点时加速显示" class="headerlink" title="四、接近端点时加速显示"></a>四、接近端点时加速显示</h2><h3 id="4-1-充电侧的分段加速（SOC趋向100-）"><a href="#4-1-充电侧的分段加速（SOC趋向100-）" class="headerlink" title="4.1 充电侧的分段加速（SOC趋向100%）"></a>4.1 充电侧的分段加速（SOC趋向100%）</h3><p>这是整个算法最精妙的部分。当电池快充满时，电流越来越小，安时积分驱动的 <code>changSoc</code> 趋近于零。如果没有步进补偿，显示SOC会在95%附近”卡住”，充满了电却显示不出来。</p>
+<p>分段加速的逻辑如下：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span>(copySoc &lt; aimSoc)   <span class="comment">// 显示滞后于真实SOC</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span>(aimSoc &gt;= <span class="number">9000</span>)   <span class="comment">// 真实SOC &gt; 90%，进入加速区</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span>(aimSoc &gt;= <span class="number">9750</span>)           <span class="comment">// &gt; 97.5%：最快</span></span><br><span class="line">        &#123;</span><br><span class="line">            stepSoc = (aimSoc - copySoc) / <span class="number">50</span>;</span><br><span class="line">            <span class="comment">// 剩余差距 / 50步 = 5s追完（50×100ms）</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span>(aimSoc &gt;= <span class="number">9500</span>)     <span class="comment">// &gt; 95%</span></span><br><span class="line">        &#123;</span><br><span class="line">            stepSoc = (aimSoc - copySoc) / <span class="number">150</span>;  <span class="comment">// 15s追完</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span>(aimSoc &gt;= <span class="number">9300</span>)     <span class="comment">// &gt; 93%</span></span><br><span class="line">        &#123;</span><br><span class="line">            stepSoc = (aimSoc - copySoc) / <span class="number">200</span>;  <span class="comment">// 20s追完</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span>                         <span class="comment">// &gt; 90%</span></span><br><span class="line">        &#123;</span><br><span class="line">            stepSoc = (aimSoc - copySoc) / <span class="number">300</span>;  <span class="comment">// 30s追完</span></span><br><span class="line">        &#125;</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">if</span>(<span class="number">0</span> == stepSoc)   <span class="comment">// 差距极小时保底步进1</span></span><br><span class="line">        &#123;</span><br><span class="line">            stepSoc = <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span>(aimSoc &gt;= <span class="number">8000</span>)   <span class="comment">// 80~90%：中速区</span></span><br><span class="line">    &#123;</span><br><span class="line">        stepSoc = (aimSoc - copySoc) / <span class="number">600</span>;  <span class="comment">// 60s追完</span></span><br><span class="line">        <span class="keyword">if</span>(<span class="number">0</span> == stepSoc)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">if</span>(sTime &gt;= <span class="number">2</span>)   <span class="comment">// 每3次调用（300ms）步进1</span></span><br><span class="line">            &#123;</span><br><span class="line">                stepSoc = <span class="number">1</span>;</span><br><span class="line">                sTime = <span class="number">0</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span></span><br><span class="line">            &#123;</span><br><span class="line">                stepSoc = <span class="number">0</span>;</span><br><span class="line">                sTime++;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span>                     <span class="comment">// &lt; 80%：最慢区</span></span><br><span class="line">    &#123;</span><br><span class="line">        stepSoc = (aimSoc - copySoc) / <span class="number">1200</span>;  <span class="comment">// 120s追完</span></span><br><span class="line">        <span class="keyword">if</span>(<span class="number">0</span> == stepSoc)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">if</span>(sTime &gt;= <span class="number">3</span>)   <span class="comment">// 每4次调用（400ms）步进1</span></span><br><span class="line">            &#123;</span><br><span class="line">                stepSoc = <span class="number">1</span>;</span><br><span class="line">                sTime = <span class="number">0</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span></span><br><span class="line">            &#123;</span><br><span class="line">                stepSoc = <span class="number">0</span>;</span><br><span class="line">                sTime++;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>汇总为表格：</p>
+<table>
+<thead>
+<tr>
+<th>真实SOC区间</th>
+<th>追赶时间（理论值）</th>
+<th>步进计算公式</th>
+<th>体感</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>&gt; 97.5%</td>
+<td><strong>5秒</strong></td>
+<td><code>(aim - copy) / 50</code></td>
+<td>快速收尾</td>
+</tr>
+<tr>
+<td>95% ~ 97.5%</td>
+<td><strong>15秒</strong></td>
+<td><code>(aim - copy) / 150</code></td>
+<td>加速趋近</td>
+</tr>
+<tr>
+<td>93% ~ 95%</td>
+<td><strong>20秒</strong></td>
+<td><code>(aim - copy) / 200</code></td>
+<td>平稳加速</td>
+</tr>
+<tr>
+<td>90% ~ 93%</td>
+<td><strong>30秒</strong></td>
+<td><code>(aim - copy) / 300</code></td>
+<td>缓慢加速</td>
+</tr>
+<tr>
+<td>80% ~ 90%</td>
+<td><strong>60秒</strong></td>
+<td><code>(aim - copy) / 600</code></td>
+<td>正常速度</td>
+</tr>
+<tr>
+<td>&lt; 80%</td>
+<td><strong>120秒</strong></td>
+<td><code>(aim - copy) / 1200</code></td>
+<td>最慢</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>设计意图</strong>：用户在接近充满时最敏感。在97.5%以上，5秒内完成收尾，避免充满了还在转圈；而在中间段（80%以下），120秒的追赶时间意味着显示不会因为电流噪声频繁抖动。</p>
+</blockquote>
+<h3 id="4-2-放电侧的镜像加速（SOC趋向0-）"><a href="#4-2-放电侧的镜像加速（SOC趋向0-）" class="headerlink" title="4.2 放电侧的镜像加速（SOC趋向0%）"></a>4.2 放电侧的镜像加速（SOC趋向0%）</h3><p>放电侧完全对称，阈值反向：</p>
+<table>
+<thead>
+<tr>
+<th>真实SOC区间</th>
+<th>追赶时间</th>
+<th>体感</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>&lt; 3.5%（350&#x2F;10000）</td>
+<td><strong>5秒</strong></td>
+<td>快速告警</td>
+</tr>
+<tr>
+<td>3.5% ~ 8%（800）</td>
+<td><strong>15秒</strong></td>
+<td>加速下降</td>
+</tr>
+<tr>
+<td>8% ~ 14%（1400）</td>
+<td><strong>20秒</strong></td>
+<td>平稳加速</td>
+</tr>
+<tr>
+<td>14% ~ 20%（2000）</td>
+<td><strong>30秒</strong></td>
+<td>缓慢加速</td>
+</tr>
+<tr>
+<td>20% ~ 25%（2500）</td>
+<td><strong>60秒</strong></td>
+<td>正常速度</td>
+</tr>
+<tr>
+<td>&gt; 25%</td>
+<td><strong>120秒</strong></td>
+<td>最慢</td>
+</tr>
+</tbody></table>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 放电端点加速示例</span></span><br><span class="line"><span class="keyword">if</span>(aimSoc &lt;= <span class="number">2000</span>)   <span class="comment">// 真实SOC &lt; 20%</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span>(aimSoc &lt;= <span class="number">350</span>)   <span class="comment">// &lt; 3.5%</span></span><br><span class="line">    &#123;</span><br><span class="line">        stepSoc = (copySoc - aimSoc) / <span class="number">50</span>;  <span class="comment">// 5s追完</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<hr>
+<h2 id="五、端点锁定机制"><a href="#五、端点锁定机制" class="headerlink" title="五、端点锁定机制"></a>五、端点锁定机制</h2><p><code>UpdateSocSlowDisplay()</code> 在写入最终显示值之前，有一层边界保护逻辑：</p>
+<h3 id="5-1-99-上锁（充电侧）"><a href="#5-1-99-上锁（充电侧）" class="headerlink" title="5.1 99% 上锁（充电侧）"></a>5.1 99% 上锁（充电侧）</h3><div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">else</span> <span class="keyword">if</span>((slowSoc &gt;= <span class="number">9900</span>)                         <span class="comment">// 平滑值 &gt;= 99%</span></span><br><span class="line">    &amp;&amp; (<span class="number">0</span> == EnerGetGroupVHLimStateHook()))        <span class="comment">// 且尚未触发高压告警</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span>(sSlowDisplaySoc &lt;= <span class="number">9900</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        sSlowDisplaySoc = <span class="number">9900</span>;    <span class="comment">// 上限锁在99%，不显示100%</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span>(slowSoc &lt; sSlowDisplaySoc)   <span class="comment">// 如果是放电（值在减小）</span></span><br><span class="line">    &#123;</span><br><span class="line">        sSlowDisplaySoc = slowSoc;       <span class="comment">// 允许继续减小</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p><strong>为什么不显示100%？</strong></p>
+<p>99% 锁定是一种”余量感”设计。用户看到100%会认为”满了，可以拔枪了”，然而BMS内部可能还在做均衡补充充电。在高压告警（<code>VHLimState</code>）触发之前显示停在99%，意思是”快满了，但还在充”。只有当高压保护真正触发（充电真正完成）后，才会跳到100%。</p>
+<h3 id="5-2-1-下锁（放电侧）"><a href="#5-2-1-下锁（放电侧）" class="headerlink" title="5.2 1% 下锁（放电侧）"></a>5.2 1% 下锁（放电侧）</h3><div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">else</span> <span class="keyword">if</span>((slowSoc &lt;= <span class="number">100</span>)                          <span class="comment">// 平滑值 &lt;= 1%</span></span><br><span class="line">    &amp;&amp; (<span class="number">0</span> == EnerGetGroupVLLimStateHook()))        <span class="comment">// 且尚未触发低压告警</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span>(sSlowDisplaySoc &gt;= <span class="number">100</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        sSlowDisplaySoc = <span class="number">100</span>;     <span class="comment">// 下限锁在1%，不显示0%</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span>(slowSoc &gt; sSlowDisplaySoc)   <span class="comment">// 如果是充电（值在增加）</span></span><br><span class="line">    &#123;</span><br><span class="line">        sSlowDisplaySoc = slowSoc;       <span class="comment">// 允许继续增加</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>SOC锁在1%不显示0%，是为了给用户”还有一点余量”的心理暗示，避免用户因为看到0%而恐慌。低压保护触发后才真正显示0%，表示”必须停止使用”。</p>
+<h3 id="5-3-EEPROM节流写入"><a href="#5-3-EEPROM节流写入" class="headerlink" title="5.3 EEPROM节流写入"></a>5.3 EEPROM节流写入</h3><p>每次更新完显示值，还有一个节流保存逻辑：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span>((sShowCopy / <span class="number">100</span>) != (sSlowDisplaySoc / <span class="number">100</span>))   <span class="comment">// 变化超过1%</span></span><br><span class="line">&#123;</span><br><span class="line">    EnerChangEepGNowSocHook((sSlowDisplaySoc / <span class="number">10</span>)); <span class="comment">// 保存显示SOC到EEPROM</span></span><br><span class="line">    sShowCopy = sSlowDisplaySoc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>SOC以100ms为周期更新，如果每次都写EEPROM，一天会产生864000次写操作，远超Flash的擦写寿命（约10万次）。这里的设计是：<strong>只有显示变化超过1%时才写EEPROM</strong>，大幅降低写入频率，同时保证掉电后重启的SOC精度误差不超过1%。</p>
+<hr>
+<h2 id="六、强制修正：跳过平滑直接覆写"><a href="#六、强制修正：跳过平滑直接覆写" class="headerlink" title="六、强制修正：跳过平滑直接覆写"></a>六、强制修正：跳过平滑直接覆写</h2><p>平滑跟踪保证了”正常工况”下的用户体验，但面对保护触发，必须有即时响应机制。这就是 <code>CorrGDisplaySocByUser()</code> 接口：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">CorrGDisplaySocByUser</span><span class="params">(u16 soc)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span>(soc &gt; <span class="number">10000</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">return</span>;   <span class="comment">// 参数防护</span></span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    sSlowDisplaySoc = soc;   <span class="comment">// 直接覆写平滑中间变量</span></span><br><span class="line">    </span><br><span class="line">    UpdateSocSlowDisplay(soc); <span class="comment">// 立即更新显示输出</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>这个函数完全绕过了 <code>CalcSocSlowChang()</code> 的缓慢追赶逻辑，直接将平滑中间变量设置为目标值，然后立即输出。</p>
+<p>它由 <code>CalcSocChgDhgEndCorr()</code> 中的保护逻辑调用：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 过充一级保护触发</span></span><br><span class="line"><span class="keyword">if</span>(EnerGetGroupVHProStateHook() &gt; <span class="number">0</span>)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span>((<span class="number">1</span> != sCorrFlag)</span><br><span class="line">        &amp;&amp; ((nowSoc &lt; SOC_SLOW_VHER_SOC) || (sSlowDisplaySoc &lt; SOC_SLOW_VHER_SOC)))</span><br><span class="line">    &#123;</span><br><span class="line">        CorrGRemainCapBySocAPI(SOC_SLOW_VHER_SOC / <span class="number">10</span>);  <span class="comment">// 修正算法层SOC</span></span><br><span class="line">        CorrGNowCapBySocAPI(SOC_SLOW_VHER_SOC / <span class="number">10</span>);     <span class="comment">// 修正容量基准</span></span><br><span class="line">        sSlowDisplaySoc = SOC_SLOW_VHER_SOC;             <span class="comment">// 直接覆写显示值</span></span><br><span class="line">        aimSoc = SOC_SLOW_VHER_SOC;                      <span class="comment">// 目标也设为100%</span></span><br><span class="line">        sCorrFlag = <span class="number">1</span>;                                   <span class="comment">// 标记已执行修正</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p><code>sCorrFlag</code> 是一个单次执行标志，防止保护状态持续时重复修正。在 <code>UpdateSocSlowDisplay()</code> 中，还有最终的兜底显示覆写：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span>(EnerGetGroupVHProStateHook() &gt; <span class="number">0</span>)</span><br><span class="line">&#123;</span><br><span class="line">    sSlowDisplaySoc = <span class="number">10000</span>;   <span class="comment">// 过充保护：直接显示100%</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">else</span> <span class="keyword">if</span>(EnerGetGroupVLProStateHook() &gt; <span class="number">0</span>)</span><br><span class="line">&#123;</span><br><span class="line">    sSlowDisplaySoc = <span class="number">0</span>;       <span class="comment">// 过放保护：直接显示0%</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>各保护状态下的显示行为总结：</p>
+<table>
+<thead>
+<tr>
+<th>触发条件</th>
+<th>宏定义常量</th>
+<th>显示值</th>
+<th>机制</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>过充一级保护（VH_PRO）</td>
+<td><code>SOC_SLOW_VHER_SOC = 10000</code></td>
+<td><strong>100%</strong></td>
+<td>直接覆写+算法修正</td>
+</tr>
+<tr>
+<td>过放一级保护（VL_PRO）</td>
+<td><code>SOC_SLOW_VLER_SOC = 0</code></td>
+<td><strong>0%</strong></td>
+<td>直接覆写+算法修正</td>
+</tr>
+<tr>
+<td>高压告警（VH_LIM）</td>
+<td><code>SOC_SLOW_VH_SOC = 9950</code></td>
+<td><strong>99.5%</strong></td>
+<td>平滑趋近，放电可减</td>
+</tr>
+<tr>
+<td>低压告警（VL_LIM）</td>
+<td><code>SOC_SLOW_VL_SOC = 50</code></td>
+<td><strong>0.5%</strong></td>
+<td>平滑趋近，充电可增</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="七、充放电末端的电压辅助修正"><a href="#七、充放电末端的电压辅助修正" class="headerlink" title="七、充放电末端的电压辅助修正"></a>七、充放电末端的电压辅助修正</h2><p>在 <code>CalcSocChgDhgEndCorr()</code> 中，还有一套基于单体电压的辅助修正逻辑，这套逻辑在<strong>充放电末端</strong>发挥作用：</p>
+<h3 id="7-1-充电末端修正（以磷酸铁锂为例）"><a href="#7-1-充电末端修正（以磷酸铁锂为例）" class="headerlink" title="7.1 充电末端修正（以磷酸铁锂为例）"></a>7.1 充电末端修正（以磷酸铁锂为例）</h3><div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 单体最高电压超过3.495V（接近充满）且SOC偏低</span></span><br><span class="line"><span class="keyword">if</span>((GetGCellMaxVoltAPI() &gt;= SOC_V_CHG_UP_MAX_V) &amp;&amp; (nowSoc &lt; SOC_V_CHG_UP_LES_SOC))</span><br><span class="line">&#123;</span><br><span class="line">    CorrGNowCapBySocAPI(SOC_V_CHG_UP_LES_SOC / <span class="number">10</span>);  <span class="comment">// 强制SOC修正为96%</span></span><br><span class="line">    aimSoc = SOC_V_CHG_UP_LES_SOC;                    <span class="comment">// 显示目标拉到96%</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 单体最高电压超过3.437V（充电初段末端）且SOC偏低</span></span><br><span class="line"><span class="keyword">else</span> <span class="keyword">if</span>((GetGCellMaxVoltAPI() &gt;= SOC_V_CHG_DN_MAX_V) &amp;&amp; (nowSoc &lt; SOC_V_CHG_DN_LES_SOC))</span><br><span class="line">&#123;</span><br><span class="line">    CorrGNowCapBySocAPI(SOC_V_CHG_DN_LES_SOC / <span class="number">10</span>);  <span class="comment">// 强制SOC修正为91%</span></span><br><span class="line">    aimSoc = SOC_V_CHG_DN_LES_SOC;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>这是一套”电压-SOC交叉校验”机制：磷酸铁锂电池的充电末端电压特征非常明显（3.4V以上进入尾段），利用这一特征对安时积分的累积误差进行修正。</p>
+<h3 id="7-2-静置时的电压平台修正"><a href="#7-2-静置时的电压平台修正" class="headerlink" title="7.2 静置时的电压平台修正"></a>7.2 静置时的电压平台修正</h3><p>系统静置超过600秒（<code>SOC_SLOW_CORR_IDLE_T = 6000</code> × 0.1s）后，会基于开路电压（OCV）与SOC的对应关系进行修正：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span>(sIdleTime &gt;= SOC_SLOW_CORR_IDLE_T)   <span class="comment">// 静置10分钟</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span>(GetGCellMaxVoltAPI() &lt; SOC_V_SEC_DN_MAX_V)   <span class="comment">// 单体最高电压很低</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span>(nowSoc &gt; SOC_V_SEC_DN_MOS_SOC)           <span class="comment">// 但SOC偏高</span></span><br><span class="line">        &#123;</span><br><span class="line">            CorrGNowCapBySocAPI(SOC_V_SEC_DN_MOS_SOC / <span class="number">10</span>); <span class="comment">// 向下修正SOC</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// ...其他电压区间类似处理</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>这种修正设计为<strong>单次触发</strong>，利用开路电压平台排除安时积分漂移。静置时间要求足够长（10分钟），确保电压已完全平衡，减少测量误差。</p>
+<hr>
+<h2 id="八、完整数据流梳理"><a href="#八、完整数据流梳理" class="headerlink" title="八、完整数据流梳理"></a>八、完整数据流梳理</h2><div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">算法层真实SOC（每10ms积分更新）</span><br><span class="line">        │</span><br><span class="line">        ▼</span><br><span class="line">GetGRealSocTenThousAPI()     ← 取值，单位：万分之一</span><br><span class="line">        │</span><br><span class="line">        ▼</span><br><span class="line">CalcSocChgDhgEndCorr()       ← 充放电末端修正 / 保护触发修正</span><br><span class="line">        │  ┌──────────────────────────────────────────┐</span><br><span class="line">        │  │ VH保护 → aimSoc=10000（100%）           │</span><br><span class="line">        │  │ VL保护 → aimSoc=0（0%）                 │</span><br><span class="line">        │  │ 充电末端 → 电压辅助拉高SOC              │</span><br><span class="line">        │  │ 放电末端 → 电压辅助压低SOC              │</span><br><span class="line">        │  │ 静置10min → OCV平台校准                 │</span><br><span class="line">        │  └──────────────────────────────────────────┘</span><br><span class="line">        │ aimSoc（修正后目标值）</span><br><span class="line">        ▼</span><br><span class="line">CalcSocSlowChang()           ← 平滑追赶计算（核心）</span><br><span class="line">        │  ┌──────────────────────────────────────────┐</span><br><span class="line">        │  │ 判断充放电方向（state）                  │</span><br><span class="line">        │  │ 计算真实变化量 changSoc                  │</span><br><span class="line">        │  │ 查表得步进量 stepSoc（端点加速）         │</span><br><span class="line">        │  │ 叠加：changSoc += stepSoc                │</span><br><span class="line">        │  │ 单向更新：充电只加 / 放电只减            │</span><br><span class="line">        │  │ 防越界：不超过/不低于aimSoc              │</span><br><span class="line">        │  └──────────────────────────────────────────┘</span><br><span class="line">        │ slowSoc（平滑值）</span><br><span class="line">        ▼</span><br><span class="line">UpdateSocSlowDisplay()       ← 端点锁定+输出</span><br><span class="line">        │  ┌──────────────────────────────────────────┐</span><br><span class="line">        │  │ VH保护 → 强制100%                       │</span><br><span class="line">        │  │ VL保护 → 强制0%                         │</span><br><span class="line">        │  │ slowSoc≥99% 且无VH告警 → 锁99%          │</span><br><span class="line">        │  │ slowSoc≤1%  且无VL告警 → 锁1%           │</span><br><span class="line">        │  │ 转换单位：/10 → 千分之一（0.1%精度）    │</span><br><span class="line">        │  │ 变化&gt;1% → 写EEPROM                      │</span><br><span class="line">        │  └──────────────────────────────────────────┘</span><br><span class="line">        │</span><br><span class="line">        ▼</span><br><span class="line">gGSysCapInfo_61[eSysCapInfo61_SOC]   ← 最终显示值（上层读取）</span><br></pre></td></tr></table></figure></div>
+
+<hr>
+<h2 id="九、工程经验总结"><a href="#九、工程经验总结" class="headerlink" title="九、工程经验总结"></a>九、工程经验总结</h2><p><strong>1. 平滑不是低通滤波</strong></p>
+<p>简单的 <code>display = 0.9×display + 0.1×real</code> 对BMS毫无意义——它对充放电方向无感知，会产生”放电时SOC短暂增加”的悖论显示。这套工程选择的是有状态的、方向敏感的单向追赶，才是正确思路。</p>
+<p><strong>2. 步进叠加解决了末端卡顿问题</strong></p>
+<p><code>changSoc += stepSoc</code> 这一行是灵魂。仅靠电流积分驱动，充电末期电流趋零时显示会完全停滞。强制步进保证显示”永远在动”，向用户传达”充电进行中”的状态。</p>
+<p><strong>3. 分段加速是用户体验的精细调校</strong></p>
+<p>从120秒到5秒，六个加速档位是反复调试的结果。80%以下的缓慢追赶防止了中间段的抖动，97.5%以上的快速收尾保证了充满提示的及时性。这种非线性设计，不是算法的精妙，而是对用户心理的理解。</p>
+<p><strong>4. 端点锁定是用户引导的艺术</strong></p>
+<p>不显示100%（锁99%），是主动欺骗——但这种欺骗对用户有益。它给用户留了余量感，减少了”满了又没满”的焦虑。只有触发了实际的过充保护，才真正告诉用户”满了”。这是产品设计和嵌入式工程相交汇的地方。</p>
+<p><strong>5. EEPROM节流写入是寿命工程</strong></p>
+<p>100ms的更新周期，如果每次都写EEPROM，设备寿命按天计算。1%阈值的节流策略将写入频率降低了约100倍，且重启时SOC误差不超过1%，是性能与寿命的平衡点。</p>
+<hr>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>SOC显示平滑，表面上是一个UI优化问题，本质上是<strong>算法层与显示层之间的接口设计问题</strong>。这套工程给出的答案是：用一个有状态的、速度自适应的单向跟踪器作为桥梁，辅以端点锁定和强制覆写的逃生通道，实现了在任何工况下都”符合直觉”的SOC显示。</p>
+<p><code>SocDisplay.c</code> 的350行代码，是BMS用户体验工程的缩影——它不属于任何核心算法，却是用户感知最直接的那层。</p>
+<hr>
+
+		</div>
+
+		
+		<div class="post-copyright-info w-full my-8 px-2 sm:px-6 md:px-8">
+			<div class="article-copyright-info-container">
+    <ul>
+        <li><strong>标题:</strong> BMS SOC显示平滑算法：让百分比变化符合用户直觉</li>
+        <li><strong>作者:</strong> kuangyue111</li>
+        <li><strong>创建于
+                :</strong> 2026-06-27 15:00:00</li>
+        
+            <li>
+                <strong>更新于
+                    :</strong> 2026-06-27 17:54:26
+            </li>
+        
+        <li>
+            <strong>链接:</strong> https://kuangyue111.github.io/2026/06/27/2026-06-27-bms-soc-smooth-display/
+        </li>
+        <li>
+            <strong>
+                版权声明:
+            </strong>
+            
+
+            
+                本文章采用 <a class="license" target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0">CC BY-NC-SA 4.0</a> 进行许可。
+            
+        </li>
+    </ul>
+</div>
+
+		</div>
+		
+
+		
+		<ul class="post-tags-box text-lg mt-1.5 flex-wrap justify-center flex md:hidden">
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E5%B5%8C%E5%85%A5%E5%BC%8F/">#嵌入式</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/BMS/">#BMS</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/SOC/">#SOC</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E6%98%BE%E7%A4%BA%E5%B9%B3%E6%BB%91/">#显示平滑</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/FreeRTOS/">#FreeRTOS</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/S32K146/">#S32K146</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E7%AE%97%E6%B3%95/">#算法</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E7%94%A8%E6%88%B7%E4%BD%93%E9%AA%8C/">#用户体验</a>&nbsp;
+			</li>
+			
+		</ul>
+		
+
+		
+
+		
+		<div class="article-nav my-8 flex justify-between items-center px-2 sm:px-6 md:px-8">
+			
+			<div class="article-prev border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
+				<a class="prev" rel="prev" href="/2026/06/27/2026-06-27-bms-engineering-evaluation-report/">
+					<span class="left arrow-icon flex justify-center items-center">
+						<i class="fa-solid fa-chevron-left"></i>
+					</span>
+					<span class="title flex justify-center items-center">
+						<span class="post-nav-title-item truncate max-w-48">BMS工程专业评价报告</span>
+						<span class="post-nav-item">上一篇</span>
+					</span>
+				</a>
+			</div>
+			
+			
+			<div class="article-next border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
+				<a class="next" rel="next" href="/2026/06/25/2026-06-25-ekf-soc-estimation-reading-review/">
+					<span class="title flex justify-center items-center">
+						<span class="post-nav-title-item truncate max-w-48">卡尔曼滤波SOC估算技术调研读后感：从理论到工程的完整解读</span>
+						<span class="post-nav-item">下一篇</span>
+					</span>
+					<span class="right arrow-icon flex justify-center items-center">
+						<i class="fa-solid fa-chevron-right"></i>
+					</span>
+				</a>
+			</div>
+			
+		</div>
+		
+
+
+		
+		<div class="comment-container px-2 sm:px-6 md:px-8 pb-8">
+			<div class="comments-container mt-10 w-full ">
+    <div id="comment-anchor" class="w-full h-2.5"></div>
+    <div class="comment-area-title w-full my-1.5 md:my-2.5 text-xl md:text-3xl font-bold">
+        评论
+    </div>
+    
+
+        
+            
+    <div id="waline"></div>
+    <script type="module" data-swup-reload-script>
+      import { init } from '/js/libs/waline.js';
+
+      (function() {
+        const startPath = location.pathname;
+        const startTime = Date.now();
+        const retryDelay = 200;
+        const retryLimit = 5000;
+
+        const runWaline = () => {
+          if (location.pathname !== startPath) {
+            return;
+          }
+
+          const container = document.getElementById('waline');
+          if (!container) {
+            if (Date.now() - startTime < retryLimit) {
+              setTimeout(runWaline, retryDelay);
+            }
+            return;
+          }
+
+          if (window.redefineWalineInstance?.destroy) {
+            window.redefineWalineInstance.destroy();
+          }
+
+          container.innerHTML = '';
+          window.redefineWalineInstance = init({
+            el: '#waline',
+            serverURL: 'https://example.example.com',
+            path: location.pathname,
+            dark: 'body[class~="dark-mode"]',
+            reaction: false,
+            requiredMeta: ['nick', 'mail'],
+            emoji: [],
+                      lang: 'zh-CN',
+          });
+        };
+
+        runWaline();
+      })();
+    </script>
+
+
+
+        
+    
+</div>
+
+		</div>
+		
+	</div>
+
+	
+	<div class="toc-content-container">
+		<div class="post-toc-wrap">
+	<div class="post-toc">
+		<div class="toc-title">目录</div>
+		<div class="page-title">BMS SOC显示平滑算法：让百分比变化符合用户直觉</div>
+		<ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#BMS-SOC%E6%98%BE%E7%A4%BA%E5%B9%B3%E6%BB%91%E7%AE%97%E6%B3%95%EF%BC%9A%E8%AE%A9%E7%99%BE%E5%88%86%E6%AF%94%E5%8F%98%E5%8C%96%E7%AC%A6%E5%90%88%E7%94%A8%E6%88%B7%E7%9B%B4%E8%A7%89"><span class="nav-text">BMS SOC显示平滑算法：让百分比变化符合用户直觉</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E6%98%BE%E7%A4%BA%E5%B9%B3%E6%BB%91"><span class="nav-text">一、为什么需要显示平滑</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-%E5%AE%89%E6%97%B6%E7%A7%AF%E5%88%86%E7%9A%84%E5%9B%BA%E6%9C%89%E5%99%AA%E5%A3%B0"><span class="nav-text">1.1 安时积分的固有噪声</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-2-%E4%BF%9D%E6%8A%A4%E8%A7%A6%E5%8F%91%E6%97%B6%E7%9A%84%E5%BC%BA%E5%88%B6%E4%BF%AE%E6%AD%A3"><span class="nav-text">1.2 保护触发时的强制修正</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-3-%E5%85%85%E6%94%BE%E7%94%B5%E6%9C%AB%E6%9C%9F%E7%9A%84%E6%94%B6%E6%95%9B%E5%8A%A0%E9%80%9F"><span class="nav-text">1.3 充放电末期的收敛加速</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E6%95%B4%E4%BD%93%E6%9E%B6%E6%9E%84%EF%BC%9A%E4%B8%89%E5%B1%82%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8"><span class="nav-text">二、整体架构：三层函数调用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E9%80%9F%E5%BA%A6%E8%87%AA%E9%80%82%E5%BA%94%E7%9A%84%E5%8D%95%E5%90%91%E8%B7%9F%E8%B8%AA"><span class="nav-text">三、速度自适应的单向跟踪</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-%E6%A0%B8%E5%BF%83%E8%AE%BE%E8%AE%A1%E6%80%9D%E6%83%B3"><span class="nav-text">3.1 核心设计思想</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-%E5%85%85%E7%94%B5%E7%8A%B6%E6%80%81%E4%B8%8B%E7%9A%84%E8%B7%9F%E8%B8%AA%E9%80%BB%E8%BE%91"><span class="nav-text">3.2 充电状态下的跟踪逻辑</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-3-%E6%94%BE%E7%94%B5%E7%8A%B6%E6%80%81%E4%B8%8B%E7%9A%84%E8%B7%9F%E8%B8%AA%E9%80%BB%E8%BE%91"><span class="nav-text">3.3 放电状态下的跟踪逻辑</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-4-%E6%98%BE%E7%A4%BA%E5%80%BC%E8%B6%85%E5%89%8D%E6%97%B6%E7%9A%84%E9%99%8D%E9%80%9F%E5%A4%84%E7%90%86"><span class="nav-text">3.4 显示值超前时的降速处理</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E6%8E%A5%E8%BF%91%E7%AB%AF%E7%82%B9%E6%97%B6%E5%8A%A0%E9%80%9F%E6%98%BE%E7%A4%BA"><span class="nav-text">四、接近端点时加速显示</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#4-1-%E5%85%85%E7%94%B5%E4%BE%A7%E7%9A%84%E5%88%86%E6%AE%B5%E5%8A%A0%E9%80%9F%EF%BC%88SOC%E8%B6%8B%E5%90%91100-%EF%BC%89"><span class="nav-text">4.1 充电侧的分段加速（SOC趋向100%）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-2-%E6%94%BE%E7%94%B5%E4%BE%A7%E7%9A%84%E9%95%9C%E5%83%8F%E5%8A%A0%E9%80%9F%EF%BC%88SOC%E8%B6%8B%E5%90%910-%EF%BC%89"><span class="nav-text">4.2 放电侧的镜像加速（SOC趋向0%）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E7%AB%AF%E7%82%B9%E9%94%81%E5%AE%9A%E6%9C%BA%E5%88%B6"><span class="nav-text">五、端点锁定机制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#5-1-99-%E4%B8%8A%E9%94%81%EF%BC%88%E5%85%85%E7%94%B5%E4%BE%A7%EF%BC%89"><span class="nav-text">5.1 99% 上锁（充电侧）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-2-1-%E4%B8%8B%E9%94%81%EF%BC%88%E6%94%BE%E7%94%B5%E4%BE%A7%EF%BC%89"><span class="nav-text">5.2 1% 下锁（放电侧）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-3-EEPROM%E8%8A%82%E6%B5%81%E5%86%99%E5%85%A5"><span class="nav-text">5.3 EEPROM节流写入</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AD%E3%80%81%E5%BC%BA%E5%88%B6%E4%BF%AE%E6%AD%A3%EF%BC%9A%E8%B7%B3%E8%BF%87%E5%B9%B3%E6%BB%91%E7%9B%B4%E6%8E%A5%E8%A6%86%E5%86%99"><span class="nav-text">六、强制修正：跳过平滑直接覆写</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%83%E3%80%81%E5%85%85%E6%94%BE%E7%94%B5%E6%9C%AB%E7%AB%AF%E7%9A%84%E7%94%B5%E5%8E%8B%E8%BE%85%E5%8A%A9%E4%BF%AE%E6%AD%A3"><span class="nav-text">七、充放电末端的电压辅助修正</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#7-1-%E5%85%85%E7%94%B5%E6%9C%AB%E7%AB%AF%E4%BF%AE%E6%AD%A3%EF%BC%88%E4%BB%A5%E7%A3%B7%E9%85%B8%E9%93%81%E9%94%82%E4%B8%BA%E4%BE%8B%EF%BC%89"><span class="nav-text">7.1 充电末端修正（以磷酸铁锂为例）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-2-%E9%9D%99%E7%BD%AE%E6%97%B6%E7%9A%84%E7%94%B5%E5%8E%8B%E5%B9%B3%E5%8F%B0%E4%BF%AE%E6%AD%A3"><span class="nav-text">7.2 静置时的电压平台修正</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AB%E3%80%81%E5%AE%8C%E6%95%B4%E6%95%B0%E6%8D%AE%E6%B5%81%E6%A2%B3%E7%90%86"><span class="nav-text">八、完整数据流梳理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B9%9D%E3%80%81%E5%B7%A5%E7%A8%8B%E7%BB%8F%E9%AA%8C%E6%80%BB%E7%BB%93"><span class="nav-text">九、工程经验总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E8%AF%AD"><span class="nav-text">结语</span></a></li></ol></li></ol>
+
+	</div>
+</div>
+	</div>
+	
+</div>
+
+			</div>
+
+			
+		</div>
+
+		<div class="main-content-footer">
+			<footer class="footer mt-5 py-5 h-auto text-base text-third-text-color relative border-t-2 border-t-border-color">
+    <div class="info-container py-3 text-center">
+        
+        <div class="text-center">
+            &copy;
+            
+              <span>2022</span>
+              -
+            
+            2026&nbsp;&nbsp;<i class="fa-solid fa-heart fa-beat" style="--fa-animation-duration: 0.5s; color: #f54545"></i>&nbsp;&nbsp;<a href="/">kuangyue111</a>
+            
+                
+                <p class="post-count space-x-0.5">
+                    <span>
+                        共撰写了 45 篇文章
+                    </span>
+                    
+                </p>
+            
+        </div>
+        
+            <script data-swup-reload-script src="https://cn.vercount.one/js"></script>
+            <div class="relative text-center lg:absolute lg:right-[20px] lg:top-1/2 lg:-translate-y-1/2 lg:text-right">
+                
+                    <span id="busuanzi_container_site_uv" class="lg:!block">
+                        <span class="text-sm">访问人数</span>
+                        <span id="busuanzi_value_site_uv"></span>
+                    </span>
+                
+                
+                    <span id="busuanzi_container_site_pv" class="lg:!block">
+                        <span class="text-sm">总访问量</span>
+                        <span id="busuanzi_value_site_pv"></span>
+                    </span>
+                
+            </div>
+        
+        <div class="relative text-center lg:absolute lg:left-[20px] lg:top-1/2 lg:-translate-y-1/2 lg:text-left">
+            <span class="lg:block text-sm">由 <?xml version="1.0" encoding="utf-8"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg class="relative top-[2px] inline-block align-baseline" version="1.1" id="圖層_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="1rem" height="1rem" viewBox="0 0 512 512" enable-background="new 0 0 512 512" xml:space="preserve"><path fill="#0E83CD" d="M256.4,25.8l-200,115.5L56,371.5l199.6,114.7l200-115.5l0.4-230.2L256.4,25.8z M349,354.6l-18.4,10.7l-18.6-11V275H200v79.6l-18.4,10.7l-18.6-11v-197l18.5-10.6l18.5,10.8V237h112v-79.6l18.5-10.6l18.5,10.8V354.6z"/></svg><a target="_blank" class="text-base" href="https://hexo.io">Hexo</a> 驱动</span>
+            <span class="text-sm lg:block">主题&nbsp;<a class="text-base" target="_blank" href="https://github.com/EvanNotFound/hexo-theme-redefine">Redefine v2.9.0</a></span>
+        </div>
+        
+        
+            <div>
+                博客已运行 <span class="odometer" id="runtime_days" ></span> 天 <span class="odometer" id="runtime_hours"></span> 小时 <span class="odometer" id="runtime_minutes"></span> 分钟 <span class="odometer" id="runtime_seconds"></span> 秒
+            </div>
+        
+        
+            <script data-swup-reload-script>
+                try {
+                    function odometer_init() {
+                    const elements = document.querySelectorAll('.odometer');
+                    elements.forEach(el => {
+                        new Odometer({
+                            el,
+                            format: '( ddd).dd',
+                            duration: 200
+                        });
+                    });
+                    }
+                    odometer_init();
+                } catch (error) {}
+            </script>
+        
+        
+        
+    </div>  
+</footer>
+		</div>
+	</div>
+
+	
+	<div class="post-tools">
+		<div class="post-tools-container">
+	<ul class="article-tools-list">
+		<!-- TOC aside toggle -->
+		
+		<li class="right-bottom-tools page-aside-toggle">
+			<i class="fa-regular fa-outdent"></i>
+		</li>
+		
+
+		<!-- go comment -->
+		
+		<li class="go-comment">
+			<i class="fa-regular fa-comments"></i>
+		</li>
+		
+	</ul>
+</div>
+	</div>
+	
+
+	<div class="right-side-tools-container">
+		<div class="side-tools-container">
+	<ul class="hidden-tools-list">
+		<li class="right-bottom-tools tool-font-adjust-plus flex justify-center items-center">
+			<i class="fa-regular fa-magnifying-glass-plus"></i>
+		</li>
+
+		<li class="right-bottom-tools tool-font-adjust-minus flex justify-center items-center">
+			<i class="fa-regular fa-magnifying-glass-minus"></i>
+		</li>
+
+		<li class="right-bottom-tools tool-dark-light-toggle flex justify-center items-center">
+			<i class="fa-regular fa-moon"></i>
+		</li>
+
+		<!-- rss -->
+		
+
+		
+
+		<li class="right-bottom-tools tool-scroll-to-bottom flex justify-center items-center">
+			<i class="fa-regular fa-arrow-down"></i>
+		</li>
+	</ul>
+
+	<ul class="visible-tools-list">
+		<li class="right-bottom-tools toggle-tools-list flex justify-center items-center">
+			<i class="fa-regular fa-cog fa-spin"></i>
+		</li>
+		
+		<li class="right-bottom-tools tool-scroll-to-top flex justify-center items-center">
+			<i class="arrow-up fas fa-arrow-up"></i>
+			<span class="percent"></span>
+		</li>
+		
+		
+	</ul>
+</div>
+	</div>
+
+	<div class="image-viewer-container" role="dialog" aria-modal="true" aria-label="图片查看器">
+	<button class="image-viewer-close" type="button" aria-label="关闭">
+		<i class="fa-solid fa-xmark"></i>
+	</button>
+	<button class="image-viewer-prev" type="button" aria-label="上一页">
+		<i class="fa-solid fa-chevron-left"></i>
+	</button>
+	<div class="image-viewer-frame">
+		<img src="" alt="">
+	</div>
+	<div class="image-viewer-exif-panel hidden absolute left-1/2 bottom-20 -translate-x-1/2 w-[min(92vw,420px)] max-h-[60vh] overflow-hidden rounded-2xl bg-background-color-transparent-80 p-4 text-left shadow-redefine-flat backdrop-blur-md" role="dialog" aria-label="EXIF" aria-hidden="true">
+		<div class="flex items-center justify-between mb-3">
+			<span class="text-sm font-semibold text-first-text-color">EXIF</span>
+			<button class="image-viewer-exif-close flex h-8 w-8 items-center justify-center rounded-full bg-background-color-transparent-80 text-first-text-color transition hover:bg-background-color-transparent-40" type="button" aria-label="关闭">
+				<i class="fa-solid fa-xmark text-[0.65rem]"></i>
+			</button>
+		</div>
+		<div class="image-viewer-exif-cards grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto pr-1 scrollbar-hide"></div>
+		<template class="image-viewer-exif-card-template">
+			<div class="rounded-lg bg-background-color-transparent-40 px-3 py-2">
+				<div class="image-viewer-exif-card-header flex items-center gap-2 mb-1">
+					<i class="image-viewer-exif-card-icon fa-solid fa-circle-info text-xs text-third-text-color"></i>
+					<div class="image-viewer-exif-card-title text-xs font-semibold text-first-text-color"></div>
+				</div>
+				<div class="image-viewer-exif-card-items flex flex-col gap-1"></div>
+			</div>
+		</template>
+	</div>
+	<button class="image-viewer-exif-toggle flex items-center gap-2 hidden absolute left-1/2 bottom-6 -translate-x-1/2 rounded-full border border-border-color bg-background-color-transparent-80 px-4 py-2 text-first-text-color backdrop-blur-md transition hover:bg-background-color-transparent-40" type="button" aria-label="EXIF" aria-expanded="false">
+		<i class="fa-solid fa-circle-info text-xs"></i>
+		<span class="text-xs font-semibold uppercase tracking-wider">EXIF</span>
+	</button>
+	<button class="image-viewer-next" type="button" aria-label="下一页">
+		<i class="fa-solid fa-chevron-right"></i>
+	</button>
+</div>
+
+
+	
+
+</main>
+
+
+
+<script src="/js/build/libs/Swup.min.js"></script>
+
+<script src="/js/build/libs/SwupSlideTheme.min.js"></script>
+
+<script src="/js/build/libs/SwupScriptsPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupProgressPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupScrollPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupPreloadPlugin.min.js"></script>
+
+<script>
+    window.swup = new Swup({
+        plugins: [
+            new SwupScriptsPlugin({
+                optin: true,
+            }),
+            new SwupProgressPlugin(),
+            new SwupScrollPlugin({
+                offset: 80,
+            }),
+            new SwupSlideTheme({
+                mainElement: ".main-content-body",
+            }),
+            new SwupPreloadPlugin(),
+        ],
+        containers: ["#swup"],
+    });
+
+    window.dispatchEvent(
+        new CustomEvent("redefine:swup:ready", {
+            detail: {
+                swup: window.swup,
+            },
+        }),
+    );
+</script>
+
+
+
+
+	
+<script src="/js/build/main.js" type="module"></script>
+
+
+
+    
+<script src="/js/build/libs/odometer.min.js"></script>
+
+    
+<link rel="stylesheet" href="/assets/odometer-theme-minimal.css">
+
+
+
+
+
+
+
+  
+<script src="/js/build/libs/Typed.min.js"></script>
+
+
+
+
+
+
+
+
+
+
+<script src="/js/build/libs/moment-with-locales.min.js" data-swup-reload-script=""></script>
+
+
+
+	
+</body>
+
+</html>

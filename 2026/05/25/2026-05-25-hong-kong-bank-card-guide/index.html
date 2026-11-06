@@ -1,0 +1,1552 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="keywords" content="Hexo Theme Redefine">
+    
+    
+    <meta name="author" content="kuangyue111">
+    
+    <!-- Completely eliminate flash of wrong theme -->
+    <script>
+        (function() {
+            const THEME_KEY = "REDEFINE-THEME-STATUS";
+            const DARK = "dark", LIGHT = "light";
+            
+            // Get preferred theme
+            function getTheme() {
+                try {
+                    const saved = localStorage.getItem(THEME_KEY);
+                    if (saved) {
+                        const { isDark } = JSON.parse(saved);
+                        return isDark ? DARK : LIGHT;
+                    }
+                } catch (e) {}
+                
+                return matchMedia("(prefers-color-scheme: dark)").matches ? DARK : LIGHT;
+            }
+            
+            // Apply theme to document
+            function applyTheme(theme) {
+                const isDark = theme === DARK;
+                const root = document.documentElement;
+                
+                // Set classes for compatibility
+                root.classList.add(theme);
+                root.classList.remove(isDark ? LIGHT : DARK);
+                root.style.colorScheme = theme;
+            }
+            
+            // Initial application
+            const theme = getTheme();
+            applyTheme(theme);
+            
+            // Listen for system preference changes
+            matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ({ matches }) => {
+                // Only update if using system preference (no localStorage entry)
+                if (!localStorage.getItem(THEME_KEY)) {
+                    applyTheme(matches ? DARK : LIGHT);
+                }
+            });
+            
+            // Set body classes ASAP (before DOMContentLoaded)
+            (function() {
+                const addBodyClass = () => {
+                    const b = document.body;
+                    if (!b) return false;
+                    b.classList.add(theme + "-mode");
+                    return true;
+                };
+
+                // Try immediately
+                if (addBodyClass()) return;
+
+                // Observe until body exists
+                const mo = new MutationObserver(() => {
+                    if (addBodyClass()) mo.disconnect();
+                });
+                mo.observe(document.documentElement, { childList: true, subtree: true });
+            })();
+        })();
+    </script>
+    
+    <!-- preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    
+    <!--- Seo Part-->
+    
+    <link rel="canonical" href="https://kuangyue111.github.io/2026/05/25/2026-05-25-hong-kong-bank-card-guide/"/>
+    <meta name="robots" content="index,follow">
+    <meta name="googlebot" content="index,follow">
+    <meta name="revisit-after" content="1 days">
+    
+    
+        
+        <meta name="description" content="Hexo Theme Redefine, Redefine Your Hexo Journey.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="港卡这扇门，趁还没关赶紧进——一份实操向的开户笔记">
+<meta property="og:url" content="https://kuangyue111.github.io/2026/05/25/2026-05-25-hong-kong-bank-card-guide/index.html">
+<meta property="og:site_name" content="KuangYue&#39;s Blog">
+<meta property="og:description" content="Hexo Theme Redefine, Redefine Your Hexo Journey.">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://kuangyue111.github.io/images/redefine-og.webp">
+<meta property="article:published_time" content="2026-05-25T14:00:00.000Z">
+<meta property="article:modified_time" content="2026-05-25T02:26:59.048Z">
+<meta property="article:author" content="嵌入式系统开发工程师">
+<meta property="article:tag" content="港卡">
+<meta property="article:tag" content="香港银行">
+<meta property="article:tag" content="跨境投资">
+<meta property="article:tag" content="港股">
+<meta property="article:tag" content="美股">
+<meta property="article:tag" content="加密货币">
+<meta property="article:tag" content="汇丰">
+<meta property="article:tag" content="中银香港">
+<meta property="article:tag" content="虚拟银行">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://kuangyue111.github.io/images/redefine-og.webp">
+    
+    
+    <!--- Icon Part-->
+    <link rel="icon" type="image/png" href="/images/redefine-favicon.svg" sizes="192x192">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/redefine-favicon.svg">
+    <meta name="theme-color" content="#A31F34">
+    <link rel="shortcut icon" href="/images/redefine-favicon.svg">
+    <!--- Page Info-->
+    
+    <title>
+        
+            港卡这扇门，趁还没关赶紧进——一份实操向的开户笔记 | KuangYue&#39;s Blog
+        
+    </title>
+
+    
+<link rel="stylesheet" href="/fonts/Chillax/chillax.css">
+
+
+    <!--- Inject Part-->
+    
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+        
+<link rel="stylesheet" href="/css/build/tailwind.css">
+
+    
+
+    
+<link rel="stylesheet" href="/fonts/GeistMono/geist-mono.css">
+
+    
+<link rel="stylesheet" href="/fonts/Geist/geist.css">
+
+    <!--- Font Part-->
+    
+    
+    
+    
+    
+    
+
+    <script id="hexo-configurations">
+    window.config = {"hostname":"kuangyue111.github.io","root":"/","language":"zh-CN"};
+    window.theme = {"articles":{"style":{"font_size":"16px","line_height":1.5,"image_border_radius":"14px","image_alignment":"center","image_caption":false,"link_icon":true,"delete_mask":false,"title_alignment":"left","headings_top_spacing":{"h1":"3.2rem","h2":"2.4rem","h3":"1.9rem","h4":"1.6rem","h5":"1.4rem","h6":"1.3rem"}},"word_count":{"enable":true,"count":true,"min2read":true},"author_label":{"enable":true,"auto":false,"list":[]},"code_block":{"copy":true,"style":"mac","highlight_theme":{"light":"github","dark":"vs2015"},"font":{"enable":false,"family":null,"url":null}},"toc":{"enable":true,"max_depth":3,"number":false,"expand":true,"init_open":true},"copyright":{"enable":true,"default":"cc_by_nc_sa"},"lazyload":true,"pangu_js":false,"recommendation":{"enable":false,"title":"推荐阅读","limit":3,"mobile_limit":2,"placeholder":"/images/wallhaven-wqery6-light.webp","skip_dirs":[]}},"colors":{"primary":"#A31F34","secondary":null,"default_mode":"light"},"global":{"fonts":{"chinese":{"enable":false,"family":null,"url":null},"english":{"enable":false,"family":null,"url":null},"title":{"enable":false,"family":null,"url":null}},"content_max_width":"1000px","sidebar_width":"210px","hover":{"shadow":true,"scale":false},"scroll_progress":{"bar":false,"percentage":true},"website_counter":{"url":"https://cn.vercount.one/js","enable":true,"site_pv":true,"site_uv":true,"post_pv":true},"single_page":true,"preloader":{"enable":false,"custom_message":null},"side_tools":{"gear_rotation":true,"auto_expand":false},"open_graph":{"enable":true,"image":"/images/redefine-og.webp","description":"Hexo Theme Redefine, Redefine Your Hexo Journey."},"google_analytics":{"enable":false,"id":null}},"home_banner":{"enable":true,"style":"fixed","image":{"light":"/images/wallhaven-wqery6-light.webp","dark":"/images/wallhaven-wqery6-dark.webp"},"title":"KuangYue's Blog","subtitle":{"text":["专注储能系统与嵌入式开发","记录 NCCU 控制单元架构演进","探索工业物联网与云端对接"],"hitokoto":{"enable":false,"show_author":false,"api":"https://v1.hitokoto.cn"},"typing_speed":100,"backing_speed":80,"starting_delay":500,"backing_delay":1500,"loop":true,"smart_backspace":true},"text_color":{"light":"#fff","dark":"#d1d1b6"},"text_style":{"title_size":"2.8rem","subtitle_size":"1.5rem","line_height":1.2},"custom_font":{"enable":false,"family":null,"url":null},"social_links":{"enable":true,"style":"default","links":[{"icon":"fa-brands fa-github","url":"https://github.com/kuangyue111"},{"icon":"fa-brands fa-twitter","url":null},{"icon":"fa-solid fa-at","url":"you@example.com"},{"icon":"fa-brands fa-telegram","url":null},{"icon":"/images/custom-icon.svg","url":null}],"qrs":[{"icon":"fa-brands fa-weixin","qr":null},{"icon":"/images/custom-icon.svg","qr":null}]}},"plugins":{"feed":{"enable":false},"aplayer":{"enable":false,"type":"fixed","audios":[{"name":null,"artist":null,"url":null,"cover":null,"lrc":null}]},"mermaid":{"theme":{"light":"default","dark":"dark"}},"katex":false,"chart":false},"version":"2.9.0","code_block":{"theme":"light","macStyle":false,"shrink":false,"copy_button":true,"language":true},"navbar":{"auto_hide":false,"color":{"left":"#f78736","right":"#367df7","transparency":35},"width":{"home":"1200px","pages":"1000px"},"links":{"Home":{"path":"/","icon":"fa-regular fa-house"},"Archives":{"path":"/archives/","icon":"fa-regular fa-archive"},"Tags":{"path":"/tags/","icon":"fa-regular fa-tags"},"Categories":{"path":"/categories/","icon":"fa-regular fa-folder"},"About":{"icon":"fa-regular fa-user","submenus":{"Me":"/about/","GitHub":"https://github.com/kuangyue111"}}},"search":{"enable":false,"preload":true}},"page_templates":{"friends_column":2,"tags_style":"blur","masonry":{"batch_size":12,"initial_batch_size":24}},"home":{"sidebar":{"enable":true,"position":"left","first_item":"menu","announcement":"专注于嵌入式与储能系统技术分享","show_on_mobile":true,"links":{"Archives":{"path":"/archives/","icon":"fa-regular fa-archive"},"Tags":{"path":"/tags/","icon":"fa-regular fa-tags"},"Categories":{"path":"/categories/","icon":"fa-regular fa-folder"}}},"article_date_format":"auto","excerpt_length":200,"categories":{"enable":true,"limit":3},"tags":{"enable":true,"limit":3}},"footer":{"runtime":true,"icon":"<i class=\"fa-solid fa-heart fa-beat\" style=\"--fa-animation-duration: 0.5s; color: #f54545\"></i>","start":"2022/8/17 11:45:14","statistics":true,"customize":null,"icp":{"enable":false,"number":null,"url":null},"since":2025,"custom":null,"copyright":true,"theme":{"enable":true},"counter":true},"footerStart":"2022/8/17 11:45:14","mermaid":{"style":{"light":"default","dark":"dark"}}};
+    window.lang_ago = {"second":"%s 秒前","minute":"%s 分钟前","hour":"%s 小时前","day":"%s 天前","week":"%s 周前","month":"%s 个月前","year":"%s 年前"};
+    window.i18n = {"search":"站内搜索您需要的内容...","toc":"目录","prev":"上一页","next":"下一页","prev_posts":"上一篇","next_posts":"下一篇","page":"第 %d 页","recent_posts":"最新文章","share":"分享","powered_by":"由 %s 驱动","theme":"主题","rss_feed":"RSS Feed","category":"分类","categories":"分类","tag":"标签","tags":"标签","post":"文章","posts":"文章","tagcloud":"标签云","comment":"评论","comments":"评论","top":"置顶","sticky":"置顶","go-back-home":"回到首页","masonry_loading":"照片加载中...","image_viewer":"图片查看器","close":"关闭","exif":{"title":"EXIF","cards":{"camera":"相机","lens":"镜头","exposure":"曝光","other":"其他"},"fields":{"make":"品牌","model":"机型","date_taken":"拍摄时间","lens_model":"镜头","focal_length":"焦距","focus_mode":"对焦模式","shutter":"快门","aperture":"光圈","iso":"感光度","exposure_program":"曝光程序","exposure_compensation":"曝光补偿","metering_mode":"测光模式","flash":"闪光灯","white_balance":"白平衡","latitude":"纬度","longitude":"经度","altitude":"海拔"},"status":{"loading":"加载中...","no_exif":"无 EXIF 信息","library_missing":"EXIF 库未加载","image_source_missing":"图片地址不可用","unavailable":"EXIF 不可用（可能被 CORS 阻止或缺少元数据）","flag_unavailable":"EXIF 不可用"}},"home":"首页","archive":"归档","archives":"归档","about":"关于","links":"链接","link":"链接","friends":"友情链接","friend":"友情链接","timeline":"时间轴","shuoshuo":"说说","bookmarks":"书签","site_uv":"访问人数","site_pv":"总访问量","read_more":"阅读全文","wordcount":"字","min2read":"分钟","changelog":"更新日志","status":"状态","runtime":"博客已运行","days":"天","hours":"小时","minutes":"分钟","seconds":"秒","optimized_by":"并由 Evan 进行优化","rights":"版权所有","site_posts":"共撰写了 %s 篇文章","site_wordcount":"共 %s 字","copyright":{"title":"标题","author":"作者","link":"链接","create_time":"创建于","update_time":"更新于","license_title":"版权声明","license_content":"本文章采用 %s 进行许可。","all_rights_reserved":"版权所有 &#169 %s，禁止转载。","public_domain":"本文为公有领域作品，可自由转载、引用。"},"ago":{"second":"%s 秒前","minute":"%s 分钟前","hour":"%s 小时前","day":"%s 天前","week":"%s 周前","month":"%s 个月前","year":"%s 年前"},"create_time":"创建","update_time":"更新","expired":"这篇文章最后更新于 %s 天前，内容可能已经过时。"};
+    window.data = {"masonry":false};
+  </script>
+    
+    <!--- Fontawesome Part-->
+    
+<link rel="stylesheet" href="/fontawesome/fontawesome.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/brands.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/solid.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/regular.min.css">
+
+    
+    
+    
+    
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+	<div class="progress-bar-container">
+	
+
+	
+	<span class="pjax-progress-bar"></span>
+	<!--        <span class="swup-progress-icon">-->
+	<!--            <i class="fa-solid fa-circle-notch fa-spin"></i>-->
+	<!--        </span>-->
+	
+</div>
+
+<main class="page-container" id="swup">
+
+	
+
+	<div class="main-content-container flex flex-col justify-between min-h-dvh">
+		<div class="main-content-header">
+			<header class="navbar-container px-6 md:px-12">
+    <div class="navbar-content transition-navbar ">
+        <div class="left">
+            
+            <a class="logo-title" href="/">
+                
+                KuangYue&#39;s Blog
+                
+            </a>
+        </div>
+
+        <div class="right">
+            <!-- PC -->
+            <div class="desktop">
+                <ul class="navbar-list">
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/"
+                                        >
+                                    <i class="fa-regular fa-house fa-fw"></i>
+                                    首页
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/archives/"
+                                        >
+                                    <i class="fa-regular fa-archive fa-fw"></i>
+                                    归档
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/tags/"
+                                        >
+                                    <i class="fa-regular fa-tags fa-fw"></i>
+                                    标签
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/categories/"
+                                        >
+                                    <i class="fa-regular fa-folder fa-fw"></i>
+                                    分类
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class="has-dropdown"
+                                   href="#"
+                                        onClick=&#34;return false;&#34;>
+                                    <i class="fa-regular fa-user fa-fw"></i>
+                                    关于
+                                    <i class="fa-solid fa-chevron-down fa-fw"></i>
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                                    <ul class="sub-menu">
+                                        
+                                            <li>
+                                                <a href="/about/">
+                                                    ME
+                                                </a>
+                                            </li>
+                                        
+                                            <li>
+                                                <a target="_blank" rel="noopener" href="https://github.com/kuangyue111">
+                                                    GITHUB
+                                                </a>
+                                            </li>
+                                        
+                                    </ul>
+                                
+                            </li>
+                    
+                    
+                </ul>
+            </div>
+            <!-- Mobile -->
+            <div class="mobile">
+                
+                <div class="icon-item navbar-bar">
+                    <div class="navbar-bar-middle"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile sheet -->
+    <div class="navbar-drawer h-dvh w-full absolute top-0 left-0 bg-background-color flex flex-col justify-between">
+        <ul class="drawer-navbar-list flex flex-col px-4 justify-center items-start">
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/"
+                        >
+                            <span>
+                                首页
+                            </span>
+                            
+                                <i class="fa-regular fa-house fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/archives/"
+                        >
+                            <span>
+                                归档
+                            </span>
+                            
+                                <i class="fa-regular fa-archive fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/tags/"
+                        >
+                            <span>
+                                标签
+                            </span>
+                            
+                                <i class="fa-regular fa-tags fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/categories/"
+                        >
+                            <span>
+                                分类
+                            </span>
+                            
+                                <i class="fa-regular fa-folder fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item-sub text-base my-1.5 flex flex-col w-full">
+                        
+                        <div class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary cursor-pointer text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                             navbar-data-toggle="submenu-About"
+                        >
+                            <span>
+                                关于
+                            </span>
+                            
+                                <i class="fa-solid fa-chevron-right fa-sm fa-fw transition-all"></i>
+                            
+                        </div>
+                        
+
+                        
+                            <div class="flex-col items-start px-2 py-2 hidden" data-target="submenu-About">
+                                
+                                    <div class="drawer-navbar-item text-base flex flex-col justify-center items-start hover:underline active:underline hover:underline-offset-1 rounded-3xl">
+                                        <a class=" text-third-text-color text-xl"
+                                           href="/about/">ME</a>
+                                    </div>
+                                
+                                    <div class="drawer-navbar-item text-base flex flex-col justify-center items-start hover:underline active:underline hover:underline-offset-1 rounded-3xl">
+                                        <a class=" text-third-text-color text-xl"
+                                           target="_blank" rel="noopener" href="https://github.com/kuangyue111">GITHUB</a>
+                                    </div>
+                                
+                            </div>
+                        
+                    </li>
+            
+
+            
+            
+                
+                    
+                    
+                    
+            
+        </ul>
+
+        <div class="statistics flex justify-around my-2.5">
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/tags">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">194</div>
+        <div class="label text-third-text-color text-sm">标签</div>
+    </a>
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/categories">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">16</div>
+        <div class="label text-third-text-color text-sm">分类</div>
+    </a>
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/archives">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">45</div>
+        <div class="label text-third-text-color text-sm">文章</div>
+    </a>
+</div>
+    </div>
+
+    <div class="window-mask"></div>
+
+</header>
+
+
+		</div>
+
+		<div class="main-content-body transition-fade-up">
+			
+
+			<div class="main-content">
+				<div class="post-page-container flex relative justify-between box-border w-full h-full">
+	<div class="article-content-container">
+
+		<div class="article-title relative w-full">
+			
+			<div class="w-full flex items-center pt-6 justify-start">
+				<h1 class="article-title-regular text-second-text-color tracking-tight text-4xl md:text-6xl font-semibold px-2 sm:px-6 md:px-8 py-3">港卡这扇门，趁还没关赶紧进——一份实操向的开户笔记</h1>
+			</div>
+			
+		</div>
+
+		
+		<div class="article-header flex flex-row gap-2 items-center px-2 sm:px-6 md:px-8">
+			<div class="avatar w-[46px] h-[46px] shrink-0 rounded-medium border border-border-color p-px">
+				<img src="/images/redefine-avatar.svg">
+			</div>
+			<div class="info flex flex-col justify-between">
+				<div class="author flex items-center">
+					<span class="name text-default-text-color text-lg font-semibold">嵌入式系统开发工程师</span>
+					
+					<span class="author-label ml-1.5 text-xs px-2 py-0.5 rounded-small text-third-text-color border border-shadow-color-1">Lv4</span>
+					
+				</div>
+				<div class="meta-info">
+					<div class="article-meta-info">
+    <span class="article-date article-meta-item">
+        <i class="fa-regular fa-pen-fancy"></i>&nbsp;
+        <span class="desktop">2026-05-25 22:00</span>
+        <span class="mobile">2026-05-25 22:00</span>
+        <span class="hover-info">创建</span>
+    </span>
+    
+        <span class="article-date article-meta-item">
+            <i class="fa-regular fa-wrench"></i>&nbsp;
+            <span class="desktop">2026-05-25 10:26:59</span>
+            <span class="mobile">2026-05-25 10:26:59</span>
+            <span class="hover-info">更新</span>
+        </span>
+    
+
+    
+        <span class="article-categories article-meta-item">
+            <i class="fa-regular fa-folders"></i>&nbsp;
+            <ul>
+                
+                
+                    
+                        
+                        <li>
+                            <a href="/categories/%E6%8A%95%E8%B5%84%E7%90%86%E8%B4%A2/">投资理财</a>&nbsp;
+                        </li>
+                    
+                    
+                
+                    
+                        
+                            <li>></li>
+                        
+                        <li>
+                            <a href="/categories/%E6%8A%95%E8%B5%84%E7%90%86%E8%B4%A2/%E7%BE%8E%E8%82%A1%E5%92%8C%E5%8A%A0%E5%AF%86%E8%B4%A7%E5%B8%81/">美股和加密货币</a>&nbsp;
+                        </li>
+                    
+                    
+                
+            </ul>
+        </span>
+    
+    
+        <span class="article-tags article-meta-item">
+            <i class="fa-regular fa-tags"></i>&nbsp;
+            <ul>
+                
+                    <li>
+                        <a href="/tags/%E6%B8%AF%E5%8D%A1/">港卡</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E9%A6%99%E6%B8%AF%E9%93%B6%E8%A1%8C/">香港银行</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E8%B7%A8%E5%A2%83%E6%8A%95%E8%B5%84/">跨境投资</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E6%B8%AF%E8%82%A1/">港股</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E7%BE%8E%E8%82%A1/">美股</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E5%8A%A0%E5%AF%86%E8%B4%A7%E5%B8%81/">加密货币</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E6%B1%87%E4%B8%B0/">汇丰</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E4%B8%AD%E9%93%B6%E9%A6%99%E6%B8%AF/">中银香港</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E8%99%9A%E6%8B%9F%E9%93%B6%E8%A1%8C/">虚拟银行</a>&nbsp;
+                    </li>
+                
+            </ul>
+        </span>
+    
+
+    
+    
+    
+    
+        <span class="article-pv article-meta-item">
+            <i class="fa-regular fa-eye"></i>&nbsp;<span id="busuanzi_value_page_pv"></span>
+        </span>
+    
+</div>
+
+				</div>
+			</div>
+		</div>
+		
+
+		
+
+
+		<div class="article-content markdown-body px-2 sm:px-6 md:px-8 pb-8">
+			<h1 id="港卡这扇门，趁还没关赶紧进——一份实操向的开户笔记"><a href="#港卡这扇门，趁还没关赶紧进——一份实操向的开户笔记" class="headerlink" title="港卡这扇门，趁还没关赶紧进——一份实操向的开户笔记"></a>港卡这扇门，趁还没关赶紧进——一份实操向的开户笔记</h1><h2 id="起点：5月22日的那条新闻"><a href="#起点：5月22日的那条新闻" class="headerlink" title="起点：5月22日的那条新闻"></a>起点：5月22日的那条新闻</h2><p>我之所以决定把这篇东西写出来，是因为昨天看见证券时报上的一条消息：老虎、富途、长桥三家香港持牌券商被八部委（证监会、工信部、市场监管总局、网信办等）联合点名，定性是”未经批准向境内投资者提供美股、港股开户和交易服务”。</p>
+<p>处罚里有两条最关键：违法所得全部没收，外加 2 年整治期——禁止新开买入交易、禁止资金转入，只能卖出和转出。账户没强制注销，但通道实质上等于关了。八部委把口径定到了一句话：”引导投资者通过港股通、QDII、跨境理财通等合法渠道进行境外投资。”</p>
+<p>这篇文章不是来聊券商的。<strong>我真正想提醒的是港卡——下一只可能落下的靴子。</strong></p>
+<p>回头看 2023 年底，监管第一次明确说”禁止境外券商为境内投资者开设新账户”，当时大多数人当成了背景音。两年后的今天，这句话变成了八部委联合处罚加 2 年整治期。从”喊话”到”动手”，用了不到 24 个月。下一波传导大概率会落到香港银行端：老虎、富途、长桥的存量内地用户加起来是百万级，这些人接下来都得找新出口，其中一部分必然会涌向”赴港开户 + 持牌券商”这条路。需求一冲上来，香港银行那边怎么反应，你自己想就够了。</p>
+<hr>
+<h2 id="港卡和加密货币的那层关系（很多人没说透）"><a href="#港卡和加密货币的那层关系（很多人没说透）" class="headerlink" title="港卡和加密货币的那层关系（很多人没说透）"></a>港卡和加密货币的那层关系（很多人没说透）</h2><p>这一段单独拎出来讲，因为我之前写过《如何在币圈找工作》《不想赚死工资？币圈躺赚理财渠道全盘点》，不少读者私下问：”港卡和加密到底什么关系？为什么搞 crypto 的人都在催办？”</p>
+<p>简单说：<strong>港卡是目前合规进出加密世界最顺手的一座桥</strong>。</p>
+<p>香港这两年的态度你能看到——证监会发了 VASP 牌照，HashKey、OSL 这些持牌交易所都需要绑定港币或美元的银行账户做出入金，几乎所有香港持牌交易所对入金账户都默认认港币体系内的银行。换句话说，没有港卡，你连合规的入金通道都摸不到门。再往前一步，部分港卡已经直接打通加密货币通道（包括一些虚拟银行的法币-USDT&#x2F;USDC 入金、出金对接），这在内地的银行账户里是完全做不到的事。</p>
+<p>第二层是合规留痕。链上玩家最怕的不是赚钱，是钱赚到之后回不到法币世界、没法解释来源。港卡里的港币、美元和离岸人民币之间可以无理由互兑，配合 HashKey、OSL 这种持牌平台开的交易记录，整条链路从入金到出金都有银行流水支撑——这种”白账户”对将来万一面对税务问询、海外购房资金证明，价值远比账面那点利息大。</p>
+<p>第三层是出海支付的稳定性。绑 Apple Pay、订阅海外服务、在境外平台购买 NFT 或参与早期项目时常会有美元&#x2F;港元支付场景。内地双币卡偶尔被拒、被风控，港卡几乎不会出这种事。</p>
+<p>所以圈里的共识其实就一句话：<strong>港卡不是炒币的工具，是给”币转回正常生活”留的那条路。</strong></p>
+<hr>
+<h2 id="表面在放宽，底层在收紧"><a href="#表面在放宽，底层在收紧" class="headerlink" title="表面在放宽，底层在收紧"></a>表面在放宽，底层在收紧</h2><p>很多人感觉港卡现在比五年前好开多了。汇丰、中银都支持”人在香港 App 申请”，不用预约不排队。这是事实——背景是 2019 年香港金管局开放远程开户，银行也需要数字化拉客户。</p>
+<p>但只看表面会被骗。往下扒一层就能看见：</p>
+<ul>
+<li>地址证明从”电子账单都行”，到汇丰、恒生开始要纸质版</li>
+<li>中银的开户准入从”零门槛”变成”流水 + 余额 10 万港币”双要求</li>
+<li>ZA Bank 的访港旅客账户从”全功能”被砍成”限制跨境汇入额度”</li>
+</ul>
+<p>每一项单独看都不吓人，叠在一起就是门槛在悄悄抬高。我的判断很朴素：<strong>现在好开≠不用急，恰恰说明这是个稀有的窗口期。能办就先办下来。</strong></p>
+<hr>
+<h2 id="你需不需要现在就办？看下面这张排序"><a href="#你需不需要现在就办？看下面这张排序" class="headerlink" title="你需不需要现在就办？看下面这张排序"></a>你需不需要现在就办？看下面这张排序</h2><p>按紧迫度从高到低：</p>
+<ul>
+<li><strong>现在没有港卡 + 有美元&#x2F;海外配置需求的</strong>：这次处罚把”哪天有空再办”提前到了”这周”。这篇就是写给你的。</li>
+<li><strong>出海创业者 &#x2F; 自由职业者</strong>：接 Stripe、Payoneer、Wise 收款的群体，海外现金流的稳定底座离不开港卡。</li>
+<li><strong>留学家庭 &#x2F; 长期海外消费</strong>：5 万美元购汇额度紧张时，港卡是缓冲带。</li>
+<li><strong>已经有一张港卡的</strong>：建议补开一张做备份，单一银行风控时不至于断线。</li>
+<li><strong>纯境内生活、零外币需求的</strong>：可以收藏不读。</li>
+</ul>
+<hr>
+<h2 id="港卡到底能解决什么实际问题"><a href="#港卡到底能解决什么实际问题" class="headerlink" title="港卡到底能解决什么实际问题"></a>港卡到底能解决什么实际问题</h2><p>不夸大，就三件事。</p>
+<p><strong>第一件，资金真正属于你自己。</strong> 港卡里的离岸人民币、港元、美元，可以随时无理由互兑。”每人每年 5 万美元购汇额度”和”每天 ATM 取现 2 万人民币”这些约束，在香港零售银行体系里压根不存在。</p>
+<p><strong>第二件，跨境投资和跨境收款的合规底盘。</strong> 不光是炒港股美股需要它。跨境电商收 Stripe &#x2F; Payoneer 结算、海外打工赚的美元、给孩子付海外学费、买境外保险、海外房产首付——但凡涉及外币流动，港卡比没有强一个数量级。</p>
+<p><strong>第三件，海外支付通道稳定。</strong> App Store 港区、Netflix、海外酒店、香港 Apple Pay&#x2F;微信，内地双币卡偶尔会被拒，港卡基本是稳的。</p>
+<p>所以别把港卡想得太抽象——它给你的不是身份感，是<strong>自由度和确定性</strong>。</p>
+<hr>
+<h2 id="在动手之前，得知道的几条风险"><a href="#在动手之前，得知道的几条风险" class="headerlink" title="在动手之前，得知道的几条风险"></a>在动手之前，得知道的几条风险</h2><p><strong>CRS 自动信息交换。</strong> 中国大陆是 CRS 成员国，你在香港银行的账户余额、利息、股息会自动汇报给中国国家税务总局。账户合法持有、资金来源合法、申报义务履行就没问题。风险只发生在你把港卡当避税工具用。</p>
+<p><strong>账户休眠。</strong> 12 个月没动作就进入休眠，部分实体行会收管理费。对策很简单——每三个月做一笔小额跨币种兑换（500 港币换成美元再换回来），账户就一直是活的。</p>
+<p><strong>月均余额。</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">账户类型</th>
+<th align="center">首存</th>
+<th align="left">余额不达标</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">中银 自在理财</td>
+<td align="center">1 万港币</td>
+<td align="left">月均低于 1 万收 60 港币&#x2F;月</td>
+</tr>
+<tr>
+<td align="left">中银 智盈理财</td>
+<td align="center">20 万港币</td>
+<td align="left">实测目前未收，政策可能变</td>
+</tr>
+<tr>
+<td align="left">汇丰 HSBC One</td>
+<td align="center">1 万港币</td>
+<td align="left">日均低于 1 万收 120 港币&#x2F;月</td>
+</tr>
+<tr>
+<td align="left">汇丰 Premier</td>
+<td align="center">100 万港币</td>
+<td align="left">月均低于 100 万收 380 港币&#x2F;月</td>
+</tr>
+<tr>
+<td align="left">虚拟银行（ZA&#x2F;象象&#x2F;Ant&#x2F;LIVI）</td>
+<td align="center">无</td>
+<td align="left">无</td>
+</tr>
+</tbody></table>
+<p><strong>存款保障（DPS）。</strong> 香港存款保障计划 2024 年从 50 万港币上调到 80 万港币，所有受监管银行（含 8 家虚拟银行）都加入。</p>
+<hr>
+<h2 id="出发前的物料清单"><a href="#出发前的物料清单" class="headerlink" title="出发前的物料清单"></a>出发前的物料清单</h2><p>不用纠结开哪家，这些东西无论开哪家都得带齐。</p>
+<p><strong>核心三件套：</strong> 居民身份证、港澳通行证（有效签注 ≥ 6 个月）、入境小票。</p>
+<p><strong>关键文件：出入境记录 PDF。</strong> 这个是 9 成新人会和”入境小票”搞混的东西——入境小票是过关时给的纸质小白条，出入境记录是微信小程序”移民局”或”12367”上下载的 PDF，<strong>线上 App 开户的硬性材料</strong>。注意：过关后通常要等 1–2 小时记录才会更新，下载请求会发到你邮箱。线上开户前一定要先下好。</p>
+<p><strong>资金&#x2F;居住证明（线下网点 + 汇丰内地见证开户必备）：</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">材料</th>
+<th align="left">用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">近 3 个月地址证明</td>
+<td align="left">必须，电子账单优先；恒生有时要纸质</td>
+</tr>
+<tr>
+<td align="left">6 个月银行流水</td>
+<td align="left">中银线下开户硬性</td>
+</tr>
+<tr>
+<td align="left">近 3 个月股票投资记录</td>
+<td align="left">让”投资港股美股”用途看着真实</td>
+</tr>
+<tr>
+<td align="left">在职&#x2F;收入证明</td>
+<td align="left">加分项</td>
+</tr>
+</tbody></table>
+<p><strong>地址证明这块 90% 的人会翻车，盯死四点：</strong></p>
+<ol>
+<li>精确到门牌号（”XX 室”，不能只到”XX 路 XX 号”）</li>
+<li>必须是住宅地址，公司地址不行</li>
+<li>抬头姓名要和身份证一模一样</li>
+<li>要带银行 App 或运营商 App 的官方公章。招商信用卡 App、工行 App 都能直接下载带抬头的电子账单 PDF</li>
+</ol>
+<hr>
+<h2 id="工具准备：别等到香港才下载"><a href="#工具准备：别等到香港才下载" class="headerlink" title="工具准备：别等到香港才下载"></a>工具准备：别等到香港才下载</h2><p><strong>App 提前在大陆装好：</strong> 汇丰香港 HSBC HK（安卓商店里叫”汇丰流动理财”，别下成”汇丰中国”）、中银香港 BOCHK、ZA Bank、象象银行 Ele Bank（原天星 Airstar，2026 年 4 月已正式更名）、WeLab Bank、Mox Bank、Ant Bank（HK）、LIVI Bank。iOS 用户需要切到香港区 App Store 才能下载部分 App。</p>
+<p><strong>汇丰开户的 NFC 是硬条件。</strong> App 申请要用 NFC 读港澳通行证芯片。出发前确认手机有 NFC（iPhone 7 及以后所有机型都有，安卓多数旗舰也有），把手机壳摘掉，金属&#x2F;磁吸壳干扰 NFC。<strong>实测 iPhone 16 在中银线上扫身份证时容易失败，保险起见带一台安卓机备用。</strong></p>
+<p><strong>通信和网络：</strong> 大陆手机号开国际漫游（不是港澳台流量包，是漫游服务），2020 年前的电信号可能没港澳漫游能力，需提前换卡。开户时建议走蜂窝数据，公共 Wi-Fi 容易触发风控。</p>
+<p><strong>最后关注公众号”中银香港微服务”——中银网点预约的官方入口。</strong></p>
+<hr>
+<h2 id="一天能开几家？参考行程"><a href="#一天能开几家？参考行程" class="headerlink" title="一天能开几家？参考行程"></a>一天能开几家？参考行程</h2><p>实测：2 家实体（汇丰 + 中银）+ 4 家虚拟（ZA Bank + 象象 + Ant + LIVI）。其他虚拟银行（Mox、WeLab、富融、平安壹账通）目前不接内地访港居民，跳过即可。</p>
+<p>2025 年之后的关键变化：汇丰和中银的主流路径都已经是 App 在港申请，不预约不排队，卡邮寄到内地。整个流程坐在咖啡馆就能完成。</p>
+<table>
+<thead>
+<tr>
+<th align="left">时间</th>
+<th align="left">安排</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">08:00 前</td>
+<td align="left">罗湖&#x2F;福田&#x2F;西九龙站过关</td>
+</tr>
+<tr>
+<td align="left">08:30–09:00</td>
+<td align="left">找咖啡馆坐下（口岸附近或尖沙咀都行）</td>
+</tr>
+<tr>
+<td align="left">09:00–09:30</td>
+<td align="left">在小程序”移民局”下载出入境记录 PDF（发邮箱）</td>
+</tr>
+<tr>
+<td align="left">09:30–11:30</td>
+<td align="left">App 申请：汇丰 HSBC One + 中银</td>
+</tr>
+<tr>
+<td align="left">11:30–12:30</td>
+<td align="left">午饭</td>
+</tr>
+<tr>
+<td align="left">12:30–15:30</td>
+<td align="left">App 申请：ZA Bank + 象象 + Ant + LIVI</td>
+</tr>
+<tr>
+<td align="left">15:30 后</td>
+<td align="left">收工回深圳</td>
+</tr>
+</tbody></table>
+<p>想当场拿汇丰实体卡（红狮子&#x2F;蓝狮子）的，需要 walk-in。可以上午先去西九龙站汇丰分行，这家是为内地高铁旅客专设，周末也营业。</p>
+<hr>
+<h2 id="汇丰-HSBC：港卡里的硬通货"><a href="#汇丰-HSBC：港卡里的硬通货" class="headerlink" title="汇丰 HSBC：港卡里的硬通货"></a>汇丰 HSBC：港卡里的硬通货</h2><p>我会优先开汇丰，理由很直接：全球网点最多，回内地补办最方便；几乎所有香港持牌券商都接汇丰入金；蓝狮子 Mastercard 扣账卡功能完整；也是少数能在内地走”见证开户”路径的香港银行之一。</p>
+<p><strong>普通人直接选 HSBC One 就行。</strong> 汇丰个人户分三层：</p>
+<table>
+<thead>
+<tr>
+<th align="left">账户</th>
+<th align="center">首存</th>
+<th align="center">月均余额</th>
+<th align="left">适合谁</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">HSBC One</td>
+<td align="center">1 万港币</td>
+<td align="center">1 万港币</td>
+<td align="left">90% 内地居民</td>
+</tr>
+<tr>
+<td align="left">Premier 卓越理财</td>
+<td align="center">100 万港币</td>
+<td align="center">100 万港币</td>
+<td align="left">高净值</td>
+</tr>
+<tr>
+<td align="left">Premier Jade</td>
+<td align="center">100 万美元</td>
+<td align="center">无</td>
+<td align="left">超高净值</td>
+</tr>
+</tbody></table>
+<p>Premier 100 万门槛，没这个资金量别选。</p>
+<p><strong>三种开户路径：</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">路径</th>
+<th align="center">时间</th>
+<th align="center">是否赴港</th>
+<th align="center">通过率</th>
+<th align="left">适合</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">在港 App 申请（最推荐）</td>
+<td align="center">20 分钟 + 当场&#x2F;1–3 天审核</td>
+<td align="center">是（不进网点）</td>
+<td align="center">90%+</td>
+<td align="left">不想排队</td>
+</tr>
+<tr>
+<td align="left">香港线下 walk-in</td>
+<td align="center">半天</td>
+<td align="center">是</td>
+<td align="center">高</td>
+<td align="left">想当场拿蓝狮子卡、现场沟通</td>
+</tr>
+<tr>
+<td align="left">内地见证（仅 Premier）</td>
+<td align="center">4 周以上</td>
+<td align="center">否</td>
+<td align="center">中</td>
+<td align="left">100 万人民币级别</td>
+</tr>
+</tbody></table>
+<p>注意：2025 年 4 月起汇丰已取消在线预约入口，想去网点只能 walk-in。</p>
+<h3 id="在港-App-申请的实操"><a href="#在港-App-申请的实操" class="headerlink" title="在港 App 申请的实操"></a>在港 App 申请的实操</h3><p>硬性条件：人在香港（GPS+IP 双重检测）、手机有 NFC（最大卡点）、年龄 18–64、港澳通行证有效期 ≥ 3 个月。</p>
+<p>操作顺序：</p>
+<ol>
+<li>香港境内打开 HSBC HK App</li>
+<li>选”我没有任何账户” → “身处香港，无香港身份证”</li>
+<li>选 HSBC One</li>
+<li>填邮箱 + 内地手机号（+86 前缀）</li>
+<li>拍身份证 + NFC 读港澳通行证（这一步最容易卡，多试几次，摘手机壳）</li>
+<li>上传出入境记录 PDF</li>
+<li>填职业、内地住宅地址（中文或拼音都行）、收信地址、公司英文地址、税务居民身份、账户用途</li>
+</ol>
+<p><strong>用途别填空话</strong>——“为了存钱””以备不时之需”这种会被认为太模糊。建议写”储蓄和投资”或”投资港股美股”。</p>
+<p>审核结果分三种：当场过 → 收到”Say hello to HSBC One”邮件；拼音重名 → 待定 3–5 个工作日；少数被拒。</p>
+<p><strong>实体卡寄到内地是两张 + 一封密码信：</strong></p>
+<ul>
+<li><strong>红狮子 ATM 卡</strong>：银联通道，只能 ATM 取款，不支持网上购物 &#x2F; 微信绑定。中文地址用 EMS，拼音地址用平邮。</li>
+<li><strong>蓝狮子 Mastercard 扣账卡</strong>：功能完整，海外订阅、Apple Pay、跨境电商收款都靠它。<strong>需要在 App 内单独申请</strong>（开户成功后），3–4 天到。</li>
+</ul>
+<p>蓝狮子一定记得申请。21 天内一般能拿到全套，但账号当下就有，App 登录就能先收款；转出功能可能要等实体卡到。</p>
+<h3 id="内地见证开户（仅适合-Premier-用户）"><a href="#内地见证开户（仅适合-Premier-用户）" class="headerlink" title="内地见证开户（仅适合 Premier 用户）"></a>内地见证开户（仅适合 Premier 用户）</h3><p>这条路 100 万人民币级别才划算。普通人知道有这么回事就行。</p>
+<p>支持的城市：北京、上海、广州、深圳、成都、重庆、大连、东莞、佛山、杭州、南京、宁波、青岛、沈阳、苏州、天津、武汉、无锡、厦门、西安、中山、珠海等 22 城。</p>
+<p>两种门槛任选：</p>
+<ul>
+<li><strong>方式 A</strong>（标准）：内地汇丰存入 50 万人民币保持 3 个月</li>
+<li><strong>方式 B</strong>（加速）：付协助费 1500 + 律师见证费 800，免 50 万门槛。这条路阶段性开放阶段性暂停，需向分行确认</li>
+</ul>
+<p>之后律师见证 + 邮寄材料 + 视频面试，约 4 周。视频面试 15 分钟，主要问开户用途、资金来源、交易频率。</p>
+<p>最后拿到的是 Premier，月均不足 100 万要收 380 港币管理费。这是这个路径最大的硬伤。</p>
+<h3 id="西九龙站汇丰分行"><a href="#西九龙站汇丰分行" class="headerlink" title="西九龙站汇丰分行"></a>西九龙站汇丰分行</h3><p>walk-in 的最优解。2024 年新开的分行，专门接待内地旅客，高铁过关下车即到，周六日也营业。不能预约但可 walk-in，建议工作日 9 点开门就到，热门时段排队 1–3 小时。</p>
+<hr>
+<h2 id="中银香港-BOC-HK：内地入金的最佳通道"><a href="#中银香港-BOC-HK：内地入金的最佳通道" class="headerlink" title="中银香港 BOC HK：内地入金的最佳通道"></a>中银香港 BOC HK：内地入金的最佳通道</h2><p>中银和汇丰是另一块基石。理由也很直接：内地居民最熟悉的体验；<strong>内地中银 → 中银香港转账免手续费、无损</strong>——这是其他银行没有的；实体卡是 Mastercard 万事达扣账卡，别再当银联卡看。</p>
+<table>
+<thead>
+<tr>
+<th align="left">账户</th>
+<th align="center">首存</th>
+<th align="left">月均余额不达标</th>
+<th align="left">功能</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">自在理财</td>
+<td align="center">1 万港币</td>
+<td align="left">月余额 1 万以下收 60 港币&#x2F;月</td>
+<td align="left">基础账户</td>
+</tr>
+<tr>
+<td align="left">智盈理财</td>
+<td align="center">20 万港币</td>
+<td align="left">实测目前未收（政策可能变）</td>
+<td align="left">含投资账户</td>
+</tr>
+</tbody></table>
+<p>绝大多数人开自在理财就够。智盈的优势主要在能买理财、外汇、保险。</p>
+<h3 id="在港-App-申请（最推荐）"><a href="#在港-App-申请（最推荐）" class="headerlink" title="在港 App 申请（最推荐）"></a>在港 App 申请（最推荐）</h3><p>操作顺序：</p>
+<ol>
+<li>香港境内打开 BOCHK App</li>
+<li>选”立即开户”</li>
+<li>上传身份证 + 港澳通行证</li>
+<li>填内地居住地址 + 上传地址证明（PDF 即可）</li>
+<li>选账户类型</li>
+<li>人脸识别</li>
+<li>提交</li>
+</ol>
+<p>最爽的一点：审核通过后立刻能在 App 内看到账号，<strong>马上就能加到 Apple Pay</strong>，不用等实体卡。路径是 App 内 → 选单 → 转账及缴费 → 扫码取款 → 看到卡号 → 手动加到 Apple Pay。</p>
+<p>实体卡是 Mastercard，邮寄到内地（平邮慢，可加 20+ 港币改挂号信，能查询追踪）。</p>
+<h3 id="中银特有的”补签名”机制"><a href="#中银特有的”补签名”机制" class="headerlink" title="中银特有的”补签名”机制"></a>中银特有的”补签名”机制</h3><p>线上&#x2F;远程开的户分两种状态：</p>
+<table>
+<thead>
+<tr>
+<th align="left">状态</th>
+<th align="center">日限额</th>
+<th align="center">可投资</th>
+<th align="center">可买股票&#x2F;理财</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">未补签名</td>
+<td align="center">20 万 HKD</td>
+<td align="center">不可</td>
+<td align="center">不可</td>
+</tr>
+<tr>
+<td align="left">已补签名</td>
+<td align="center">100 万 HKD</td>
+<td align="center">可</td>
+<td align="center">可</td>
+</tr>
+</tbody></table>
+<p>补签名要去任意中银香港网点排队，不能远程办。</p>
+<p>我的建议：日常收付款、Apple Pay、普通转账，不补签名也够用，20 万 HKD 日限额已经覆盖绝大多数场景，等下次去香港顺路补就行。但<strong>要专门买基金理财，必须补</strong>。</p>
+<h3 id="网点预约（公众号”中银香港微服务”）"><a href="#网点预约（公众号”中银香港微服务”）" class="headerlink" title="网点预约（公众号”中银香港微服务”）"></a>网点预约（公众号”中银香港微服务”）</h3><p>想当场拿卡走网点路径：微信关注公众号 → “个人开户预约” → 每晚 12 点刷新名额，提前 7 天放号 → 抢到截图保存。</p>
+<p>热门网点（中环、尖沙咀、铜锣湾）一般 0 点放号秒空，可以试试偏远的（元朗、上水、屯门）。</p>
+<h3 id="中银线上的两个坑"><a href="#中银线上的两个坑" class="headerlink" title="中银线上的两个坑"></a>中银线上的两个坑</h3><ul>
+<li><strong>iPhone 16 扫身份证可能失败</strong>：备一台安卓机</li>
+<li><strong>登录密码规则复杂</strong>：要求大小写 + 数字 + 特殊字符，记不住会很烦。开户当下就用密码管理器存上，同时开人脸识别</li>
+</ul>
+<h3 id="中银-vs-汇丰怎么选——直接两家都开"><a href="#中银-vs-汇丰怎么选——直接两家都开" class="headerlink" title="中银 vs 汇丰怎么选——直接两家都开"></a>中银 vs 汇丰怎么选——直接两家都开</h3><ul>
+<li>中银承担”内地入金通道”——内地中行 → 中银香港免手续费、无损、几乎实时</li>
+<li>汇丰承担”全球出金通道”——SWIFT 更稳，蓝狮子 Mastercard 海外通用度高</li>
+</ul>
+<p>一个咖啡馆下午就能用 App 把两家都搞定。</p>
+<hr>
+<h2 id="ZA-Bank：虚拟银行里我会第一个开的"><a href="#ZA-Bank：虚拟银行里我会第一个开的" class="headerlink" title="ZA Bank：虚拟银行里我会第一个开的"></a>ZA Bank：虚拟银行里我会第一个开的</h2><p>不要把虚拟银行当备胎。8 家虚拟银行里，我最建议优先开 ZA Bank：</p>
+<ul>
+<li>第一家拿到香港金管局虚拟银行牌照（2019 年）</li>
+<li>第一家支持访港内地居民线上开户</li>
+<li>App 体验是 8 家里最好的</li>
+<li>加入存款保障（80 万港币上限）</li>
+<li>自带港股美股交易功能</li>
+<li><strong>支持跨境支付通从国内直接入金</strong>（2025 年起的关键变化）</li>
+</ul>
+<h3 id="开户硬性条件"><a href="#开户硬性条件" class="headerlink" title="开户硬性条件"></a>开户硬性条件</h3><p>人在香港境内（GPS+IP 检测，禁用 Wi-Fi，必须蜂窝数据）；中国大陆身份证（有效期 ≥ 30 天）；港澳通行证 + 当天有效签注（≥ 30 天）；内地银行储蓄卡（一类卡）+ 与开户手机号一致；出入境记录 PDF。</p>
+<h3 id="5-分钟开户"><a href="#5-分钟开户" class="headerlink" title="5 分钟开户"></a>5 分钟开户</h3><p>香港境内打开 App → 选”中国大陆居民开户” → 上传身份证 + 港澳通行证 → 上传出入境记录 PDF → 人脸识别动态验证 → 验证内地银行储蓄卡 → 填职业、收入区间、开户用途 → 提交。</p>
+<p>全程 5–10 分钟，几小时到 1–2 天出结果。</p>
+<h3 id="卡的选择"><a href="#卡的选择" class="headerlink" title="卡的选择"></a>卡的选择</h3><ul>
+<li><strong>虚拟卡</strong>：免费，立刻可用，可绑 Apple Pay &#x2F; Google Pay</li>
+<li><strong>实体卡 ZA Card</strong>：Visa 通道。寄内地 35 港币邮费，寄香港免费，约 10 个工作日到</li>
+</ul>
+<p>我会两个都申请。实体卡寄回国后绑微信香港钱包，可以直接刷港币消费，也能用于海外订阅。</p>
+<h3 id="入金路径（按便捷度排）"><a href="#入金路径（按便捷度排）" class="headerlink" title="入金路径（按便捷度排）"></a>入金路径（按便捷度排）</h3><ol>
+<li><strong>跨境支付通</strong>（2025 年新通道）：国内主流银行 App（招行、工行、建行等）发起跨境支付通汇款，几分钟到账，手续费极低（几港币级）。这是 2025 年最重要的入金路径，<strong>只开 ZA Bank、不依赖实体行也能跑起来</strong>。</li>
+<li><strong>从汇丰&#x2F;中银港卡转账</strong>：实时到账，免手续费。</li>
+<li><strong>FPS 转数快</strong>：香港的实时支付系统，从其他香港账户转入。</li>
+<li><strong>内地银行 SWIFT 汇款</strong>：3–5 个工作日，每笔 150–300 港币。跨境支付通成熟后这条基本没必要走。</li>
+</ol>
+<h3 id="转账限额阶梯"><a href="#转账限额阶梯" class="headerlink" title="转账限额阶梯"></a>转账限额阶梯</h3><p>ZA Bank 访港旅客账户的限额是分阶段解锁的：</p>
+<table>
+<thead>
+<tr>
+<th align="left">阶段</th>
+<th align="center">转自己</th>
+<th align="center">转他人</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">初始</td>
+<td align="center">5 万 HKD&#x2F;日</td>
+<td align="center">1 万 HKD&#x2F;日</td>
+</tr>
+<tr>
+<td align="left">从他行同名账户转入一笔后</td>
+<td align="center">30 万 HKD&#x2F;日</td>
+<td align="center">3 万 HKD&#x2F;日</td>
+</tr>
+<tr>
+<td align="left">内部查核通过</td>
+<td align="center">100 万 HKD&#x2F;日</td>
+<td align="center">30 万 HKD&#x2F;日</td>
+</tr>
+</tbody></table>
+<p><strong>实操：开户后第一时间从汇丰或中银港卡转一笔同名资金过去，先把第一档提额触发掉。</strong></p>
+<h3 id="港股美股"><a href="#港股美股" class="headerlink" title="港股美股"></a>港股美股</h3><p>ZA Bank App 内自带港股美股交易模块，需在香港境内激活。可以暂时替代券商，长期持仓没问题；高频交易别指望，专业券商更合适。</p>
+<hr>
+<h2 id="其他三家虚拟银行（顺手开齐）"><a href="#其他三家虚拟银行（顺手开齐）" class="headerlink" title="其他三家虚拟银行（顺手开齐）"></a>其他三家虚拟银行（顺手开齐）</h2><p>8 家虚拟银行里能直接给内地访港居民开的只有 4 家：</p>
+<table>
+<thead>
+<tr>
+<th align="left">银行</th>
+<th align="center">内地访港</th>
+<th align="center">卡组织</th>
+<th align="center">实体卡寄内地</th>
+<th align="left">特色</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">ZA Bank</td>
+<td align="center">可</td>
+<td align="center">Visa</td>
+<td align="center">35 HKD</td>
+<td align="left">App 最稳，跨境支付通，加密友好</td>
+</tr>
+<tr>
+<td align="left">象象银行 Ele Bank（原天星 Airstar）</td>
+<td align="center">可</td>
+<td align="center">Visa</td>
+<td align="center">50 HKD</td>
+<td align="left">富途+小米股东，可绑 AlipayHK</td>
+</tr>
+<tr>
+<td align="left">Ant Bank（蚂蚁集团）</td>
+<td align="center">可</td>
+<td align="center">无</td>
+<td align="center">—</td>
+<td align="left">配支付宝 HK 顺手</td>
+</tr>
+<tr>
+<td align="left">LIVI Bank（中银+京东+怡和）</td>
+<td align="center">可</td>
+<td align="center">Mastercard</td>
+<td align="center">35 HKD</td>
+<td align="left">中银系对接顺手</td>
+</tr>
+<tr>
+<td align="left">WeLab &#x2F; Fusion &#x2F; 平安壹账通 &#x2F; Mox</td>
+<td align="center">不可（仅本港居民）</td>
+<td align="center">—</td>
+<td align="center">—</td>
+<td align="left">—</td>
+</tr>
+</tbody></table>
+<h3 id="象象银行-Ele-Bank（原天星-Airstar）"><a href="#象象银行-Ele-Bank（原天星-Airstar）" class="headerlink" title="象象银行 Ele Bank（原天星 Airstar）"></a>象象银行 Ele Bank（原天星 Airstar）</h3><p>关于改名：天星银行（Airstar Bank Limited）已于 2026 年 4 月 23 日正式更名为象象银行（Ele Bank Limited），短信发送方变成 #elebank。原账户、资产、卡片、服务都不变。如果你之前听过”天星”现在搜不到，搜”象象”或”Ele Bank”。</p>
+<p>股东是富途 + 小米，定位很明显：金融科技 + 移动体验。</p>
+<p>开户流程和 ZA Bank 类似，App 内走”非香港居民开户”路径，上传身份证 + 港澳通行证 + 出入境记录 PDF。当天到 2 个工作日出结果。</p>
+<p>我会顺手开它，看的是这三点：</p>
+<ul>
+<li>4 家里<strong>唯一能绑 Alipay HK</strong> 的，出门”扫一扫”刷港币</li>
+<li><strong>富途生态联动</strong>（直接接富途证券账户）</li>
+<li>加入存款保障，80 万港币上限</li>
+</ul>
+<h3 id="Ant-Bank（HK）"><a href="#Ant-Bank（HK）" class="headerlink" title="Ant Bank（HK）"></a>Ant Bank（HK）</h3><p>股东：蚂蚁集团（和支付宝 HK 同一家）。App 内”非香港居民开户”，几小时到 1 个工作日出结果。</p>
+<p>适合顺手开：</p>
+<ul>
+<li>和 Alipay HK 整合最丝滑</li>
+<li>开通基金功能通常送 50 港币左右（迎新福利浮动）</li>
+<li><strong>没有实体卡</strong>，更像”账户 + 转账工具”，别当消费卡用</li>
+</ul>
+<h3 id="LIVI-Bank（中银-京东-怡和）"><a href="#LIVI-Bank（中银-京东-怡和）" class="headerlink" title="LIVI Bank（中银+京东+怡和）"></a>LIVI Bank（中银+京东+怡和）</h3><p>股东：中银香港 + 京东数科 + 怡和集团。App 内”非香港居民开户”。</p>
+<p>价值主要在两处：</p>
+<ul>
+<li>中银系股东背景，<strong>和中银实体行账户对接最丝滑</strong></li>
+<li>Mastercard 借记卡（线上线下都能刷）</li>
+</ul>
+<h3 id="为什么我建议-4-家全开"><a href="#为什么我建议-4-家全开" class="headerlink" title="为什么我建议 4 家全开"></a>为什么我建议 4 家全开</h3><ul>
+<li>每家都加入存款保障，加起来 &#x3D; <strong>320 万港币的保障空间</strong></li>
+<li>多账户是分散风控最好的方式，某家被冻结其他还能用</li>
+<li>反正人都在香港，下午 5–10 分钟一家，顺手就开完了</li>
+</ul>
+<p>顺序建议：ZA Bank → 象象 → Ant → LIVI。</p>
+<h3 id="关于迎新"><a href="#关于迎新" class="headerlink" title="关于迎新"></a>关于迎新</h3><p>虚拟银行迎新是周期性变化的：</p>
+<ul>
+<li>ZA Bank：消费返现券 + 美股 0 佣金券 + 港元&#x2F;美元&#x2F;人民币新资金高息定存</li>
+<li>象象 Ele Bank：消费返现券 + Web3 相关迎新</li>
+<li>Ant Bank：开通基金功能送 50 港币</li>
+<li>LIVI：消费立减 + Mastercard 联名</li>
+</ul>
+<p>迎新数字变得很快，最省事的办法是去小红书搜”虚拟银行迎新 + 当前月份”，<strong>别从老攻略抄数字</strong>，每月都可能变。</p>
+<hr>
+<h2 id="10-条避坑清单"><a href="#10-条避坑清单" class="headerlink" title="10 条避坑清单"></a>10 条避坑清单</h2><p>很多人材料都备齐了，最后偏偏卡在这些小地方：</p>
+<ol>
+<li><strong>入境小票 ≠ 出入境记录</strong>：小票是过关时的纸条，部分线下网点要；出入境记录是微信”移民局”小程序下载的 PDF，<strong>线上 App 必备</strong>，过关后 1–2 小时才更新。线上开户前一定先下好。</li>
+<li><strong>iPhone 16 用户线上开中银易失败</strong>：识别身份证翻车率高，备一台安卓机。</li>
+<li><strong>汇丰开户必须 NFC 读通行证</strong>：最大卡点。出发前确认手机有 NFC，开户时摘掉手机壳。NFC 过不去后面全做不了。</li>
+<li><strong>中银 App 密码规则复杂</strong>：大小写 + 数字 + 特殊字符。开户当下用密码管理器存上，同时开人脸识别。每周都有人在群里问”中银密码忘了”，重置流程很麻烦。</li>
+<li><strong>拼音重名 &#x3D; 待定 3–5 天，先别当被拒</strong>：汇丰下户时如果你的拼音名字和某个内部黑名单同名，会进”待定”状态。3–5 个工作日出结果，别急、别重复申请。</li>
+<li><strong>地址证明精确到门牌号</strong>：”XX 路 XX 号 XX 室”是最低要求，只到小区或路号会被退。</li>
+<li><strong>公司地址要英文版本</strong>：汇丰 App 会要英文公司地址。如果你的公司没有现成英文地址，提前查注册地址的英文写法。</li>
+<li><strong>红狮子不支持网购</strong>：汇丰寄内地的红狮子是银联 ATM 卡，只能取现，不能绑微信、不能网购。真正能用的是蓝狮子 Mastercard，开户后在 App 单独申请，3–4 天到。</li>
+<li><strong>开完户做一笔小额交易激活账户</strong>：12 个月不动会休眠，部分实体行收休眠费。每 3 个月做一笔小额跨币种兑换（500 港币换美元再换回来）就行。</li>
+<li><strong>ZA Bank 转账限额是阶梯的</strong>：初始 5 万&#x2F;1 万 HKD 看着够，其实很容易卡住。开完户立刻从汇丰或中银转一笔同名资金过去触发提额，别等用钱时才发现限额不够。</li>
+</ol>
+<hr>
+<h2 id="收尾：办港卡，本质是给自己留路"><a href="#收尾：办港卡，本质是给自己留路" class="headerlink" title="收尾：办港卡，本质是给自己留路"></a>收尾：办港卡，本质是给自己留路</h2><p>港卡这件事说到底，是给自己留一条后路。<strong>办了港卡，不等于你立刻要做美股、加密、海外配置。它更像是你手里多了一条路</strong>——某天某个通道突然收紧，你不至于原地卡死。</p>
+<p>这次八部委的处罚只是个信号。这种强度的联合行动过去 5 年没出现过。后面大概率会发生三件事：</p>
+<ol>
+<li>接下来 2 年是境内 → 境外投资通道的全面合规化期</li>
+<li>香港持牌券商 + 港卡的组合是最稳的合规通道</li>
+<li>但这个通道的入口（港卡）也会同步抬高门槛</li>
+</ol>
+<p><strong>办这件事最好的时间是 5 年前，第二好的时间是这周。</strong> 把 App 下好，资料备齐，订张高铁票。一趟香港行程不到 6 小时，换来的是未来 10 年多一点的选择权。</p>
+<p>行动比完美重要。</p>
+
+		</div>
+
+		
+		<div class="post-copyright-info w-full my-8 px-2 sm:px-6 md:px-8">
+			<div class="article-copyright-info-container">
+    <ul>
+        <li><strong>标题:</strong> 港卡这扇门，趁还没关赶紧进——一份实操向的开户笔记</li>
+        <li><strong>作者:</strong> 嵌入式系统开发工程师</li>
+        <li><strong>创建于
+                :</strong> 2026-05-25 22:00:00</li>
+        
+            <li>
+                <strong>更新于
+                    :</strong> 2026-05-25 10:26:59
+            </li>
+        
+        <li>
+            <strong>链接:</strong> https://kuangyue111.github.io/2026/05/25/2026-05-25-hong-kong-bank-card-guide/
+        </li>
+        <li>
+            <strong>
+                版权声明:
+            </strong>
+            
+
+            
+                本文章采用 <a class="license" target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0">CC BY-NC-SA 4.0</a> 进行许可。
+            
+        </li>
+    </ul>
+</div>
+
+		</div>
+		
+
+		
+		<ul class="post-tags-box text-lg mt-1.5 flex-wrap justify-center flex md:hidden">
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E6%B8%AF%E5%8D%A1/">#港卡</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E9%A6%99%E6%B8%AF%E9%93%B6%E8%A1%8C/">#香港银行</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E8%B7%A8%E5%A2%83%E6%8A%95%E8%B5%84/">#跨境投资</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E6%B8%AF%E8%82%A1/">#港股</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E7%BE%8E%E8%82%A1/">#美股</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E5%8A%A0%E5%AF%86%E8%B4%A7%E5%B8%81/">#加密货币</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E6%B1%87%E4%B8%B0/">#汇丰</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E4%B8%AD%E9%93%B6%E9%A6%99%E6%B8%AF/">#中银香港</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E8%99%9A%E6%8B%9F%E9%93%B6%E8%A1%8C/">#虚拟银行</a>&nbsp;
+			</li>
+			
+		</ul>
+		
+
+		
+
+		
+		<div class="article-nav my-8 flex justify-between items-center px-2 sm:px-6 md:px-8">
+			
+			<div class="article-prev border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
+				<a class="prev" rel="prev" href="/2026/05/25/2026-05-25-sems-rems-demand-response-architecture/">
+					<span class="left arrow-icon flex justify-center items-center">
+						<i class="fa-solid fa-chevron-left"></i>
+					</span>
+					<span class="title flex justify-center items-center">
+						<span class="post-nav-title-item truncate max-w-48">电力需求响应——SEMS/REMS 层级架构下的多站协调控制</span>
+						<span class="post-nav-item">上一篇</span>
+					</span>
+				</a>
+			</div>
+			
+			
+			<div class="article-next border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
+				<a class="next" rel="next" href="/2026/05/25/2026-05-25-ai-energy-storage-codebase-predictive-maintenance/">
+					<span class="title flex justify-center items-center">
+						<span class="post-nav-title-item truncate max-w-48">从被动告警到预测性维护——将 AI 引入真实储能系统代码库的工程实践</span>
+						<span class="post-nav-item">下一篇</span>
+					</span>
+					<span class="right arrow-icon flex justify-center items-center">
+						<i class="fa-solid fa-chevron-right"></i>
+					</span>
+				</a>
+			</div>
+			
+		</div>
+		
+
+
+		
+		<div class="comment-container px-2 sm:px-6 md:px-8 pb-8">
+			<div class="comments-container mt-10 w-full ">
+    <div id="comment-anchor" class="w-full h-2.5"></div>
+    <div class="comment-area-title w-full my-1.5 md:my-2.5 text-xl md:text-3xl font-bold">
+        评论
+    </div>
+    
+
+        
+            
+    <div id="waline"></div>
+    <script type="module" data-swup-reload-script>
+      import { init } from '/js/libs/waline.js';
+
+      (function() {
+        const startPath = location.pathname;
+        const startTime = Date.now();
+        const retryDelay = 200;
+        const retryLimit = 5000;
+
+        const runWaline = () => {
+          if (location.pathname !== startPath) {
+            return;
+          }
+
+          const container = document.getElementById('waline');
+          if (!container) {
+            if (Date.now() - startTime < retryLimit) {
+              setTimeout(runWaline, retryDelay);
+            }
+            return;
+          }
+
+          if (window.redefineWalineInstance?.destroy) {
+            window.redefineWalineInstance.destroy();
+          }
+
+          container.innerHTML = '';
+          window.redefineWalineInstance = init({
+            el: '#waline',
+            serverURL: 'https://example.example.com',
+            path: location.pathname,
+            dark: 'body[class~="dark-mode"]',
+            reaction: false,
+            requiredMeta: ['nick', 'mail'],
+            emoji: [],
+                      lang: 'zh-CN',
+          });
+        };
+
+        runWaline();
+      })();
+    </script>
+
+
+
+        
+    
+</div>
+
+		</div>
+		
+	</div>
+
+	
+	<div class="toc-content-container">
+		<div class="post-toc-wrap">
+	<div class="post-toc">
+		<div class="toc-title">目录</div>
+		<div class="page-title">港卡这扇门，趁还没关赶紧进——一份实操向的开户笔记</div>
+		<ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B8%AF%E5%8D%A1%E8%BF%99%E6%89%87%E9%97%A8%EF%BC%8C%E8%B6%81%E8%BF%98%E6%B2%A1%E5%85%B3%E8%B5%B6%E7%B4%A7%E8%BF%9B%E2%80%94%E2%80%94%E4%B8%80%E4%BB%BD%E5%AE%9E%E6%93%8D%E5%90%91%E7%9A%84%E5%BC%80%E6%88%B7%E7%AC%94%E8%AE%B0"><span class="nav-text">港卡这扇门，趁还没关赶紧进——一份实操向的开户笔记</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B5%B7%E7%82%B9%EF%BC%9A5%E6%9C%8822%E6%97%A5%E7%9A%84%E9%82%A3%E6%9D%A1%E6%96%B0%E9%97%BB"><span class="nav-text">起点：5月22日的那条新闻</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B8%AF%E5%8D%A1%E5%92%8C%E5%8A%A0%E5%AF%86%E8%B4%A7%E5%B8%81%E7%9A%84%E9%82%A3%E5%B1%82%E5%85%B3%E7%B3%BB%EF%BC%88%E5%BE%88%E5%A4%9A%E4%BA%BA%E6%B2%A1%E8%AF%B4%E9%80%8F%EF%BC%89"><span class="nav-text">港卡和加密货币的那层关系（很多人没说透）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A1%A8%E9%9D%A2%E5%9C%A8%E6%94%BE%E5%AE%BD%EF%BC%8C%E5%BA%95%E5%B1%82%E5%9C%A8%E6%94%B6%E7%B4%A7"><span class="nav-text">表面在放宽，底层在收紧</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%A0%E9%9C%80%E4%B8%8D%E9%9C%80%E8%A6%81%E7%8E%B0%E5%9C%A8%E5%B0%B1%E5%8A%9E%EF%BC%9F%E7%9C%8B%E4%B8%8B%E9%9D%A2%E8%BF%99%E5%BC%A0%E6%8E%92%E5%BA%8F"><span class="nav-text">你需不需要现在就办？看下面这张排序</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B8%AF%E5%8D%A1%E5%88%B0%E5%BA%95%E8%83%BD%E8%A7%A3%E5%86%B3%E4%BB%80%E4%B9%88%E5%AE%9E%E9%99%85%E9%97%AE%E9%A2%98"><span class="nav-text">港卡到底能解决什么实际问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9C%A8%E5%8A%A8%E6%89%8B%E4%B9%8B%E5%89%8D%EF%BC%8C%E5%BE%97%E7%9F%A5%E9%81%93%E7%9A%84%E5%87%A0%E6%9D%A1%E9%A3%8E%E9%99%A9"><span class="nav-text">在动手之前，得知道的几条风险</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%87%BA%E5%8F%91%E5%89%8D%E7%9A%84%E7%89%A9%E6%96%99%E6%B8%85%E5%8D%95"><span class="nav-text">出发前的物料清单</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B7%A5%E5%85%B7%E5%87%86%E5%A4%87%EF%BC%9A%E5%88%AB%E7%AD%89%E5%88%B0%E9%A6%99%E6%B8%AF%E6%89%8D%E4%B8%8B%E8%BD%BD"><span class="nav-text">工具准备：别等到香港才下载</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E5%A4%A9%E8%83%BD%E5%BC%80%E5%87%A0%E5%AE%B6%EF%BC%9F%E5%8F%82%E8%80%83%E8%A1%8C%E7%A8%8B"><span class="nav-text">一天能开几家？参考行程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B1%87%E4%B8%B0-HSBC%EF%BC%9A%E6%B8%AF%E5%8D%A1%E9%87%8C%E7%9A%84%E7%A1%AC%E9%80%9A%E8%B4%A7"><span class="nav-text">汇丰 HSBC：港卡里的硬通货</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9C%A8%E6%B8%AF-App-%E7%94%B3%E8%AF%B7%E7%9A%84%E5%AE%9E%E6%93%8D"><span class="nav-text">在港 App 申请的实操</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%9C%B0%E8%A7%81%E8%AF%81%E5%BC%80%E6%88%B7%EF%BC%88%E4%BB%85%E9%80%82%E5%90%88-Premier-%E7%94%A8%E6%88%B7%EF%BC%89"><span class="nav-text">内地见证开户（仅适合 Premier 用户）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A5%BF%E4%B9%9D%E9%BE%99%E7%AB%99%E6%B1%87%E4%B8%B0%E5%88%86%E8%A1%8C"><span class="nav-text">西九龙站汇丰分行</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%AD%E9%93%B6%E9%A6%99%E6%B8%AF-BOC-HK%EF%BC%9A%E5%86%85%E5%9C%B0%E5%85%A5%E9%87%91%E7%9A%84%E6%9C%80%E4%BD%B3%E9%80%9A%E9%81%93"><span class="nav-text">中银香港 BOC HK：内地入金的最佳通道</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9C%A8%E6%B8%AF-App-%E7%94%B3%E8%AF%B7%EF%BC%88%E6%9C%80%E6%8E%A8%E8%8D%90%EF%BC%89"><span class="nav-text">在港 App 申请（最推荐）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%AD%E9%93%B6%E7%89%B9%E6%9C%89%E7%9A%84%E2%80%9D%E8%A1%A5%E7%AD%BE%E5%90%8D%E2%80%9D%E6%9C%BA%E5%88%B6"><span class="nav-text">中银特有的”补签名”机制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BD%91%E7%82%B9%E9%A2%84%E7%BA%A6%EF%BC%88%E5%85%AC%E4%BC%97%E5%8F%B7%E2%80%9D%E4%B8%AD%E9%93%B6%E9%A6%99%E6%B8%AF%E5%BE%AE%E6%9C%8D%E5%8A%A1%E2%80%9D%EF%BC%89"><span class="nav-text">网点预约（公众号”中银香港微服务”）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%AD%E9%93%B6%E7%BA%BF%E4%B8%8A%E7%9A%84%E4%B8%A4%E4%B8%AA%E5%9D%91"><span class="nav-text">中银线上的两个坑</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%AD%E9%93%B6-vs-%E6%B1%87%E4%B8%B0%E6%80%8E%E4%B9%88%E9%80%89%E2%80%94%E2%80%94%E7%9B%B4%E6%8E%A5%E4%B8%A4%E5%AE%B6%E9%83%BD%E5%BC%80"><span class="nav-text">中银 vs 汇丰怎么选——直接两家都开</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ZA-Bank%EF%BC%9A%E8%99%9A%E6%8B%9F%E9%93%B6%E8%A1%8C%E9%87%8C%E6%88%91%E4%BC%9A%E7%AC%AC%E4%B8%80%E4%B8%AA%E5%BC%80%E7%9A%84"><span class="nav-text">ZA Bank：虚拟银行里我会第一个开的</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%80%E6%88%B7%E7%A1%AC%E6%80%A7%E6%9D%A1%E4%BB%B6"><span class="nav-text">开户硬性条件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-%E5%88%86%E9%92%9F%E5%BC%80%E6%88%B7"><span class="nav-text">5 分钟开户</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8D%A1%E7%9A%84%E9%80%89%E6%8B%A9"><span class="nav-text">卡的选择</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%A5%E9%87%91%E8%B7%AF%E5%BE%84%EF%BC%88%E6%8C%89%E4%BE%BF%E6%8D%B7%E5%BA%A6%E6%8E%92%EF%BC%89"><span class="nav-text">入金路径（按便捷度排）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BD%AC%E8%B4%A6%E9%99%90%E9%A2%9D%E9%98%B6%E6%A2%AF"><span class="nav-text">转账限额阶梯</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B8%AF%E8%82%A1%E7%BE%8E%E8%82%A1"><span class="nav-text">港股美股</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B6%E4%BB%96%E4%B8%89%E5%AE%B6%E8%99%9A%E6%8B%9F%E9%93%B6%E8%A1%8C%EF%BC%88%E9%A1%BA%E6%89%8B%E5%BC%80%E9%BD%90%EF%BC%89"><span class="nav-text">其他三家虚拟银行（顺手开齐）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B1%A1%E8%B1%A1%E9%93%B6%E8%A1%8C-Ele-Bank%EF%BC%88%E5%8E%9F%E5%A4%A9%E6%98%9F-Airstar%EF%BC%89"><span class="nav-text">象象银行 Ele Bank（原天星 Airstar）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Ant-Bank%EF%BC%88HK%EF%BC%89"><span class="nav-text">Ant Bank（HK）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#LIVI-Bank%EF%BC%88%E4%B8%AD%E9%93%B6-%E4%BA%AC%E4%B8%9C-%E6%80%A1%E5%92%8C%EF%BC%89"><span class="nav-text">LIVI Bank（中银+京东+怡和）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E6%88%91%E5%BB%BA%E8%AE%AE-4-%E5%AE%B6%E5%85%A8%E5%BC%80"><span class="nav-text">为什么我建议 4 家全开</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B3%E4%BA%8E%E8%BF%8E%E6%96%B0"><span class="nav-text">关于迎新</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#10-%E6%9D%A1%E9%81%BF%E5%9D%91%E6%B8%85%E5%8D%95"><span class="nav-text">10 条避坑清单</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%94%B6%E5%B0%BE%EF%BC%9A%E5%8A%9E%E6%B8%AF%E5%8D%A1%EF%BC%8C%E6%9C%AC%E8%B4%A8%E6%98%AF%E7%BB%99%E8%87%AA%E5%B7%B1%E7%95%99%E8%B7%AF"><span class="nav-text">收尾：办港卡，本质是给自己留路</span></a></li></ol></li></ol>
+
+	</div>
+</div>
+	</div>
+	
+</div>
+
+			</div>
+
+			
+		</div>
+
+		<div class="main-content-footer">
+			<footer class="footer mt-5 py-5 h-auto text-base text-third-text-color relative border-t-2 border-t-border-color">
+    <div class="info-container py-3 text-center">
+        
+        <div class="text-center">
+            &copy;
+            
+              <span>2022</span>
+              -
+            
+            2026&nbsp;&nbsp;<i class="fa-solid fa-heart fa-beat" style="--fa-animation-duration: 0.5s; color: #f54545"></i>&nbsp;&nbsp;<a href="/">kuangyue111</a>
+            
+                
+                <p class="post-count space-x-0.5">
+                    <span>
+                        共撰写了 45 篇文章
+                    </span>
+                    
+                </p>
+            
+        </div>
+        
+            <script data-swup-reload-script src="https://cn.vercount.one/js"></script>
+            <div class="relative text-center lg:absolute lg:right-[20px] lg:top-1/2 lg:-translate-y-1/2 lg:text-right">
+                
+                    <span id="busuanzi_container_site_uv" class="lg:!block">
+                        <span class="text-sm">访问人数</span>
+                        <span id="busuanzi_value_site_uv"></span>
+                    </span>
+                
+                
+                    <span id="busuanzi_container_site_pv" class="lg:!block">
+                        <span class="text-sm">总访问量</span>
+                        <span id="busuanzi_value_site_pv"></span>
+                    </span>
+                
+            </div>
+        
+        <div class="relative text-center lg:absolute lg:left-[20px] lg:top-1/2 lg:-translate-y-1/2 lg:text-left">
+            <span class="lg:block text-sm">由 <?xml version="1.0" encoding="utf-8"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg class="relative top-[2px] inline-block align-baseline" version="1.1" id="圖層_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="1rem" height="1rem" viewBox="0 0 512 512" enable-background="new 0 0 512 512" xml:space="preserve"><path fill="#0E83CD" d="M256.4,25.8l-200,115.5L56,371.5l199.6,114.7l200-115.5l0.4-230.2L256.4,25.8z M349,354.6l-18.4,10.7l-18.6-11V275H200v79.6l-18.4,10.7l-18.6-11v-197l18.5-10.6l18.5,10.8V237h112v-79.6l18.5-10.6l18.5,10.8V354.6z"/></svg><a target="_blank" class="text-base" href="https://hexo.io">Hexo</a> 驱动</span>
+            <span class="text-sm lg:block">主题&nbsp;<a class="text-base" target="_blank" href="https://github.com/EvanNotFound/hexo-theme-redefine">Redefine v2.9.0</a></span>
+        </div>
+        
+        
+            <div>
+                博客已运行 <span class="odometer" id="runtime_days" ></span> 天 <span class="odometer" id="runtime_hours"></span> 小时 <span class="odometer" id="runtime_minutes"></span> 分钟 <span class="odometer" id="runtime_seconds"></span> 秒
+            </div>
+        
+        
+            <script data-swup-reload-script>
+                try {
+                    function odometer_init() {
+                    const elements = document.querySelectorAll('.odometer');
+                    elements.forEach(el => {
+                        new Odometer({
+                            el,
+                            format: '( ddd).dd',
+                            duration: 200
+                        });
+                    });
+                    }
+                    odometer_init();
+                } catch (error) {}
+            </script>
+        
+        
+        
+    </div>  
+</footer>
+		</div>
+	</div>
+
+	
+	<div class="post-tools">
+		<div class="post-tools-container">
+	<ul class="article-tools-list">
+		<!-- TOC aside toggle -->
+		
+		<li class="right-bottom-tools page-aside-toggle">
+			<i class="fa-regular fa-outdent"></i>
+		</li>
+		
+
+		<!-- go comment -->
+		
+		<li class="go-comment">
+			<i class="fa-regular fa-comments"></i>
+		</li>
+		
+	</ul>
+</div>
+	</div>
+	
+
+	<div class="right-side-tools-container">
+		<div class="side-tools-container">
+	<ul class="hidden-tools-list">
+		<li class="right-bottom-tools tool-font-adjust-plus flex justify-center items-center">
+			<i class="fa-regular fa-magnifying-glass-plus"></i>
+		</li>
+
+		<li class="right-bottom-tools tool-font-adjust-minus flex justify-center items-center">
+			<i class="fa-regular fa-magnifying-glass-minus"></i>
+		</li>
+
+		<li class="right-bottom-tools tool-dark-light-toggle flex justify-center items-center">
+			<i class="fa-regular fa-moon"></i>
+		</li>
+
+		<!-- rss -->
+		
+
+		
+
+		<li class="right-bottom-tools tool-scroll-to-bottom flex justify-center items-center">
+			<i class="fa-regular fa-arrow-down"></i>
+		</li>
+	</ul>
+
+	<ul class="visible-tools-list">
+		<li class="right-bottom-tools toggle-tools-list flex justify-center items-center">
+			<i class="fa-regular fa-cog fa-spin"></i>
+		</li>
+		
+		<li class="right-bottom-tools tool-scroll-to-top flex justify-center items-center">
+			<i class="arrow-up fas fa-arrow-up"></i>
+			<span class="percent"></span>
+		</li>
+		
+		
+	</ul>
+</div>
+	</div>
+
+	<div class="image-viewer-container" role="dialog" aria-modal="true" aria-label="图片查看器">
+	<button class="image-viewer-close" type="button" aria-label="关闭">
+		<i class="fa-solid fa-xmark"></i>
+	</button>
+	<button class="image-viewer-prev" type="button" aria-label="上一页">
+		<i class="fa-solid fa-chevron-left"></i>
+	</button>
+	<div class="image-viewer-frame">
+		<img src="" alt="">
+	</div>
+	<div class="image-viewer-exif-panel hidden absolute left-1/2 bottom-20 -translate-x-1/2 w-[min(92vw,420px)] max-h-[60vh] overflow-hidden rounded-2xl bg-background-color-transparent-80 p-4 text-left shadow-redefine-flat backdrop-blur-md" role="dialog" aria-label="EXIF" aria-hidden="true">
+		<div class="flex items-center justify-between mb-3">
+			<span class="text-sm font-semibold text-first-text-color">EXIF</span>
+			<button class="image-viewer-exif-close flex h-8 w-8 items-center justify-center rounded-full bg-background-color-transparent-80 text-first-text-color transition hover:bg-background-color-transparent-40" type="button" aria-label="关闭">
+				<i class="fa-solid fa-xmark text-[0.65rem]"></i>
+			</button>
+		</div>
+		<div class="image-viewer-exif-cards grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto pr-1 scrollbar-hide"></div>
+		<template class="image-viewer-exif-card-template">
+			<div class="rounded-lg bg-background-color-transparent-40 px-3 py-2">
+				<div class="image-viewer-exif-card-header flex items-center gap-2 mb-1">
+					<i class="image-viewer-exif-card-icon fa-solid fa-circle-info text-xs text-third-text-color"></i>
+					<div class="image-viewer-exif-card-title text-xs font-semibold text-first-text-color"></div>
+				</div>
+				<div class="image-viewer-exif-card-items flex flex-col gap-1"></div>
+			</div>
+		</template>
+	</div>
+	<button class="image-viewer-exif-toggle flex items-center gap-2 hidden absolute left-1/2 bottom-6 -translate-x-1/2 rounded-full border border-border-color bg-background-color-transparent-80 px-4 py-2 text-first-text-color backdrop-blur-md transition hover:bg-background-color-transparent-40" type="button" aria-label="EXIF" aria-expanded="false">
+		<i class="fa-solid fa-circle-info text-xs"></i>
+		<span class="text-xs font-semibold uppercase tracking-wider">EXIF</span>
+	</button>
+	<button class="image-viewer-next" type="button" aria-label="下一页">
+		<i class="fa-solid fa-chevron-right"></i>
+	</button>
+</div>
+
+
+	
+
+</main>
+
+
+
+<script src="/js/build/libs/Swup.min.js"></script>
+
+<script src="/js/build/libs/SwupSlideTheme.min.js"></script>
+
+<script src="/js/build/libs/SwupScriptsPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupProgressPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupScrollPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupPreloadPlugin.min.js"></script>
+
+<script>
+    window.swup = new Swup({
+        plugins: [
+            new SwupScriptsPlugin({
+                optin: true,
+            }),
+            new SwupProgressPlugin(),
+            new SwupScrollPlugin({
+                offset: 80,
+            }),
+            new SwupSlideTheme({
+                mainElement: ".main-content-body",
+            }),
+            new SwupPreloadPlugin(),
+        ],
+        containers: ["#swup"],
+    });
+
+    window.dispatchEvent(
+        new CustomEvent("redefine:swup:ready", {
+            detail: {
+                swup: window.swup,
+            },
+        }),
+    );
+</script>
+
+
+
+
+	
+<script src="/js/build/main.js" type="module"></script>
+
+
+
+    
+<script src="/js/build/libs/odometer.min.js"></script>
+
+    
+<link rel="stylesheet" href="/assets/odometer-theme-minimal.css">
+
+
+
+
+
+
+
+  
+<script src="/js/build/libs/Typed.min.js"></script>
+
+
+
+
+
+
+
+
+
+
+<script src="/js/build/libs/moment-with-locales.min.js" data-swup-reload-script=""></script>
+
+
+
+	
+</body>
+
+</html>

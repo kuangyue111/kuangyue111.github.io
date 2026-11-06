@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="keywords" content="Hexo Theme Redefine">
+    
+    
+    <meta name="author" content="kuangyue111">
+    
+    <!-- Completely eliminate flash of wrong theme -->
+    <script>
+        (function() {
+            const THEME_KEY = "REDEFINE-THEME-STATUS";
+            const DARK = "dark", LIGHT = "light";
+            
+            // Get preferred theme
+            function getTheme() {
+                try {
+                    const saved = localStorage.getItem(THEME_KEY);
+                    if (saved) {
+                        const { isDark } = JSON.parse(saved);
+                        return isDark ? DARK : LIGHT;
+                    }
+                } catch (e) {}
+                
+                return matchMedia("(prefers-color-scheme: dark)").matches ? DARK : LIGHT;
+            }
+            
+            // Apply theme to document
+            function applyTheme(theme) {
+                const isDark = theme === DARK;
+                const root = document.documentElement;
+                
+                // Set classes for compatibility
+                root.classList.add(theme);
+                root.classList.remove(isDark ? LIGHT : DARK);
+                root.style.colorScheme = theme;
+            }
+            
+            // Initial application
+            const theme = getTheme();
+            applyTheme(theme);
+            
+            // Listen for system preference changes
+            matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ({ matches }) => {
+                // Only update if using system preference (no localStorage entry)
+                if (!localStorage.getItem(THEME_KEY)) {
+                    applyTheme(matches ? DARK : LIGHT);
+                }
+            });
+            
+            // Set body classes ASAP (before DOMContentLoaded)
+            (function() {
+                const addBodyClass = () => {
+                    const b = document.body;
+                    if (!b) return false;
+                    b.classList.add(theme + "-mode");
+                    return true;
+                };
+
+                // Try immediately
+                if (addBodyClass()) return;
+
+                // Observe until body exists
+                const mo = new MutationObserver(() => {
+                    if (addBodyClass()) mo.disconnect();
+                });
+                mo.observe(document.documentElement, { childList: true, subtree: true });
+            })();
+        })();
+    </script>
+    
+    <!-- preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    
+    <!--- Seo Part-->
+    
+    <link rel="canonical" href="https://kuangyue111.github.io/2026/06/08/2026-06-08-eis-deep-analysis/"/>
+    <meta name="robots" content="index,follow">
+    <meta name="googlebot" content="index,follow">
+    <meta name="revisit-after" content="1 days">
+    
+    
+        
+        <meta name="description" content="Hexo Theme Redefine, Redefine Your Hexo Journey.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="电化学阻抗谱（EIS）深度解析：从物理原理到工程代码实现">
+<meta property="og:url" content="https://kuangyue111.github.io/2026/06/08/2026-06-08-eis-deep-analysis/index.html">
+<meta property="og:site_name" content="KuangYue&#39;s Blog">
+<meta property="og:description" content="Hexo Theme Redefine, Redefine Your Hexo Journey.">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://kuangyue111.github.io/images/redefine-og.webp">
+<meta property="article:published_time" content="2026-06-08T07:00:00.000Z">
+<meta property="article:modified_time" content="2026-06-09T08:35:31.098Z">
+<meta property="article:author" content="kuangyue111">
+<meta property="article:tag" content="嵌入式">
+<meta property="article:tag" content="BMS">
+<meta property="article:tag" content="储能">
+<meta property="article:tag" content="SOH">
+<meta property="article:tag" content="锂电池">
+<meta property="article:tag" content="EIS">
+<meta property="article:tag" content="电化学阻抗谱">
+<meta property="article:tag" content="电池诊断">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://kuangyue111.github.io/images/redefine-og.webp">
+    
+    
+    <!--- Icon Part-->
+    <link rel="icon" type="image/png" href="/images/redefine-favicon.svg" sizes="192x192">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/redefine-favicon.svg">
+    <meta name="theme-color" content="#A31F34">
+    <link rel="shortcut icon" href="/images/redefine-favicon.svg">
+    <!--- Page Info-->
+    
+    <title>
+        
+            电化学阻抗谱（EIS）深度解析：从物理原理到工程代码实现 | KuangYue&#39;s Blog
+        
+    </title>
+
+    
+<link rel="stylesheet" href="/fonts/Chillax/chillax.css">
+
+
+    <!--- Inject Part-->
+    
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+        
+<link rel="stylesheet" href="/css/build/tailwind.css">
+
+    
+
+    
+<link rel="stylesheet" href="/fonts/GeistMono/geist-mono.css">
+
+    
+<link rel="stylesheet" href="/fonts/Geist/geist.css">
+
+    <!--- Font Part-->
+    
+    
+    
+    
+    
+    
+
+    <script id="hexo-configurations">
+    window.config = {"hostname":"kuangyue111.github.io","root":"/","language":"zh-CN"};
+    window.theme = {"articles":{"style":{"font_size":"16px","line_height":1.5,"image_border_radius":"14px","image_alignment":"center","image_caption":false,"link_icon":true,"delete_mask":false,"title_alignment":"left","headings_top_spacing":{"h1":"3.2rem","h2":"2.4rem","h3":"1.9rem","h4":"1.6rem","h5":"1.4rem","h6":"1.3rem"}},"word_count":{"enable":true,"count":true,"min2read":true},"author_label":{"enable":true,"auto":false,"list":[]},"code_block":{"copy":true,"style":"mac","highlight_theme":{"light":"github","dark":"vs2015"},"font":{"enable":false,"family":null,"url":null}},"toc":{"enable":true,"max_depth":3,"number":false,"expand":true,"init_open":true},"copyright":{"enable":true,"default":"cc_by_nc_sa"},"lazyload":true,"pangu_js":false,"recommendation":{"enable":false,"title":"推荐阅读","limit":3,"mobile_limit":2,"placeholder":"/images/wallhaven-wqery6-light.webp","skip_dirs":[]}},"colors":{"primary":"#A31F34","secondary":null,"default_mode":"light"},"global":{"fonts":{"chinese":{"enable":false,"family":null,"url":null},"english":{"enable":false,"family":null,"url":null},"title":{"enable":false,"family":null,"url":null}},"content_max_width":"1000px","sidebar_width":"210px","hover":{"shadow":true,"scale":false},"scroll_progress":{"bar":false,"percentage":true},"website_counter":{"url":"https://cn.vercount.one/js","enable":true,"site_pv":true,"site_uv":true,"post_pv":true},"single_page":true,"preloader":{"enable":false,"custom_message":null},"side_tools":{"gear_rotation":true,"auto_expand":false},"open_graph":{"enable":true,"image":"/images/redefine-og.webp","description":"Hexo Theme Redefine, Redefine Your Hexo Journey."},"google_analytics":{"enable":false,"id":null}},"home_banner":{"enable":true,"style":"fixed","image":{"light":"/images/wallhaven-wqery6-light.webp","dark":"/images/wallhaven-wqery6-dark.webp"},"title":"KuangYue's Blog","subtitle":{"text":["专注储能系统与嵌入式开发","记录 NCCU 控制单元架构演进","探索工业物联网与云端对接"],"hitokoto":{"enable":false,"show_author":false,"api":"https://v1.hitokoto.cn"},"typing_speed":100,"backing_speed":80,"starting_delay":500,"backing_delay":1500,"loop":true,"smart_backspace":true},"text_color":{"light":"#fff","dark":"#d1d1b6"},"text_style":{"title_size":"2.8rem","subtitle_size":"1.5rem","line_height":1.2},"custom_font":{"enable":false,"family":null,"url":null},"social_links":{"enable":true,"style":"default","links":[{"icon":"fa-brands fa-github","url":"https://github.com/kuangyue111"},{"icon":"fa-brands fa-twitter","url":null},{"icon":"fa-solid fa-at","url":"you@example.com"},{"icon":"fa-brands fa-telegram","url":null},{"icon":"/images/custom-icon.svg","url":null}],"qrs":[{"icon":"fa-brands fa-weixin","qr":null},{"icon":"/images/custom-icon.svg","qr":null}]}},"plugins":{"feed":{"enable":false},"aplayer":{"enable":false,"type":"fixed","audios":[{"name":null,"artist":null,"url":null,"cover":null,"lrc":null}]},"mermaid":{"theme":{"light":"default","dark":"dark"}},"katex":false,"chart":false},"version":"2.9.0","code_block":{"theme":"light","macStyle":false,"shrink":false,"copy_button":true,"language":true},"navbar":{"auto_hide":false,"color":{"left":"#f78736","right":"#367df7","transparency":35},"width":{"home":"1200px","pages":"1000px"},"links":{"Home":{"path":"/","icon":"fa-regular fa-house"},"Archives":{"path":"/archives/","icon":"fa-regular fa-archive"},"Tags":{"path":"/tags/","icon":"fa-regular fa-tags"},"Categories":{"path":"/categories/","icon":"fa-regular fa-folder"},"About":{"icon":"fa-regular fa-user","submenus":{"Me":"/about/","GitHub":"https://github.com/kuangyue111"}}},"search":{"enable":false,"preload":true}},"page_templates":{"friends_column":2,"tags_style":"blur","masonry":{"batch_size":12,"initial_batch_size":24}},"home":{"sidebar":{"enable":true,"position":"left","first_item":"menu","announcement":"专注于嵌入式与储能系统技术分享","show_on_mobile":true,"links":{"Archives":{"path":"/archives/","icon":"fa-regular fa-archive"},"Tags":{"path":"/tags/","icon":"fa-regular fa-tags"},"Categories":{"path":"/categories/","icon":"fa-regular fa-folder"}}},"article_date_format":"auto","excerpt_length":200,"categories":{"enable":true,"limit":3},"tags":{"enable":true,"limit":3}},"footer":{"runtime":true,"icon":"<i class=\"fa-solid fa-heart fa-beat\" style=\"--fa-animation-duration: 0.5s; color: #f54545\"></i>","start":"2022/8/17 11:45:14","statistics":true,"customize":null,"icp":{"enable":false,"number":null,"url":null},"since":2025,"custom":null,"copyright":true,"theme":{"enable":true},"counter":true},"footerStart":"2022/8/17 11:45:14","mermaid":{"style":{"light":"default","dark":"dark"}}};
+    window.lang_ago = {"second":"%s 秒前","minute":"%s 分钟前","hour":"%s 小时前","day":"%s 天前","week":"%s 周前","month":"%s 个月前","year":"%s 年前"};
+    window.i18n = {"search":"站内搜索您需要的内容...","toc":"目录","prev":"上一页","next":"下一页","prev_posts":"上一篇","next_posts":"下一篇","page":"第 %d 页","recent_posts":"最新文章","share":"分享","powered_by":"由 %s 驱动","theme":"主题","rss_feed":"RSS Feed","category":"分类","categories":"分类","tag":"标签","tags":"标签","post":"文章","posts":"文章","tagcloud":"标签云","comment":"评论","comments":"评论","top":"置顶","sticky":"置顶","go-back-home":"回到首页","masonry_loading":"照片加载中...","image_viewer":"图片查看器","close":"关闭","exif":{"title":"EXIF","cards":{"camera":"相机","lens":"镜头","exposure":"曝光","other":"其他"},"fields":{"make":"品牌","model":"机型","date_taken":"拍摄时间","lens_model":"镜头","focal_length":"焦距","focus_mode":"对焦模式","shutter":"快门","aperture":"光圈","iso":"感光度","exposure_program":"曝光程序","exposure_compensation":"曝光补偿","metering_mode":"测光模式","flash":"闪光灯","white_balance":"白平衡","latitude":"纬度","longitude":"经度","altitude":"海拔"},"status":{"loading":"加载中...","no_exif":"无 EXIF 信息","library_missing":"EXIF 库未加载","image_source_missing":"图片地址不可用","unavailable":"EXIF 不可用（可能被 CORS 阻止或缺少元数据）","flag_unavailable":"EXIF 不可用"}},"home":"首页","archive":"归档","archives":"归档","about":"关于","links":"链接","link":"链接","friends":"友情链接","friend":"友情链接","timeline":"时间轴","shuoshuo":"说说","bookmarks":"书签","site_uv":"访问人数","site_pv":"总访问量","read_more":"阅读全文","wordcount":"字","min2read":"分钟","changelog":"更新日志","status":"状态","runtime":"博客已运行","days":"天","hours":"小时","minutes":"分钟","seconds":"秒","optimized_by":"并由 Evan 进行优化","rights":"版权所有","site_posts":"共撰写了 %s 篇文章","site_wordcount":"共 %s 字","copyright":{"title":"标题","author":"作者","link":"链接","create_time":"创建于","update_time":"更新于","license_title":"版权声明","license_content":"本文章采用 %s 进行许可。","all_rights_reserved":"版权所有 &#169 %s，禁止转载。","public_domain":"本文为公有领域作品，可自由转载、引用。"},"ago":{"second":"%s 秒前","minute":"%s 分钟前","hour":"%s 小时前","day":"%s 天前","week":"%s 周前","month":"%s 个月前","year":"%s 年前"},"create_time":"创建","update_time":"更新","expired":"这篇文章最后更新于 %s 天前，内容可能已经过时。"};
+    window.data = {"masonry":false};
+  </script>
+    
+    <!--- Fontawesome Part-->
+    
+<link rel="stylesheet" href="/fontawesome/fontawesome.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/brands.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/solid.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/regular.min.css">
+
+    
+    
+    
+    
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+	<div class="progress-bar-container">
+	
+
+	
+	<span class="pjax-progress-bar"></span>
+	<!--        <span class="swup-progress-icon">-->
+	<!--            <i class="fa-solid fa-circle-notch fa-spin"></i>-->
+	<!--        </span>-->
+	
+</div>
+
+<main class="page-container" id="swup">
+
+	
+
+	<div class="main-content-container flex flex-col justify-between min-h-dvh">
+		<div class="main-content-header">
+			<header class="navbar-container px-6 md:px-12">
+    <div class="navbar-content transition-navbar ">
+        <div class="left">
+            
+            <a class="logo-title" href="/">
+                
+                KuangYue&#39;s Blog
+                
+            </a>
+        </div>
+
+        <div class="right">
+            <!-- PC -->
+            <div class="desktop">
+                <ul class="navbar-list">
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/"
+                                        >
+                                    <i class="fa-regular fa-house fa-fw"></i>
+                                    首页
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/archives/"
+                                        >
+                                    <i class="fa-regular fa-archive fa-fw"></i>
+                                    归档
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/tags/"
+                                        >
+                                    <i class="fa-regular fa-tags fa-fw"></i>
+                                    标签
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/categories/"
+                                        >
+                                    <i class="fa-regular fa-folder fa-fw"></i>
+                                    分类
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class="has-dropdown"
+                                   href="#"
+                                        onClick=&#34;return false;&#34;>
+                                    <i class="fa-regular fa-user fa-fw"></i>
+                                    关于
+                                    <i class="fa-solid fa-chevron-down fa-fw"></i>
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                                    <ul class="sub-menu">
+                                        
+                                            <li>
+                                                <a href="/about/">
+                                                    ME
+                                                </a>
+                                            </li>
+                                        
+                                            <li>
+                                                <a target="_blank" rel="noopener" href="https://github.com/kuangyue111">
+                                                    GITHUB
+                                                </a>
+                                            </li>
+                                        
+                                    </ul>
+                                
+                            </li>
+                    
+                    
+                </ul>
+            </div>
+            <!-- Mobile -->
+            <div class="mobile">
+                
+                <div class="icon-item navbar-bar">
+                    <div class="navbar-bar-middle"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile sheet -->
+    <div class="navbar-drawer h-dvh w-full absolute top-0 left-0 bg-background-color flex flex-col justify-between">
+        <ul class="drawer-navbar-list flex flex-col px-4 justify-center items-start">
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/"
+                        >
+                            <span>
+                                首页
+                            </span>
+                            
+                                <i class="fa-regular fa-house fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/archives/"
+                        >
+                            <span>
+                                归档
+                            </span>
+                            
+                                <i class="fa-regular fa-archive fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/tags/"
+                        >
+                            <span>
+                                标签
+                            </span>
+                            
+                                <i class="fa-regular fa-tags fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/categories/"
+                        >
+                            <span>
+                                分类
+                            </span>
+                            
+                                <i class="fa-regular fa-folder fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item-sub text-base my-1.5 flex flex-col w-full">
+                        
+                        <div class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary cursor-pointer text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                             navbar-data-toggle="submenu-About"
+                        >
+                            <span>
+                                关于
+                            </span>
+                            
+                                <i class="fa-solid fa-chevron-right fa-sm fa-fw transition-all"></i>
+                            
+                        </div>
+                        
+
+                        
+                            <div class="flex-col items-start px-2 py-2 hidden" data-target="submenu-About">
+                                
+                                    <div class="drawer-navbar-item text-base flex flex-col justify-center items-start hover:underline active:underline hover:underline-offset-1 rounded-3xl">
+                                        <a class=" text-third-text-color text-xl"
+                                           href="/about/">ME</a>
+                                    </div>
+                                
+                                    <div class="drawer-navbar-item text-base flex flex-col justify-center items-start hover:underline active:underline hover:underline-offset-1 rounded-3xl">
+                                        <a class=" text-third-text-color text-xl"
+                                           target="_blank" rel="noopener" href="https://github.com/kuangyue111">GITHUB</a>
+                                    </div>
+                                
+                            </div>
+                        
+                    </li>
+            
+
+            
+            
+                
+                    
+                    
+                    
+            
+        </ul>
+
+        <div class="statistics flex justify-around my-2.5">
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/tags">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">194</div>
+        <div class="label text-third-text-color text-sm">标签</div>
+    </a>
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/categories">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">16</div>
+        <div class="label text-third-text-color text-sm">分类</div>
+    </a>
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/archives">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">45</div>
+        <div class="label text-third-text-color text-sm">文章</div>
+    </a>
+</div>
+    </div>
+
+    <div class="window-mask"></div>
+
+</header>
+
+
+		</div>
+
+		<div class="main-content-body transition-fade-up">
+			
+
+			<div class="main-content">
+				<div class="post-page-container flex relative justify-between box-border w-full h-full">
+	<div class="article-content-container">
+
+		<div class="article-title relative w-full">
+			
+			<div class="w-full flex items-center pt-6 justify-start">
+				<h1 class="article-title-regular text-second-text-color tracking-tight text-4xl md:text-6xl font-semibold px-2 sm:px-6 md:px-8 py-3">电化学阻抗谱（EIS）深度解析：从物理原理到工程代码实现</h1>
+			</div>
+			
+		</div>
+
+		
+		<div class="article-header flex flex-row gap-2 items-center px-2 sm:px-6 md:px-8">
+			<div class="avatar w-[46px] h-[46px] shrink-0 rounded-medium border border-border-color p-px">
+				<img src="/images/redefine-avatar.svg">
+			</div>
+			<div class="info flex flex-col justify-between">
+				<div class="author flex items-center">
+					<span class="name text-default-text-color text-lg font-semibold">kuangyue111</span>
+					
+					<span class="author-label ml-1.5 text-xs px-2 py-0.5 rounded-small text-third-text-color border border-shadow-color-1">Lv4</span>
+					
+				</div>
+				<div class="meta-info">
+					<div class="article-meta-info">
+    <span class="article-date article-meta-item">
+        <i class="fa-regular fa-pen-fancy"></i>&nbsp;
+        <span class="desktop">2026-06-08 15:00</span>
+        <span class="mobile">2026-06-08 15:00</span>
+        <span class="hover-info">创建</span>
+    </span>
+    
+        <span class="article-date article-meta-item">
+            <i class="fa-regular fa-wrench"></i>&nbsp;
+            <span class="desktop">2026-06-09 16:35:31</span>
+            <span class="mobile">2026-06-09 16:35:31</span>
+            <span class="hover-info">更新</span>
+        </span>
+    
+
+    
+        <span class="article-categories article-meta-item">
+            <i class="fa-regular fa-folders"></i>&nbsp;
+            <ul>
+                
+                
+                    
+                        
+                        <li>
+                            <a href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/">技术分享</a>&nbsp;
+                        </li>
+                    
+                    
+                
+                    
+                        
+                            <li>></li>
+                        
+                        <li>
+                            <a href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/%E5%B5%8C%E5%85%A5%E5%BC%8F%E5%BC%80%E5%8F%91/">嵌入式开发</a>&nbsp;
+                        </li>
+                    
+                    
+                
+            </ul>
+        </span>
+    
+    
+        <span class="article-tags article-meta-item">
+            <i class="fa-regular fa-tags"></i>&nbsp;
+            <ul>
+                
+                    <li>
+                        <a href="/tags/%E5%B5%8C%E5%85%A5%E5%BC%8F/">嵌入式</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/BMS/">BMS</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E5%82%A8%E8%83%BD/">储能</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/SOH/">SOH</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E9%94%82%E7%94%B5%E6%B1%A0/">锂电池</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/EIS/">EIS</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E7%94%B5%E5%8C%96%E5%AD%A6%E9%98%BB%E6%8A%97%E8%B0%B1/">电化学阻抗谱</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E7%94%B5%E6%B1%A0%E8%AF%8A%E6%96%AD/">电池诊断</a>&nbsp;
+                    </li>
+                
+            </ul>
+        </span>
+    
+
+    
+    
+    
+    
+        <span class="article-pv article-meta-item">
+            <i class="fa-regular fa-eye"></i>&nbsp;<span id="busuanzi_value_page_pv"></span>
+        </span>
+    
+</div>
+
+				</div>
+			</div>
+		</div>
+		
+
+		
+
+
+		<div class="article-content markdown-body px-2 sm:px-6 md:px-8 pb-8">
+			<p>电化学阻抗谱（EIS）深度解析：从物理原理到工程代码实现</p>
+<hr>
+<h1 id="一、为什么EIS是电池诊断的天花板工具"><a href="#一、为什么EIS是电池诊断的天花板工具" class="headerlink" title="一、为什么EIS是电池诊断的天花板工具"></a>一、为什么EIS是电池诊断的天花板工具</h1><p>  做储能系统的人都知道，判断一块电池的健康状态，常用的手段无非是容量标定、内阻测试、OCV曲线这几招。这些方法能告诉你电池现在的状态，但告诉不了你它为什么衰减，衰减发生在哪个环节，是SEI膜增厚、活性材料失活，还是锂离子扩散通道堵塞。</p>
+<p>  这就是<code>电化学阻抗谱（Electrochemical Impedance Spectroscopy，EIS）</code>存在的意义。</p>
+<p>  EIS的核心思想非常直接：在不同频率下向电池施加一个微小的正弦扰动信号（通常是幅值5到10mV的电压信号，或幅值C&#x2F;20以下的电流信号），测量电池的电压和电流响应，计算出各频率下的复数阻抗。不同的内部物理过程在不同频率段留下”指纹”，把这些指纹拼在一起，就能把电池的内部状态解读出来。</p>
+<p>  一个成熟的EIS测量通常覆盖频率范围从100kHz到1mHz，横跨约8个数量级。高频段揭示欧姆效应，中频段对应SEI膜和电荷传递过程，低频段反映锂离子的扩散行为。这种多频率多维度的信息密度，是任何单点测量方法都无法比拟的。</p>
+<hr>
+<h1 id="二、阻抗谱的核心物理机制"><a href="#二、阻抗谱的核心物理机制" class="headerlink" title="二、阻抗谱的核心物理机制"></a>二、阻抗谱的核心物理机制</h1><h2 id="2-1-什么是复数阻抗"><a href="#2-1-什么是复数阻抗" class="headerlink" title="2.1 什么是复数阻抗"></a>2.1 什么是复数阻抗</h2><p>  在频域里，电压和电流的关系可以用复数阻抗表示：</p>
+<p> <code> Z(ω) = Z_real(ω) + j·Z_imag(ω)</code></p>
+<p>  其中ω是角频率（ω &#x3D; 2πf），Z_real是阻抗的实部，Z_imag是虚部。将每个频率点的(Z_real,-Z_imag)画在坐标系上，就是著名的Nyquist图。</p>
+<p>  Nyquist图的解读是EIS分析的核心技能。对于锂离子电池，一张典型的Nyquist图从左到右呈现这样的形态：</p>
+<ul>
+<li>最左侧的高频截距：对应欧姆内阻（R_ohm），由电解液电阻、集流体接触电阻和隔膜电阻组成，与频率无关。</li>
+<li>第一个半圆（高频区，~10kHz附近）：对应SEI膜的弛豫过程，半圆直径就是R_SEI。</li>
+<li>第二个半圆（中频区，~10Hz附近）：对应电荷转移反应，半圆直径是R_ct。这是描述锂离子从电解液迁移到活性材料界面这一步的阻抗。</li>
+<li>低频斜线（&lt;1Hz）：对应锂离子在固相中的扩散，呈约45度斜线，这就是Warburg阻抗的特征。</li>
+</ul>
+<h2 id="2-2-四个频段对应的物理过程"><a href="#2-2-四个频段对应的物理过程" class="headerlink" title="2.2 四个频段对应的物理过程"></a>2.2 四个频段对应的物理过程</h2><p>  理解这四个区域的物理含义，是正确解读EIS结果的基础。</p>
+<p>  欧姆内阻（R_ohm）：它响应最快，在高频下就能看到。R_ohm的增大通常意味着电解液老化（溶剂分解消耗）、集流体腐蚀、或者焊接&#x2F;接触点劣化。在LFP 314Ah电芯中，新电芯R_ohm典型值在0.15到0.25mΩ之间。这个值增大超过50%，往往对应着明显的容量衰减。</p>
+<p>  SEI膜阻抗<code>（R_SEI）：SEI（Solid ElectrolyteInterphase，固体电解质界面）</code>膜是电解液在负极表面电化学还原形成的钝化层，它阻挡了进一步的分解反应，同时允许锂离子通过。每次充放电循环，SEI膜都会有微量的溶解和重新形成，随着循环次数增加，SEI膜逐渐增厚，R_SEI随之增大。对于314AhLFP，初始R_SEI在0.03到0.08mΩ量级。</p>
+<p>  电荷转移阻抗（R_ct）：这是阻抗谱里最敏感的参数，也是权重最高的SOH指标。R_ct反映的是锂离子从电解液嵌入活性材料这个步骤的动力学阻力。活性材料结构损伤、活性位点减少、活性材料颗粒裂纹导致的局部导电性下降，都会使R_ct升高。初始值在0.05到0.15mΩ，随老化可能翻倍甚至更高。</p>
+<p>  Warburg扩散阻抗：低频段的斜线对应锂离子在固相颗粒内部的扩散过程。对于理想半无限扩散，斜率是45度；实际有限厚度材料会在极低频出现弯折，变成”有限长Warburg”。Warburg系数减小意味着扩散通道被堵塞，通常与活性材料颗粒内部的结构损伤有关。</p>
+<hr>
+<h1 id="三、等效电路模型：把物理过程翻译成数学语言"><a href="#三、等效电路模型：把物理过程翻译成数学语言" class="headerlink" title="三、等效电路模型：把物理过程翻译成数学语言"></a>三、等效电路模型：把物理过程翻译成数学语言</h1><p>  EIS数据分析的标准方法是构建等效电路模型<code>（Equivalent CircuitModel，ECM）</code>，用电阻、电容和特殊元件的组合来数学表示电池的阻抗特性。</p>
+<h2 id="3-1-模型结构"><a href="#3-1-模型结构" class="headerlink" title="3.1 模型结构"></a>3.1 模型结构</h2><p>  对于LFP电池，推荐使用如下扩展Randles电路：</p>
+<div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">R_ohm ─── (R_SEI // CPE_SEI) ─── (R_ct // CPE_dl) ─── W_finite</span><br><span class="line">  欧姆内阻    SEI膜弧（高频）        电荷传递弧（中频）    有限扩散（低频）</span><br></pre></td></tr></table></figure></div>
+<p>  这里有一个重要细节：模型中用的不是纯电容（C），而是常相位元件（CPE，Constant PhaseElement）。纯电容在Nyquist图上产生完美的半圆，但实际电极界面是粗糙的、不均匀的，导致半圆”压扁”，弧顶不在实轴上方正中，而是偏下。CPE用两个参数描述这种弥散效应：</p>
+<div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Z_CPE(ω) = 1 / [Q × (jω)^n]</span><br></pre></td></tr></table></figure></div>
+<p>  当n&#x3D;1时退化为纯电容，n&#x3D;0.5时为Warburg，实际LFP的n值通常在0.7到0.9之间。</p>
+<p>  有限长<code>Warburg（Finite-length Warburg）</code>的表达式：</p>
+<div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Z_W(ω) = (Aw / √(jω)) × tanh(Bw × √(jω))</span><br></pre></td></tr></table></figure></div>
+<p>  Aw是Warburg系数，Bw与扩散层厚度有关。在极低频时，这个元件的行为与纯Warburg不同，会逐渐变为电容行为——这对应的是锂离子积累到扩散层边界无法继续扩散的饱和现象。</p>
+<h2 id="3-2-模型参数的物理范围"><a href="#3-2-模型参数的物理范围" class="headerlink" title="3.2 模型参数的物理范围"></a>3.2 模型参数的物理范围</h2><h2 id="对于314Ah-LFP电芯，各参数的典型范围如下："><a href="#对于314Ah-LFP电芯，各参数的典型范围如下：" class="headerlink" title="  对于314Ah LFP电芯，各参数的典型范围如下："></a>  对于314Ah LFP电芯，各参数的典型范围如下：<br><div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">┌───────────────┬──────────────┬──────────┬───────────────────────┐</span><br><span class="line">│     参数      │   物理含义   │ 频域位置 │       典型范围        │</span><br><span class="line">├───────────────┼──────────────┼──────────┼───────────────────────┤</span><br><span class="line">│ R_ohm         │ 欧姆内阻     │ 高频截距 │ 0.15~0.25 mΩ          │</span><br><span class="line">├───────────────┼──────────────┼──────────┼───────────────────────┤</span><br><span class="line">│ R_SEI         │ SEI膜阻抗    │ 高频半圆 │ 0.03~0.08 mΩ          │</span><br><span class="line">├───────────────┼──────────────┼──────────┼───────────────────────┤</span><br><span class="line">│ R_ct          │ 电荷转移阻抗 │ 中频半圆 │ 0.05~0.15 mΩ          │</span><br><span class="line">├───────────────┼──────────────┼──────────┼───────────────────────┤</span><br><span class="line">│ Aw（Warburg） │ 固相扩散阻抗 │ 低频斜线 │ 0.01~0.05 mΩ·s^(-0.5) │</span><br><span class="line">└───────────────┴──────────────┴──────────┴───────────────────────┘</span><br></pre></td></tr></table></figure></div></h2><h1 id="四、EIS拟合的工程实现"><a href="#四、EIS拟合的工程实现" class="headerlink" title="四、EIS拟合的工程实现"></a>四、EIS拟合的工程实现</h1><p>  理论模型建好之后，下一步是把测量到的阻抗数据用这个模型去拟合，提取参数。这是一个非线性最小二乘优化问题，工程实现中有几个关键设计决策会显著影响结果质量。</p>
+<h2 id="4-1-核心代码框架"><a href="#4-1-核心代码框架" class="headerlink" title="4.1 核心代码框架"></a>4.1 核心代码框架</h2><div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">import numpy as np</span><br><span class="line">from lmfit import Parameters, minimize</span><br><span class="line"></span><br><span class="line"># ── 阻抗模型元件 ──────────────────────────────────</span><br><span class="line"></span><br><span class="line">def Z_CPE(omega, Q, n):</span><br><span class="line">    &quot;&quot;&quot;常相位元件：Z = 1 / [Q × (jω)^n]&quot;&quot;&quot;</span><br><span class="line">    return 1.0 / (Q * (1j * omega) ** n)</span><br><span class="line"></span><br><span class="line">def Z_finite_warburg(omega, Aw, Bw):</span><br><span class="line">    &quot;&quot;&quot;有限扩散Warburg：Z = (Aw/√(jω)) × tanh(Bw × √(jω))&quot;&quot;&quot;</span><br><span class="line">    sqrt_jw = np.sqrt(1j * omega)</span><br><span class="line">    return (Aw / sqrt_jw) * np.tanh(Bw * sqrt_jw)</span><br><span class="line"></span><br><span class="line">def Z_circuit(omega, R_ohm, R_SEI, Q_SEI, n_SEI,R_ct, Q_dl, n_dl, Aw, Bw):</span><br><span class="line">    &quot;&quot;&quot;完整等效电路总阻抗&quot;&quot;&quot;</span><br><span class="line">    Z_SEI  = R_SEI / (1 + R_SEI * Z_CPE(omega, Q_SEI, n_SEI) ** -1)</span><br><span class="line">    Z_RCct = R_ct  / (1 + R_ct  * Z_CPE(omega, Q_dl,  n_dl)  ** -1)</span><br><span class="line">    Z_W    = Z_finite_warburg(omega, Aw, Bw)</span><br><span class="line">    return R_ohm + Z_SEI + Z_RCct + Z_W</span><br></pre></td></tr></table></figure></div>
+<h2 id="4-2-归一化残差：一个容易被忽视的细节"><a href="#4-2-归一化残差：一个容易被忽视的细节" class="headerlink" title="4.2 归一化残差：一个容易被忽视的细节"></a>4.2 归一化残差：一个容易被忽视的细节</h2><p>  EIS测量的阻抗值在不同频率下差异极大。高频段（100kHz）的阻抗幅值可能只有0.1mΩ，低频段（0.01Hz）可能高达50mΩ，差了三个数量级。</p>
+<p>  如果用普通的残差（diff &#x3D; Z_meas - Z_model），优化器会把绝大部分注意力放在低频段（因为那里的绝对误差更大），高频段的欧姆内阻反而得不到准确拟合。</p>
+<p>  解决方案是使用归一化残差：</p>
+<div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">def residuals(params, freq, Z_meas):</span><br><span class="line">    omega = 2 * np.pi * freq</span><br><span class="line">    p = params.valuesdict()</span><br><span class="line">    Z_model = Z_circuit(omega, **p)</span><br><span class="line">    diff = Z_meas - Z_model</span><br><span class="line">    norm = np.abs(Z_meas) + 1e-12   # 加小量防零除</span><br><span class="line">    # 实部和虚部分别归一化，拼接后返回</span><br><span class="line">    return np.concatenate([diff.real / norm, diff.imag / norm])</span><br></pre></td></tr></table></figure></div>
+<p>  这样，每个频率点的残差都被归一化到与自身幅值的相对偏差，高低频段的权重趋于平等。</p>
+<h2 id="4-3-多起点优化：对付非线性最小二乘的必要手段"><a href="#4-3-多起点优化：对付非线性最小二乘的必要手段" class="headerlink" title="4.3 多起点优化：对付非线性最小二乘的必要手段"></a>4.3 多起点优化：对付非线性最小二乘的必要手段</h2><p>  EIS拟合是非线性问题，初始值选择不当很容易陷入局部极小值。一个参数设置得稍微偏离真值，优化器就可能收敛到一个物理上毫无意义的解——比如R_ct是负数，或者n值大于1。</p>
+<p>  工程上的标准应对方式是多起点搜索：</p>
+<div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">def fit_eis(freq, Z_meas, x0_base, n_retry=5):</span><br><span class="line">    best_result, best_chi2 = None, np.inf</span><br><span class="line">    scales = [0.3, 0.5, 1.0, 2.0, 3.0]  # 5个不同的初始缩放系数</span><br><span class="line"></span><br><span class="line">    for s in scales[:n_retry]:</span><br><span class="line">        params = init_params(x0_base, scale=s)</span><br><span class="line">        try:</span><br><span class="line">            result = minimize(residuals, params,args=(freq, Z_meas), method=&#x27;leastsq&#x27;)</span><br><span class="line">            chi2 = np.sum(result.residual ** 2)</span><br><span class="line">            if chi2 &lt; best_chi2:</span><br><span class="line">                best_chi2, best_result = chi2, result</span><br><span class="line">        except Exception:</span><br><span class="line">            pass  # 某个起点发散，跳过继续</span><br><span class="line"></span><br><span class="line">    return best_result</span><br></pre></td></tr></table></figure></div>
+<p>  5个不同缩放系数覆盖了参数真值的0.3到3倍范围，基本能保证至少有一个起点落在全局最小值的吸引域内。</p>
+<h2 id="4-4-参数约束的工程实践"><a href="#4-4-参数约束的工程实践" class="headerlink" title="4.4 参数约束的工程实践"></a>4.4 参数约束的工程实践</h2><p>  在lmfit框架里，对每个参数设置合理的上下界是防止物理上无意义解的重要手段：</p>
+<div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">def init_params(x0, scale=1.0):</span><br><span class="line">    params = Parameters()</span><br><span class="line">    # R_ohm：欧姆内阻，正值，上界取初始值的10倍</span><br><span class="line">    params.add(&#x27;R_ohm&#x27;, value=x0[&#x27;R_ohm&#x27;] * scale, min=1e-6, max=1.0)</span><br><span class="line">    # R_SEI：SEI膜阻抗，正值</span><br><span class="line">    params.add(&#x27;R_SEI&#x27;, value=x0[&#x27;R_SEI&#x27;] * scale, min=1e-6, max=0.5)</span><br><span class="line">    # Q_SEI：CPE的导纳系数，正值</span><br><span class="line">    params.add(&#x27;Q_SEI&#x27;, value=x0[&#x27;Q_SEI&#x27;] * scale, min=1e-10, max=1.0)</span><br><span class="line">    # n_SEI：CPE指数，物理上限制在0到1之间</span><br><span class="line">    params.add(&#x27;n_SEI&#x27;, value=x0.get(&#x27;n_SEI&#x27;, 0.8), min=0.5, max=1.0)</span><br><span class="line">    # R_ct：电荷转移阻抗</span><br><span class="line">    params.add(&#x27;R_ct&#x27;,  value=x0[&#x27;R_ct&#x27;]  * scale, min=1e-6, max=1.0)</span><br><span class="line">    params.add(&#x27;Q_dl&#x27;,  value=x0[&#x27;Q_dl&#x27;]  * scale, min=1e-10, max=1.0)</span><br><span class="line">    params.add(&#x27;n_dl&#x27;,  value=x0.get(&#x27;n_dl&#x27;, 0.85), min=0.5, max=1.0)</span><br><span class="line">    # Warburg系数</span><br><span class="line">    params.add(&#x27;Aw&#x27;,    value=x0[&#x27;Aw&#x27;]    * scale, min=1e-8, max=0.1)</span><br><span class="line">    params.add(&#x27;Bw&#x27;,    value=x0[&#x27;Bw&#x27;]    * scale, min=1e-4, max=100.0)</span><br><span class="line">    return params</span><br></pre></td></tr></table></figure></div>
+<h2 id="4-5-拟合质量评估"><a href="#4-5-拟合质量评估" class="headerlink" title="4.5 拟合质量评估"></a>4.5 拟合质量评估</h2><p>  拟合完成后，不能只看参数值是否合理，还要定量评估拟合质量。常用指标：</p>
+<div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">def evaluate_fit_quality(result, Z_meas):</span><br><span class="line">    &quot;&quot;&quot;评估EIS拟合质量&quot;&quot;&quot;</span><br><span class="line">    # 相对残差均方根（RRMS）</span><br><span class="line">    Z_fit = Z_circuit(omega, **result.params.valuesdict())</span><br><span class="line">    rrms = np.sqrt(np.mean((np.abs(Z_meas - Z_fit) / np.abs(Z_meas))**2))</span><br><span class="line"></span><br><span class="line">    # 卡方统计量（归一化后）</span><br><span class="line">    chi2_red = result.redchi  # lmfit内置的约化卡方</span><br><span class="line"></span><br><span class="line">    return &#123;</span><br><span class="line">        &#x27;RRMS&#x27;: rrms,           # 目标：&lt; 5%</span><br><span class="line">        &#x27;chi2_reduced&#x27;: chi2_red,  # 目标：接近1</span><br><span class="line">        &#x27;n_params&#x27;: result.nvarys,</span><br><span class="line">        &#x27;n_points&#x27;: 2 * len(Z_meas)  # 实部+虚部</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure></div>
+<p>  RRMS（相对均方根误差）低于5%，通常认为拟合是可接受的；低于2%，认为是高质量拟合。</p>
+<hr>
+<h1 id="五、从EIS参数到SOH：加权评估策略"><a href="#五、从EIS参数到SOH：加权评估策略" class="headerlink" title="五、从EIS参数到SOH：加权评估策略"></a>五、从EIS参数到SOH：加权评估策略</h1><p>  EIS拟合出参数之后，如何把多个参数综合成一个SOH（State of Health）指标，是工程应用的最后一公里。</p>
+<h2 id="5-1-各参数的劣化含义"><a href="#5-1-各参数的劣化含义" class="headerlink" title="5.1 各参数的劣化含义"></a>5.1 各参数的劣化含义</h2><p>  不同参数的劣化速率和物理含义不同，在SOH评估中的权重也应该不同：</p>
+<div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">┌─────────────────┬──────┬───────────────────────────────────────────┐</span><br><span class="line">│      参数       │ 权重 │               劣化物理含义                │</span><br><span class="line">├─────────────────┼──────┼───────────────────────────────────────────┤</span><br><span class="line">│ R_ohm增量       │ 20%  │ 集流体/焊接劣化，不直接损失容量           │</span><br><span class="line">├─────────────────┼──────┼───────────────────────────────────────────┤</span><br><span class="line">│ R_SEI增量       │ 25%  │ SEI膜增厚，消耗活性锂，是容量衰减预警信号 │</span><br><span class="line">├─────────────────┼──────┼───────────────────────────────────────────┤</span><br><span class="line">│ R_ct增量        │ 45%  │ 活性材料失活，直接对应容量损失，权重最高  │</span><br><span class="line">├─────────────────┼──────┼───────────────────────────────────────────┤</span><br><span class="line">│ Warburg系数减小 │ 10%  │ 扩散通道堵塞，对功率能力影响更大          │</span><br><span class="line">└─────────────────┴──────┴───────────────────────────────────────────┘</span><br></pre></td></tr></table></figure></div>
+<h2 id="5-2-SOH计算公式"><a href="#5-2-SOH计算公式" class="headerlink" title="5.2 SOH计算公式"></a>5.2 SOH计算公式</h2><div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">SOH_EIS = 1 - (0.20 × ΔR_ohm/R_ohm,0</span><br><span class="line">             + 0.25 × ΔR_SEI/R_SEI,0</span><br><span class="line">             + 0.45 × ΔR_ct/R_ct,0</span><br><span class="line">             + 0.10 × ΔAw/Aw,0)</span><br></pre></td></tr></table></figure></div>
+<p>  R_ct权重设为45%，理由充分：大量实验数据表明，R_ct的增量与容量保持率的线性相关系数在0.85以上，是所有EIS参数里与容量衰减相关性最强的单一指标。相比之下，R_ohm的增大在早期可能很明显，但与容量损失的相关性只有约0.4。</p>
+<h2 id="5-3-实现代码"><a href="#5-3-实现代码" class="headerlink" title="5.3 实现代码"></a>5.3 实现代码</h2><div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">def compute_soh_from_eis(params_current, params_initial,</span><br><span class="line">                          weights=(0.20, 0.25, 0.45, 0.10)):</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    从EIS参数计算SOH</span><br><span class="line">    params_current/initial: dict，包含 R_ohm, R_SEI, R_ct, Aw</span><br><span class="line">    weights: (R_ohm, R_SEI, R_ct, Aw) 权重</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    w_ohm, w_sei, w_ct, w_w = weights</span><br><span class="line"></span><br><span class="line">    delta_ohm = (params_current[&#x27;R_ohm&#x27;] - params_initial[&#x27;R_ohm&#x27;]) / params_initial[&#x27;R_ohm&#x27;]</span><br><span class="line">    delta_sei = (params_current[&#x27;R_SEI&#x27;] - params_initial[&#x27;R_SEI&#x27;]) / params_initial[&#x27;R_SEI&#x27;]</span><br><span class="line">    delta_ct  = (params_current[&#x27;R_ct&#x27;]  - params_initial[&#x27;R_ct&#x27;])  / params_initial[&#x27;R_ct&#x27;]</span><br><span class="line">    # Warburg减小是劣化，用绝对差值</span><br><span class="line">    delta_aw  = max(0, (params_initial[&#x27;Aw&#x27;] - params_current[&#x27;Aw&#x27;]) / params_initial[&#x27;Aw&#x27;])</span><br><span class="line"></span><br><span class="line">    degradation = (w_ohm * delta_ohm +</span><br><span class="line">                   w_sei * delta_sei +</span><br><span class="line">                   w_ct  * delta_ct  +</span><br><span class="line">                   w_w   * delta_aw)</span><br><span class="line"></span><br><span class="line">    return max(0.0, 1.0 - degradation)</span><br></pre></td></tr></table></figure></div>
+<hr>
+<h1 id="六、EIS测量的工程约束条件"><a href="#六、EIS测量的工程约束条件" class="headerlink" title="六、EIS测量的工程约束条件"></a>六、EIS测量的工程约束条件</h1><p>  拟合代码写得再好，如果测量数据质量差，一切都是徒劳。EIS测量对实验条件的要求是有几个现场容易踩的坑。</p>
+<h2 id="6-1-线性和稳态假设"><a href="#6-1-线性和稳态假设" class="headerlink" title="6.1 线性和稳态假设"></a>6.1 线性和稳态假设</h2><p>  EIS理论成立的前提是系统满足<strong>线性时不变（LTI）</strong>条件。这意味着：</p>
+<ul>
+<li>扰动幅值要足够小（通常电压幅值≤10mV），保证系统在线性区工作，不引发非线性响应</li>
+<li>测量期间电池状态不能有明显漂移，即需要在稳态下测量</li>
+</ul>
+<p>  对于LFP，在SOC 20%到80%之间的平台区，OCV非常平稳，满足稳态条件。但在充满或将近空时（SOC接近0%或100%），OCV随时间漂移明显，此时做EIS测量会引入额外误差。实践中，完整EIS测量（从100kHz到1mHz）需要数十分钟，整个测量过程中SOC不应变化超过1%。</p>
+<h2 id="6-2-KKT（Kramers-Kronig）验证"><a href="#6-2-KKT（Kramers-Kronig）验证" class="headerlink" title="6.2 KKT（Kramers-Kronig）验证"></a>6.2 KKT（Kramers-Kronig）验证</h2><p>  Kramers-Kronig变换是检验EIS数据是否满足因果性、线性和稳态条件的数学工具。如果测量数据满足这些条件，实部和虚部之间存在严格的数学关系（Hilbert变换关系）。</p>
+<p>  实际操作中，可以用Lin-KK方法快速验证：</p>
+<div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">def lin_kk_test(freq, Z_meas, num_rc=30):</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    线性KK检验（Lin-KK方法）</span><br><span class="line">    返回残差，残差大的频率点说明数据质量有问题</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    omega = 2 * np.pi * freq</span><br><span class="line">    # 构建RC串联等效模型</span><br><span class="line">    tau_k = np.logspace(np.log10(1/freq.max()), np.log10(1/freq.min()), num_rc)</span><br><span class="line">    # ... 求解线性系统，拟合RC参数</span><br><span class="line">    # 残差目标：&lt; 1%（实部和虚部分别）</span><br><span class="line">    pass</span><br></pre></td></tr></table></figure></div>
+<p>  如果某个频段的KK残差显著偏大，那这段数据在拟合前需要剔除或标记。</p>
+<h2 id="6-3-温度影响"><a href="#6-3-温度影响" class="headerlink" title="6.3 温度影响"></a>6.3 温度影响</h2><p>  EIS参数对温度极其敏感。R_ct遵循Arrhenius温度依赖关系：</p>
+<div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">R_ct(T) = R_ct(25°C) × exp[E_a / R_gas × (1/T - 1/298.15)]</span><br></pre></td></tr></table></figure></div>
+<p>  LFP的活化能E_a约0.3到0.5eV，这意味着从25°C降到0°C，R_ct大约增大2到4倍。如果不对温度进行标准化，不同温度下测得的R_ct根本无法横向比较，SOH评估会产生严重偏差。</p>
+<p>  工程实践中，EIS在线诊断系统必须记录测量时的电芯温度，并用参考温度（通常25°C）对参数做标准化修正。</p>
+<hr>
+<h1 id="七、EIS在储能系统中的在线应用"><a href="#七、EIS在储能系统中的在线应用" class="headerlink" title="七、EIS在储能系统中的在线应用"></a>七、EIS在储能系统中的在线应用</h1><p>  实验室的EIS测量已经相对成熟，但如何把它搬到实际运行的储能系统里做在线诊断，是工程上更有挑战性的问题。</p>
+<h2 id="7-1-在线EIS的信号注入方式"><a href="#7-1-在线EIS的信号注入方式" class="headerlink" title="7.1 在线EIS的信号注入方式"></a>7.1 在线EIS的信号注入方式</h2><p>  在运行中的储能系统上做EIS，不能像实验室一样用专用阻抗分析仪，通常借助PCS（储能变流器）的电流控制能力实现信号注入：</p>
+<ul>
+<li>空闲时段注入：在不充放电的空闲窗口，由PCS注入多频率的正弦电流叠加信号，同步采集BMS的电压响应计算阻抗。</li>
+<li>充放电间隙利用：在CC-CV切换阶段利用电流切换计算低频阻抗。</li>
+<li>宽带伪随机信号（PRBS）：同时注入多个频率的随机信号，一次扫频完成，测量时间从数十分钟缩短到几分钟，适合在线应用。</li>
+</ul>
+<h2 id="7-2-数据库集成"><a href="#7-2-数据库集成" class="headerlink" title="7.2 数据库集成"></a>7.2 数据库集成</h2><p>  在OCVB分选数据库架构中，EIS参数作为电芯健康档案的一部分持久化存储：</p>
+<div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">-- EIS参数表，与电芯主表关联</span><br><span class="line">CREATE TABLE eis_params (</span><br><span class="line">    eis_id      INTEGER PRIMARY KEY AUTOINCREMENT,</span><br><span class="line">    cell_id     TEXT REFERENCES cell(cell_id),</span><br><span class="line">    cycle_count INTEGER,        -- 测量时的循环次数</span><br><span class="line">    temperature REAL,           -- 测量温度（°C）</span><br><span class="line">    soc_pct     REAL,           -- 测量时的SOC</span><br><span class="line">    R_ohm       REAL,           -- mΩ</span><br><span class="line">    R_SEI       REAL,           -- mΩ</span><br><span class="line">    R_ct        REAL,           -- mΩ</span><br><span class="line">    Aw          REAL,           -- mΩ·s^(-0.5)</span><br><span class="line">    n_SEI       REAL,           -- CPE指数</span><br><span class="line">    n_dl        REAL,           -- CPE指数</span><br><span class="line">    fit_rrms    REAL,           -- 拟合相对残差均方根</span><br><span class="line">    soh_eis     REAL,           -- 由本次EIS计算的SOH</span><br><span class="line">    measured_at DATETIME</span><br><span class="line">);</span><br></pre></td></tr></table></figure></div>
+<p>  通过这张表，可以追踪每个电芯随循环次数的参数演化趋势，在容量衰减到10%之前，R_ct的上升往往已经能提供2到3个月的预警窗口<br>  。</p>
+<h2 id="7-3-EIS与其他诊断方法的联用"><a href="#7-3-EIS与其他诊断方法的联用" class="headerlink" title="7.3 EIS与其他诊断方法的联用"></a>7.3 EIS与其他诊断方法的联用</h2><p>  EIS单独使用时，还不够完整。在工程实践中，建议的联用策略是：</p>
+<ul>
+<li>EIS + OCV曲线：OCV曲线的形变（峰值位移、平台收缩）对应活性材料的失锂&#x2F;失钠量，与EIS的R_ct增量联合分析，能区分活性材料<br>  损失和活性面积减小这两种不同的失效路径。</li>
+<li>EIS + 容量标定：EIS的SOH_EIS用于趋势监测，容量标定的SOH_cap作为绝对基准。每季度一次容量标定，每次充放电结束后更新EIS，两者相互校正。</li>
+<li>EIS + DCIR：1秒脉冲的DCIR能反映高频阻抗（主要是R_ohm），可作为EIS的快速补充检测手段，用于日常监控，EIS用于定期深度诊断。</li>
+</ul>
+<hr>
+<h1 id="八、EIS分析的常见误区与解决思路"><a href="#八、EIS分析的常见误区与解决思路" class="headerlink" title="八、EIS分析的常见误区与解决思路"></a>八、EIS分析的常见误区与解决思路</h1><h2 id="误区一：用不合适的等效电路"><a href="#误区一：用不合适的等效电路" class="headerlink" title="误区一：用不合适的等效电路"></a>误区一：用不合适的等效电路</h2><p>  最常见的错误是对所有电池都用同一个电路模型。NMC和LFP的阻抗谱在低频段差异显著——NMC的固相扩散通常用半无限Warburg就够了，而LFP因为两相反应机制，在低频段可能出现额外的感性弧，用半无限Warburg会系统性地低估扩散阻抗。</p>
+<h2 id="误区二：忽略接触阻抗"><a href="#误区二：忽略接触阻抗" class="headerlink" title="误区二：忽略接触阻抗"></a>误区二：忽略接触阻抗</h2><p>  在实验室测量中，BMS探针与电芯端子的接触电阻可能在0.5到2mΩ量级，与R_ohm同数量级。如果不做四线（Kelvin）连接，测到的R_ohm里包含了不属于电芯本身的误差。工程上做EIS测量，至少要保证使用Kelvin探头，电流激励和电压采集走独立通路。</p>
+<h2 id="误区三：低频数据不稳定还强行拟合"><a href="#误区三：低频数据不稳定还强行拟合" class="headerlink" title="误区三：低频数据不稳定还强行拟合"></a>误区三：低频数据不稳定还强行拟合</h2><p>  EIS在极低频（&lt;0.1Hz）的测量时间极长（每个频率点需要数个周期，0.01Hz需要100秒以上），这段时间内如果电池SOC有轻微漂移（比如在自放电或轻微漏液的情况下），测量的低频阻抗就不可靠。强行拿这段数据拟合Warburg参数，会得到毫无物理意义的结果。解决办法是在拟合前先做KKT检验，把残差超过2%的频率点剔除。</p>
+<hr>
+<h1 id="九、结语：EIS是精密仪器，不是万金油"><a href="#九、结语：EIS是精密仪器，不是万金油" class="headerlink" title="九、结语：EIS是精密仪器，不是万金油"></a>九、结语：EIS是精密仪器，不是万金油</h1><p>  EIS的信息密度极高，但它不是无所不能的。它对测量条件要求苛刻，模型选择高度依赖对具体电化学体系的理解，参数解读需要经验积累。</p>
+<p>  在实际储能项目里，EIS最适合的角色是定期深度体检，而不是实时监控。每个季度或每500次循环对代表性电芯做一次EIS，追踪R_ct的增量趋势，在容量发生实质性衰减之前给出预警，为电芯分组策略、充放电策略调整提供依据——这是EIS能发挥最大价值的位置。</p>
+<p>  配合规范的数据库管理（如EIS.md中描述的OCVB分选数据库设计），把每次EIS测量的原始数据、拟合参数、计算SOH都完整记录下来，随着数据积累，还能用统计方法建立针对特定供应商特定批次电芯的衰减模型，进一步提升诊断精度。</p>
+<p>  这套方法论——物理模型驱动的参数提取、多维度权重加权评估、与其他诊断手段联用——是目前工程上把EIS用好的正确路径。</p>
+
+		</div>
+
+		
+		<div class="post-copyright-info w-full my-8 px-2 sm:px-6 md:px-8">
+			<div class="article-copyright-info-container">
+    <ul>
+        <li><strong>标题:</strong> 电化学阻抗谱（EIS）深度解析：从物理原理到工程代码实现</li>
+        <li><strong>作者:</strong> kuangyue111</li>
+        <li><strong>创建于
+                :</strong> 2026-06-08 15:00:00</li>
+        
+            <li>
+                <strong>更新于
+                    :</strong> 2026-06-09 16:35:31
+            </li>
+        
+        <li>
+            <strong>链接:</strong> https://kuangyue111.github.io/2026/06/08/2026-06-08-eis-deep-analysis/
+        </li>
+        <li>
+            <strong>
+                版权声明:
+            </strong>
+            
+
+            
+                本文章采用 <a class="license" target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0">CC BY-NC-SA 4.0</a> 进行许可。
+            
+        </li>
+    </ul>
+</div>
+
+		</div>
+		
+
+		
+		<ul class="post-tags-box text-lg mt-1.5 flex-wrap justify-center flex md:hidden">
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E5%B5%8C%E5%85%A5%E5%BC%8F/">#嵌入式</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/BMS/">#BMS</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E5%82%A8%E8%83%BD/">#储能</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/SOH/">#SOH</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E9%94%82%E7%94%B5%E6%B1%A0/">#锂电池</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/EIS/">#EIS</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E7%94%B5%E5%8C%96%E5%AD%A6%E9%98%BB%E6%8A%97%E8%B0%B1/">#电化学阻抗谱</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E7%94%B5%E6%B1%A0%E8%AF%8A%E6%96%AD/">#电池诊断</a>&nbsp;
+			</li>
+			
+		</ul>
+		
+
+		
+
+		
+		<div class="article-nav my-8 flex justify-between items-center px-2 sm:px-6 md:px-8">
+			
+			<div class="article-prev border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
+				<a class="prev" rel="prev" href="/2026/06/09/2026-06-09-solid-state-transformer-industry-analysis/">
+					<span class="left arrow-icon flex justify-center items-center">
+						<i class="fa-solid fa-chevron-left"></i>
+					</span>
+					<span class="title flex justify-center items-center">
+						<span class="post-nav-title-item truncate max-w-48">固态变压器（SST）行业深度分析报告</span>
+						<span class="post-nav-item">上一篇</span>
+					</span>
+				</a>
+			</div>
+			
+			
+			<div class="article-next border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
+				<a class="next" rel="next" href="/2026/06/01/2026-06-01-grid-frequency-regulation-200ms-en/">
+					<span class="title flex justify-center items-center">
+						<span class="post-nav-title-item truncate max-w-48">Building a 200ms Grid Frequency Regulation Path in a Battery Storage System</span>
+						<span class="post-nav-item">下一篇</span>
+					</span>
+					<span class="right arrow-icon flex justify-center items-center">
+						<i class="fa-solid fa-chevron-right"></i>
+					</span>
+				</a>
+			</div>
+			
+		</div>
+		
+
+
+		
+		<div class="comment-container px-2 sm:px-6 md:px-8 pb-8">
+			<div class="comments-container mt-10 w-full ">
+    <div id="comment-anchor" class="w-full h-2.5"></div>
+    <div class="comment-area-title w-full my-1.5 md:my-2.5 text-xl md:text-3xl font-bold">
+        评论
+    </div>
+    
+
+        
+            
+    <div id="waline"></div>
+    <script type="module" data-swup-reload-script>
+      import { init } from '/js/libs/waline.js';
+
+      (function() {
+        const startPath = location.pathname;
+        const startTime = Date.now();
+        const retryDelay = 200;
+        const retryLimit = 5000;
+
+        const runWaline = () => {
+          if (location.pathname !== startPath) {
+            return;
+          }
+
+          const container = document.getElementById('waline');
+          if (!container) {
+            if (Date.now() - startTime < retryLimit) {
+              setTimeout(runWaline, retryDelay);
+            }
+            return;
+          }
+
+          if (window.redefineWalineInstance?.destroy) {
+            window.redefineWalineInstance.destroy();
+          }
+
+          container.innerHTML = '';
+          window.redefineWalineInstance = init({
+            el: '#waline',
+            serverURL: 'https://example.example.com',
+            path: location.pathname,
+            dark: 'body[class~="dark-mode"]',
+            reaction: false,
+            requiredMeta: ['nick', 'mail'],
+            emoji: [],
+                      lang: 'zh-CN',
+          });
+        };
+
+        runWaline();
+      })();
+    </script>
+
+
+
+        
+    
+</div>
+
+		</div>
+		
+	</div>
+
+	
+	<div class="toc-content-container">
+		<div class="post-toc-wrap">
+	<div class="post-toc">
+		<div class="toc-title">目录</div>
+		<div class="page-title">电化学阻抗谱（EIS）深度解析：从物理原理到工程代码实现</div>
+		<ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E4%B8%BA%E4%BB%80%E4%B9%88EIS%E6%98%AF%E7%94%B5%E6%B1%A0%E8%AF%8A%E6%96%AD%E7%9A%84%E5%A4%A9%E8%8A%B1%E6%9D%BF%E5%B7%A5%E5%85%B7"><span class="nav-text">一、为什么EIS是电池诊断的天花板工具</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E9%98%BB%E6%8A%97%E8%B0%B1%E7%9A%84%E6%A0%B8%E5%BF%83%E7%89%A9%E7%90%86%E6%9C%BA%E5%88%B6"><span class="nav-text">二、阻抗谱的核心物理机制</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#2-1-%E4%BB%80%E4%B9%88%E6%98%AF%E5%A4%8D%E6%95%B0%E9%98%BB%E6%8A%97"><span class="nav-text">2.1 什么是复数阻抗</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-2-%E5%9B%9B%E4%B8%AA%E9%A2%91%E6%AE%B5%E5%AF%B9%E5%BA%94%E7%9A%84%E7%89%A9%E7%90%86%E8%BF%87%E7%A8%8B"><span class="nav-text">2.2 四个频段对应的物理过程</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E7%AD%89%E6%95%88%E7%94%B5%E8%B7%AF%E6%A8%A1%E5%9E%8B%EF%BC%9A%E6%8A%8A%E7%89%A9%E7%90%86%E8%BF%87%E7%A8%8B%E7%BF%BB%E8%AF%91%E6%88%90%E6%95%B0%E5%AD%A6%E8%AF%AD%E8%A8%80"><span class="nav-text">三、等效电路模型：把物理过程翻译成数学语言</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#3-1-%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84"><span class="nav-text">3.1 模型结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-2-%E6%A8%A1%E5%9E%8B%E5%8F%82%E6%95%B0%E7%9A%84%E7%89%A9%E7%90%86%E8%8C%83%E5%9B%B4"><span class="nav-text">3.2 模型参数的物理范围</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%B9%E4%BA%8E314Ah-LFP%E7%94%B5%E8%8A%AF%EF%BC%8C%E5%90%84%E5%8F%82%E6%95%B0%E7%9A%84%E5%85%B8%E5%9E%8B%E8%8C%83%E5%9B%B4%E5%A6%82%E4%B8%8B%EF%BC%9A"><span class="nav-text">  对于314Ah LFP电芯，各参数的典型范围如下：1234567891011┌───────────────┬──────────────┬──────────┬───────────────────────┐│     参数      │   物理含义   │ 频域位置 │       典型范围        │├───────────────┼──────────────┼──────────┼───────────────────────┤│ R_ohm         │ 欧姆内阻     │ 高频截距 │ 0.15~0.25 mΩ          │├───────────────┼──────────────┼──────────┼───────────────────────┤│ R_SEI         │ SEI膜阻抗    │ 高频半圆 │ 0.03~0.08 mΩ          │├───────────────┼──────────────┼──────────┼───────────────────────┤│ R_ct          │ 电荷转移阻抗 │ 中频半圆 │ 0.05~0.15 mΩ          │├───────────────┼──────────────┼──────────┼───────────────────────┤│ Aw（Warburg） │ 固相扩散阻抗 │ 低频斜线 │ 0.01~0.05 mΩ·s^(-0.5) │└───────────────┴──────────────┴──────────┴───────────────────────┘</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9B%9B%E3%80%81EIS%E6%8B%9F%E5%90%88%E7%9A%84%E5%B7%A5%E7%A8%8B%E5%AE%9E%E7%8E%B0"><span class="nav-text">四、EIS拟合的工程实现</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#4-1-%E6%A0%B8%E5%BF%83%E4%BB%A3%E7%A0%81%E6%A1%86%E6%9E%B6"><span class="nav-text">4.1 核心代码框架</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-2-%E5%BD%92%E4%B8%80%E5%8C%96%E6%AE%8B%E5%B7%AE%EF%BC%9A%E4%B8%80%E4%B8%AA%E5%AE%B9%E6%98%93%E8%A2%AB%E5%BF%BD%E8%A7%86%E7%9A%84%E7%BB%86%E8%8A%82"><span class="nav-text">4.2 归一化残差：一个容易被忽视的细节</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-3-%E5%A4%9A%E8%B5%B7%E7%82%B9%E4%BC%98%E5%8C%96%EF%BC%9A%E5%AF%B9%E4%BB%98%E9%9D%9E%E7%BA%BF%E6%80%A7%E6%9C%80%E5%B0%8F%E4%BA%8C%E4%B9%98%E7%9A%84%E5%BF%85%E8%A6%81%E6%89%8B%E6%AE%B5"><span class="nav-text">4.3 多起点优化：对付非线性最小二乘的必要手段</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-4-%E5%8F%82%E6%95%B0%E7%BA%A6%E6%9D%9F%E7%9A%84%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5"><span class="nav-text">4.4 参数约束的工程实践</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-5-%E6%8B%9F%E5%90%88%E8%B4%A8%E9%87%8F%E8%AF%84%E4%BC%B0"><span class="nav-text">4.5 拟合质量评估</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E4%BB%8EEIS%E5%8F%82%E6%95%B0%E5%88%B0SOH%EF%BC%9A%E5%8A%A0%E6%9D%83%E8%AF%84%E4%BC%B0%E7%AD%96%E7%95%A5"><span class="nav-text">五、从EIS参数到SOH：加权评估策略</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#5-1-%E5%90%84%E5%8F%82%E6%95%B0%E7%9A%84%E5%8A%A3%E5%8C%96%E5%90%AB%E4%B9%89"><span class="nav-text">5.1 各参数的劣化含义</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-2-SOH%E8%AE%A1%E7%AE%97%E5%85%AC%E5%BC%8F"><span class="nav-text">5.2 SOH计算公式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-3-%E5%AE%9E%E7%8E%B0%E4%BB%A3%E7%A0%81"><span class="nav-text">5.3 实现代码</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%AD%E3%80%81EIS%E6%B5%8B%E9%87%8F%E7%9A%84%E5%B7%A5%E7%A8%8B%E7%BA%A6%E6%9D%9F%E6%9D%A1%E4%BB%B6"><span class="nav-text">六、EIS测量的工程约束条件</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#6-1-%E7%BA%BF%E6%80%A7%E5%92%8C%E7%A8%B3%E6%80%81%E5%81%87%E8%AE%BE"><span class="nav-text">6.1 线性和稳态假设</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-2-KKT%EF%BC%88Kramers-Kronig%EF%BC%89%E9%AA%8C%E8%AF%81"><span class="nav-text">6.2 KKT（Kramers-Kronig）验证</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-3-%E6%B8%A9%E5%BA%A6%E5%BD%B1%E5%93%8D"><span class="nav-text">6.3 温度影响</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%83%E3%80%81EIS%E5%9C%A8%E5%82%A8%E8%83%BD%E7%B3%BB%E7%BB%9F%E4%B8%AD%E7%9A%84%E5%9C%A8%E7%BA%BF%E5%BA%94%E7%94%A8"><span class="nav-text">七、EIS在储能系统中的在线应用</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#7-1-%E5%9C%A8%E7%BA%BFEIS%E7%9A%84%E4%BF%A1%E5%8F%B7%E6%B3%A8%E5%85%A5%E6%96%B9%E5%BC%8F"><span class="nav-text">7.1 在线EIS的信号注入方式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#7-2-%E6%95%B0%E6%8D%AE%E5%BA%93%E9%9B%86%E6%88%90"><span class="nav-text">7.2 数据库集成</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#7-3-EIS%E4%B8%8E%E5%85%B6%E4%BB%96%E8%AF%8A%E6%96%AD%E6%96%B9%E6%B3%95%E7%9A%84%E8%81%94%E7%94%A8"><span class="nav-text">7.3 EIS与其他诊断方法的联用</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%AB%E3%80%81EIS%E5%88%86%E6%9E%90%E7%9A%84%E5%B8%B8%E8%A7%81%E8%AF%AF%E5%8C%BA%E4%B8%8E%E8%A7%A3%E5%86%B3%E6%80%9D%E8%B7%AF"><span class="nav-text">八、EIS分析的常见误区与解决思路</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%B8%80%EF%BC%9A%E7%94%A8%E4%B8%8D%E5%90%88%E9%80%82%E7%9A%84%E7%AD%89%E6%95%88%E7%94%B5%E8%B7%AF"><span class="nav-text">误区一：用不合适的等效电路</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%BA%8C%EF%BC%9A%E5%BF%BD%E7%95%A5%E6%8E%A5%E8%A7%A6%E9%98%BB%E6%8A%97"><span class="nav-text">误区二：忽略接触阻抗</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%B8%89%EF%BC%9A%E4%BD%8E%E9%A2%91%E6%95%B0%E6%8D%AE%E4%B8%8D%E7%A8%B3%E5%AE%9A%E8%BF%98%E5%BC%BA%E8%A1%8C%E6%8B%9F%E5%90%88"><span class="nav-text">误区三：低频数据不稳定还强行拟合</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B9%9D%E3%80%81%E7%BB%93%E8%AF%AD%EF%BC%9AEIS%E6%98%AF%E7%B2%BE%E5%AF%86%E4%BB%AA%E5%99%A8%EF%BC%8C%E4%B8%8D%E6%98%AF%E4%B8%87%E9%87%91%E6%B2%B9"><span class="nav-text">九、结语：EIS是精密仪器，不是万金油</span></a></li></ol>
+
+	</div>
+</div>
+	</div>
+	
+</div>
+
+			</div>
+
+			
+		</div>
+
+		<div class="main-content-footer">
+			<footer class="footer mt-5 py-5 h-auto text-base text-third-text-color relative border-t-2 border-t-border-color">
+    <div class="info-container py-3 text-center">
+        
+        <div class="text-center">
+            &copy;
+            
+              <span>2022</span>
+              -
+            
+            2026&nbsp;&nbsp;<i class="fa-solid fa-heart fa-beat" style="--fa-animation-duration: 0.5s; color: #f54545"></i>&nbsp;&nbsp;<a href="/">kuangyue111</a>
+            
+                
+                <p class="post-count space-x-0.5">
+                    <span>
+                        共撰写了 45 篇文章
+                    </span>
+                    
+                </p>
+            
+        </div>
+        
+            <script data-swup-reload-script src="https://cn.vercount.one/js"></script>
+            <div class="relative text-center lg:absolute lg:right-[20px] lg:top-1/2 lg:-translate-y-1/2 lg:text-right">
+                
+                    <span id="busuanzi_container_site_uv" class="lg:!block">
+                        <span class="text-sm">访问人数</span>
+                        <span id="busuanzi_value_site_uv"></span>
+                    </span>
+                
+                
+                    <span id="busuanzi_container_site_pv" class="lg:!block">
+                        <span class="text-sm">总访问量</span>
+                        <span id="busuanzi_value_site_pv"></span>
+                    </span>
+                
+            </div>
+        
+        <div class="relative text-center lg:absolute lg:left-[20px] lg:top-1/2 lg:-translate-y-1/2 lg:text-left">
+            <span class="lg:block text-sm">由 <?xml version="1.0" encoding="utf-8"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg class="relative top-[2px] inline-block align-baseline" version="1.1" id="圖層_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="1rem" height="1rem" viewBox="0 0 512 512" enable-background="new 0 0 512 512" xml:space="preserve"><path fill="#0E83CD" d="M256.4,25.8l-200,115.5L56,371.5l199.6,114.7l200-115.5l0.4-230.2L256.4,25.8z M349,354.6l-18.4,10.7l-18.6-11V275H200v79.6l-18.4,10.7l-18.6-11v-197l18.5-10.6l18.5,10.8V237h112v-79.6l18.5-10.6l18.5,10.8V354.6z"/></svg><a target="_blank" class="text-base" href="https://hexo.io">Hexo</a> 驱动</span>
+            <span class="text-sm lg:block">主题&nbsp;<a class="text-base" target="_blank" href="https://github.com/EvanNotFound/hexo-theme-redefine">Redefine v2.9.0</a></span>
+        </div>
+        
+        
+            <div>
+                博客已运行 <span class="odometer" id="runtime_days" ></span> 天 <span class="odometer" id="runtime_hours"></span> 小时 <span class="odometer" id="runtime_minutes"></span> 分钟 <span class="odometer" id="runtime_seconds"></span> 秒
+            </div>
+        
+        
+            <script data-swup-reload-script>
+                try {
+                    function odometer_init() {
+                    const elements = document.querySelectorAll('.odometer');
+                    elements.forEach(el => {
+                        new Odometer({
+                            el,
+                            format: '( ddd).dd',
+                            duration: 200
+                        });
+                    });
+                    }
+                    odometer_init();
+                } catch (error) {}
+            </script>
+        
+        
+        
+    </div>  
+</footer>
+		</div>
+	</div>
+
+	
+	<div class="post-tools">
+		<div class="post-tools-container">
+	<ul class="article-tools-list">
+		<!-- TOC aside toggle -->
+		
+		<li class="right-bottom-tools page-aside-toggle">
+			<i class="fa-regular fa-outdent"></i>
+		</li>
+		
+
+		<!-- go comment -->
+		
+		<li class="go-comment">
+			<i class="fa-regular fa-comments"></i>
+		</li>
+		
+	</ul>
+</div>
+	</div>
+	
+
+	<div class="right-side-tools-container">
+		<div class="side-tools-container">
+	<ul class="hidden-tools-list">
+		<li class="right-bottom-tools tool-font-adjust-plus flex justify-center items-center">
+			<i class="fa-regular fa-magnifying-glass-plus"></i>
+		</li>
+
+		<li class="right-bottom-tools tool-font-adjust-minus flex justify-center items-center">
+			<i class="fa-regular fa-magnifying-glass-minus"></i>
+		</li>
+
+		<li class="right-bottom-tools tool-dark-light-toggle flex justify-center items-center">
+			<i class="fa-regular fa-moon"></i>
+		</li>
+
+		<!-- rss -->
+		
+
+		
+
+		<li class="right-bottom-tools tool-scroll-to-bottom flex justify-center items-center">
+			<i class="fa-regular fa-arrow-down"></i>
+		</li>
+	</ul>
+
+	<ul class="visible-tools-list">
+		<li class="right-bottom-tools toggle-tools-list flex justify-center items-center">
+			<i class="fa-regular fa-cog fa-spin"></i>
+		</li>
+		
+		<li class="right-bottom-tools tool-scroll-to-top flex justify-center items-center">
+			<i class="arrow-up fas fa-arrow-up"></i>
+			<span class="percent"></span>
+		</li>
+		
+		
+	</ul>
+</div>
+	</div>
+
+	<div class="image-viewer-container" role="dialog" aria-modal="true" aria-label="图片查看器">
+	<button class="image-viewer-close" type="button" aria-label="关闭">
+		<i class="fa-solid fa-xmark"></i>
+	</button>
+	<button class="image-viewer-prev" type="button" aria-label="上一页">
+		<i class="fa-solid fa-chevron-left"></i>
+	</button>
+	<div class="image-viewer-frame">
+		<img src="" alt="">
+	</div>
+	<div class="image-viewer-exif-panel hidden absolute left-1/2 bottom-20 -translate-x-1/2 w-[min(92vw,420px)] max-h-[60vh] overflow-hidden rounded-2xl bg-background-color-transparent-80 p-4 text-left shadow-redefine-flat backdrop-blur-md" role="dialog" aria-label="EXIF" aria-hidden="true">
+		<div class="flex items-center justify-between mb-3">
+			<span class="text-sm font-semibold text-first-text-color">EXIF</span>
+			<button class="image-viewer-exif-close flex h-8 w-8 items-center justify-center rounded-full bg-background-color-transparent-80 text-first-text-color transition hover:bg-background-color-transparent-40" type="button" aria-label="关闭">
+				<i class="fa-solid fa-xmark text-[0.65rem]"></i>
+			</button>
+		</div>
+		<div class="image-viewer-exif-cards grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto pr-1 scrollbar-hide"></div>
+		<template class="image-viewer-exif-card-template">
+			<div class="rounded-lg bg-background-color-transparent-40 px-3 py-2">
+				<div class="image-viewer-exif-card-header flex items-center gap-2 mb-1">
+					<i class="image-viewer-exif-card-icon fa-solid fa-circle-info text-xs text-third-text-color"></i>
+					<div class="image-viewer-exif-card-title text-xs font-semibold text-first-text-color"></div>
+				</div>
+				<div class="image-viewer-exif-card-items flex flex-col gap-1"></div>
+			</div>
+		</template>
+	</div>
+	<button class="image-viewer-exif-toggle flex items-center gap-2 hidden absolute left-1/2 bottom-6 -translate-x-1/2 rounded-full border border-border-color bg-background-color-transparent-80 px-4 py-2 text-first-text-color backdrop-blur-md transition hover:bg-background-color-transparent-40" type="button" aria-label="EXIF" aria-expanded="false">
+		<i class="fa-solid fa-circle-info text-xs"></i>
+		<span class="text-xs font-semibold uppercase tracking-wider">EXIF</span>
+	</button>
+	<button class="image-viewer-next" type="button" aria-label="下一页">
+		<i class="fa-solid fa-chevron-right"></i>
+	</button>
+</div>
+
+
+	
+
+</main>
+
+
+
+<script src="/js/build/libs/Swup.min.js"></script>
+
+<script src="/js/build/libs/SwupSlideTheme.min.js"></script>
+
+<script src="/js/build/libs/SwupScriptsPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupProgressPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupScrollPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupPreloadPlugin.min.js"></script>
+
+<script>
+    window.swup = new Swup({
+        plugins: [
+            new SwupScriptsPlugin({
+                optin: true,
+            }),
+            new SwupProgressPlugin(),
+            new SwupScrollPlugin({
+                offset: 80,
+            }),
+            new SwupSlideTheme({
+                mainElement: ".main-content-body",
+            }),
+            new SwupPreloadPlugin(),
+        ],
+        containers: ["#swup"],
+    });
+
+    window.dispatchEvent(
+        new CustomEvent("redefine:swup:ready", {
+            detail: {
+                swup: window.swup,
+            },
+        }),
+    );
+</script>
+
+
+
+
+	
+<script src="/js/build/main.js" type="module"></script>
+
+
+
+    
+<script src="/js/build/libs/odometer.min.js"></script>
+
+    
+<link rel="stylesheet" href="/assets/odometer-theme-minimal.css">
+
+
+
+
+
+
+
+  
+<script src="/js/build/libs/Typed.min.js"></script>
+
+
+
+
+
+
+
+
+
+
+<script src="/js/build/libs/moment-with-locales.min.js" data-swup-reload-script=""></script>
+
+
+
+	
+</body>
+
+</html>

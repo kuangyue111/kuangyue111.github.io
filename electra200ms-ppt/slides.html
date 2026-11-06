@@ -1,0 +1,286 @@
+<section class="slide accent" data-animate="hero" data-layout="SWISS-COVER-ASCII" data-slide-id="cover">
+  <div class="canvas-card">
+    <canvas class="ascii-bg" aria-hidden="true"></canvas>
+    <div class="chrome-min">
+      <div class="l">Solaris 储能管理系统 · ILC-A2415</div>
+      <div class="r">SS · 2026.06 · 01 / 07</div>
+    </div>
+    <div style="flex:1;padding:0;display:grid;grid-template-rows:auto 1fr auto;gap:2.6vh">
+      <div data-anim="kicker" class="t-meta" style="color:rgba(255,255,255,.78);letter-spacing:.22em">GRID FREQUENCY REGULATION / 电网调频</div>
+      <h1 data-anim="title" style="align-self:center;font-family:var(--sans),var(--sans-zh);font-weight:200;font-size:min(11.6vw,19vh);line-height:.94;letter-spacing:-.025em;color:#fff">200ms<br><span style="font-size:.4em;font-weight:300;letter-spacing:0">电网调频</span></h1>
+      <div data-anim="bottom" style="display:grid;grid-template-rows:auto auto;gap:1.6vh;border-top:1px solid rgba(255,255,255,.22);padding-top:2vh">
+        <div data-anim="lead" class="lead" style="max-width:52ch;color:rgba(255,255,255,.86)">从一次需求落地，看储能系统如何把端到端有功响应压进 200ms。</div>
+        <div style="display:flex;justify-content:space-between;align-items:end">
+          <div class="t-meta" style="color:rgba(255,255,255,.6)">KuangYue · 2026-06-01</div>
+          <div class="t-meta" style="color:rgba(255,255,255,.6)">→ swipe / arrow keys</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="slide light" data-animate="duo-mirror" data-layout="S08" data-slide-id="problem">
+  <div class="canvas-card">
+    <div class="chrome-min">
+      <div class="l">背景 · Background</div>
+      <div class="r">SS · 2026.06 · 02 / 07</div>
+    </div>
+    <div style="flex:1;padding:0;display:flex;flex-direction:column;gap:2vh">
+      <div data-anim="head" style="display:flex;flex-direction:column;gap:1.4vh">
+        <div class="t-meta">WHY 200MS · 问题定义</div>
+        <h2 class="h-xl-zh">为什么需要 200ms</h2>
+      </div>
+      <div class="duo-compare" style="margin-top:2vh">
+        <div class="col">
+          <div class="col-tag"><span class="num">01</span> 原有链路 · BEFORE</div>
+          <div class="col-ttl">500ms ~ 1s</div>
+          <div class="col-desc">上级 EMS → Modbus TCP → 数据库 → CCU 采样 → UDP → 从站，完整周期在正常负载下需 500ms~1s，远慢于调频要求。</div>
+          <ul class="col-list">
+            <li>多级中转，链路长</li>
+            <li>非阻塞 select 调度有唤醒延迟</li>
+            <li>计数信号量会指令堆积</li>
+          </ul>
+        </div>
+        <div class="vrule"></div>
+        <div class="col accent">
+          <div class="col-tag"><span class="num">02</span> 调频要求 · AFTER</div>
+          <div class="col-ttl">≤ 200ms</div>
+          <div class="col-desc">国家能源局与电网规范要求：储能收到调度指令后，有功功率响应时间不超过 200ms。频率 50Hz ±0.2Hz，毫秒级响应是核心竞争力。</div>
+          <ul class="col-list">
+            <li>专用快速通道</li>
+            <li>确定性延迟优先</li>
+            <li>最新指令覆盖</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="slide light" data-animate="stack-build" data-layout="S05" data-slide-id="architecture">
+  <div class="canvas-card">
+    <div class="chrome-min">
+      <div class="l">系统架构 · Architecture</div>
+      <div class="r">SS · 2026.06 · 03 / 07</div>
+    </div>
+    <div style="flex:1;padding:0;display:flex;flex-direction:column;gap:2vh">
+      <div data-anim="head" style="display:flex;flex-direction:column;gap:1.4vh">
+        <div class="t-meta">THREE LAYERS · 分层链路</div>
+        <h2 class="h-xl-zh">三层控制链路</h2>
+      </div>
+      <div class="stack-row" style="margin-top:3vh">
+        <div class="stack-block b-ink">
+          <span class="layer-nb">LAYER 01 · 调度层</span>
+          <i data-lucide="radio-tower"></i>
+          <div class="layer-ttl">上级 EMS</div>
+          <div class="layer-desc">Modbus TCP Client，端口 502，下发有功功率指令。</div>
+          <div class="layer-tag">MODBUS TCP</div>
+        </div>
+        <div class="stack-block b-accent">
+          <span class="layer-nb">LAYER 02 · 决策层</span>
+          <i data-lucide="cpu"></i>
+          <div class="layer-ttl">CCU Sampler 主站</div>
+          <div class="layer-desc">运行 EMS 算法，决定每个从站的充放电功率，经 UDP 下发。</div>
+          <div class="layer-tag">EMS · UDP 9990</div>
+        </div>
+        <div class="stack-block b-grey">
+          <span class="layer-nb">LAYER 03 · 执行层</span>
+          <i data-lucide="zap"></i>
+          <div class="layer-ttl">SlaveEMS 从站</div>
+          <div class="layer-desc">接收控制指令，驱动 PCS / BMS 实际调整输出功率。</div>
+          <div class="layer-tag">PCS · BMS</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="slide dark" data-animate="grid-reveal" data-layout="S04" data-slide-id="design">
+  <div class="canvas-card">
+    <div class="chrome-min">
+      <div class="l">核心设计 · Core Design</div>
+      <div class="r">SS · 2026.06 · 04 / 07</div>
+    </div>
+    <div style="flex:1;padding:0;display:flex;flex-direction:column;gap:2vh">
+      <div data-anim="head" style="display:flex;flex-direction:column;gap:1.4vh">
+        <div class="t-meta">SIX DECISIONS · 六个关键决策</div>
+        <h2 class="h-xl-zh">不破坏原架构的快速通道</h2>
+      </div>
+      <div class="sub-grid-3-2">
+        <div class="sub-card accent" style="border-radius:0">
+          <i data-lucide="git-branch"></i>
+          <span class="nb-corner">01</span>
+          <div class="ttl">独立 GridSvc 通道</div>
+          <div class="desc">专属 UDP 9990/10006 与信号量，与 QickAnt 语义隔离。</div>
+        </div>
+        <div class="sub-card" style="border-radius:0">
+          <i data-lucide="hourglass"></i>
+          <span class="nb-corner">02</span>
+          <div class="ttl">阻塞模式接收</div>
+          <div class="desc">fcntl 关闭 O_NONBLOCK，消除 select 调度延迟。</div>
+        </div>
+        <div class="sub-card" style="border-radius:0">
+          <i data-lucide="toggle-left"></i>
+          <span class="nb-corner">03</span>
+          <div class="ttl">二值信号量</div>
+          <div class="desc">sem_binary_post 只保留最新指令，不堆积。</div>
+        </div>
+        <div class="sub-card" style="border-radius:0">
+          <i data-lucide="cpu"></i>
+          <span class="nb-corner">04</span>
+          <div class="ttl">SCHED_RR 优先级 98</div>
+          <div class="desc">实时轮转调度，保证关键线程及时拿到 CPU。</div>
+        </div>
+        <div class="sub-card" style="border-radius:0">
+          <i data-lucide="settings-2"></i>
+          <span class="nb-corner">05</span>
+          <div class="ttl">PTHREAD_EXPLICIT_SCHED</div>
+          <div class="desc">显式继承策略，否则优先级设置会被忽略。</div>
+        </div>
+        <div class="sub-card" style="border-radius:0">
+          <i data-lucide="sliders-horizontal"></i>
+          <span class="nb-corner">06</span>
+          <div class="ttl">参数化功能开关</div>
+          <div class="desc">一套固件按配置决定是否启用调频，多项目复用。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="slide light" data-animate="bar-grow" data-layout="S07" data-slide-id="latency">
+  <div class="canvas-card">
+    <div class="chrome-min">
+      <div class="l">延迟预算 · Latency Budget</div>
+      <div class="r">SS · 2026.06 · 05 / 07</div>
+    </div>
+    <div style="flex:1;padding:0;display:flex;flex-direction:column;gap:3vh">
+      <div data-anim="head" style="display:flex;flex-direction:column;gap:1.4vh">
+        <div class="t-meta">THE 200MS BUDGET · 延迟账单</div>
+        <h2 class="h-xl-zh">一条指令的时间账单</h2>
+      </div>
+      <div data-anim="up" style="display:flex;flex-direction:column;gap:2.4vh">
+        <div style="display:flex;align-items:baseline;gap:2.4vw">
+          <div class="kpi-thin accent" style="font-size:min(8vw,14vh)">91<small class="unit">ms</small></div>
+          <div class="t-body" style="max-width:44ch;color:var(--text-secondary)">端到端理论合计 ~91ms，仅为 200ms 上限的一半，留有充足裕量。</div>
+        </div>
+        <div class="h-bar-chart" style="margin-top:1vh">
+          <span class="row-lbl">Modbus 解析</span>
+          <div class="row-track"><div class="row-fill" style="width:10%"></div></div>
+          <span class="row-val">5<small class="unit">ms</small></span>
+          <span class="row-lbl">信号量 + EMS</span>
+          <div class="row-track"><div class="row-fill" style="width:40%"></div></div>
+          <span class="row-val">20<small class="unit">ms</small></span>
+          <span class="row-lbl">UDP 发送</span>
+          <div class="row-track"><div class="row-fill" style="width:2%"></div></div>
+          <span class="row-val">1<small class="unit">ms</small></span>
+          <span class="row-lbl">从站解析</span>
+          <div class="row-track"><div class="row-fill" style="width:10%"></div></div>
+          <span class="row-val">5<small class="unit">ms</small></span>
+          <span class="row-lbl">从站执行</span>
+          <div class="row-track"><div class="row-fill" style="width:20%"></div></div>
+          <span class="row-val">10<small class="unit">ms</small></span>
+          <span class="row-lbl">PCS 响应</span>
+          <div class="row-track"><div class="row-fill accent" style="width:100%"></div></div>
+          <span class="row-val">50<small class="unit">ms</small></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="slide light" data-animate="timeline-walk" data-layout="S11" data-slide-id="journey">
+  <div class="canvas-card">
+    <div class="chrome-min">
+      <div class="l">数据流 · Instruction Journey</div>
+      <div class="r">SS · 2026.06 · 06 / 07</div>
+    </div>
+    <div style="flex:1;padding:0;display:flex;flex-direction:column;gap:4vh">
+      <div data-anim="head" style="display:flex;flex-direction:column;gap:1.4vh">
+        <div class="t-meta">SIX STEPS · 一条指令的旅程</div>
+        <h2 class="h-xl-zh">从 EMS 到 PCS 的六步</h2>
+      </div>
+      <div class="timeline-h">
+        <div class="tl-row" style="grid-template-columns:repeat(6,1fr)">
+          <div class="th-node up">
+            <span class="label"><span class="yr">01</span><span class="name">上级 EMS 下发</span><span class="desc">Modbus 写 3901</span></span>
+            <span class="dot"></span>
+          </div>
+          <div class="th-node down">
+            <span class="label"><span class="yr">02</span><span class="name">Modbus 解析</span><span class="desc">阻塞线程提取功率</span></span>
+            <span class="dot"></span>
+          </div>
+          <div class="th-node up">
+            <span class="label"><span class="yr">03</span><span class="name">CCU 决策</span><span class="desc">信号量触发 EMS</span></span>
+            <span class="dot"></span>
+          </div>
+          <div class="th-node down">
+            <span class="label"><span class="yr">04</span><span class="name">UDP 发送</span><span class="desc">端口 9990 直传</span></span>
+            <span class="dot"></span>
+          </div>
+          <div class="th-node up">
+            <span class="label"><span class="yr">05</span><span class="name">从站接收</span><span class="desc">SlaveEMS 解析帧</span></span>
+            <span class="dot"></span>
+          </div>
+          <div class="th-node down accent">
+            <span class="label"><span class="yr">06</span><span class="name">PCS 执行</span><span class="desc">功率变换响应</span></span>
+            <span class="dot"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="slide split" data-animate="split-statement" data-layout="S10" data-slide-id="closing">
+  <div class="canvas-card">
+    <div class="split-half">
+      <div class="half b-accent" style="padding:5.6vh 3.6vw 4.4vh;justify-content:space-between;position:relative;overflow:hidden">
+        <canvas class="ascii-bg" aria-hidden="true"></canvas>
+        <div class="chrome-min" style="margin-bottom:0;position:relative;z-index:1">
+          <div class="l">07 / 07</div>
+          <div class="r">CLOSING</div>
+        </div>
+        <div data-anim="manifesto" style="display:flex;flex-direction:column;gap:2vh;position:relative;z-index:1">
+          <div class="t-meta" style="color:rgba(255,255,255,.78);letter-spacing:.22em;margin-bottom:1.6vh">MANIFESTO</div>
+          <h2 style="font-family:var(--sans),var(--sans-zh);font-size:min(8vw,14vh);line-height:.94;letter-spacing:-.025em;font-weight:200;color:#fff">200ms 背后，<br>是<span style="font-style:italic;font-weight:300">系统工程</span>。</h2>
+          <div style="font-family:var(--sans),var(--sans-zh);font-size:max(14px,1vw);line-height:1.6;color:rgba(255,255,255,.82);font-weight:400;max-width:36ch;margin-top:1.4vh">每一行代码，都是对物理世界约束的精确响应。</div>
+        </div>
+        <div data-anim="signature" style="display:flex;justify-content:space-between;align-items:end;border-top:1px solid rgba(255,255,255,.22);padding-top:2vh;position:relative;z-index:1">
+          <div class="t-meta" style="color:rgba(255,255,255,.62)">KuangYue · Solaris EMS</div>
+          <div class="t-meta" style="color:rgba(255,255,255,.62)">2026.06</div>
+        </div>
+      </div>
+      <div class="half" style="padding:5.6vh 3.6vw 4.4vh;justify-content:space-between">
+        <div class="chrome-min">
+          <div class="l">TAKEAWAYS</div>
+          <div class="r">03 RULES</div>
+        </div>
+        <div data-anim="rules" style="display:flex;flex-direction:column;gap:0">
+          <div style="display:grid;grid-template-columns:auto 1fr;gap:2vw;align-items:start;padding:2.6vh 0;border-top:1px solid var(--border-subtle)">
+            <div style="font-family:var(--sans);font-weight:200;font-size:min(4.4vw,7.8vh);line-height:.9;color:var(--text-primary)">01</div>
+            <div>
+              <h3 style="font-family:var(--sans),var(--sans-zh);font-weight:400;font-size:max(18px,1.8vw);line-height:1.2;letter-spacing:-.015em;color:var(--text-primary);margin-bottom:1vh">实时性</h3>
+              <p style="font-family:var(--sans),var(--sans-zh);font-size:max(16px,.94vw);line-height:1.6;color:var(--text-secondary);font-weight:400">SCHED_RR + 阻塞模式 + 二值信号量，端到端 ~91ms。</p>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:auto 1fr;gap:2vw;align-items:start;padding:2.6vh 0;border-top:1px solid var(--border-subtle)">
+            <div style="font-family:var(--sans);font-weight:200;font-size:min(4.4vw,7.8vh);line-height:.9;color:var(--text-primary)">02</div>
+            <div>
+              <h3 style="font-family:var(--sans),var(--sans-zh);font-weight:400;font-size:max(18px,1.8vw);line-height:1.2;letter-spacing:-.015em;color:var(--text-primary);margin-bottom:1vh">可靠性</h3>
+              <p style="font-family:var(--sans),var(--sans-zh);font-size:max(16px,.94vw);line-height:1.6;color:var(--text-secondary);font-weight:400">独立通道语义隔离，调频故障不拖垮防逆流 / 防过载。</p>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:auto 1fr;gap:2vw;align-items:start;padding:2.6vh 0;border-top:1px solid var(--border-subtle);border-bottom:2px solid var(--accent)">
+            <div style="font-family:var(--sans);font-weight:200;font-size:min(4.4vw,7.8vh);line-height:.9;color:var(--accent)">03</div>
+            <div>
+              <h3 style="font-family:var(--sans),var(--sans-zh);font-weight:400;font-size:max(18px,1.8vw);line-height:1.2;letter-spacing:-.015em;color:var(--accent);margin-bottom:1vh">可维护性</h3>
+              <p style="font-family:var(--sans),var(--sans-zh);font-size:max(16px,.94vw);line-height:1.6;color:var(--text-secondary);font-weight:400">参数化开关 + 模块化重构，一套固件多项目复用。</p>
+            </div>
+          </div>
+        </div>
+        <div data-anim="foot" class="t-meta" style="color:var(--text-helper);text-align:right">→ 完 · END</div>
+      </div>
+    </div>
+  </div>
+</section>

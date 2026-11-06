@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="keywords" content="Hexo Theme Redefine">
+    
+    
+    <meta name="author" content="kuangyue111">
+    
+    <!-- Completely eliminate flash of wrong theme -->
+    <script>
+        (function() {
+            const THEME_KEY = "REDEFINE-THEME-STATUS";
+            const DARK = "dark", LIGHT = "light";
+            
+            // Get preferred theme
+            function getTheme() {
+                try {
+                    const saved = localStorage.getItem(THEME_KEY);
+                    if (saved) {
+                        const { isDark } = JSON.parse(saved);
+                        return isDark ? DARK : LIGHT;
+                    }
+                } catch (e) {}
+                
+                return matchMedia("(prefers-color-scheme: dark)").matches ? DARK : LIGHT;
+            }
+            
+            // Apply theme to document
+            function applyTheme(theme) {
+                const isDark = theme === DARK;
+                const root = document.documentElement;
+                
+                // Set classes for compatibility
+                root.classList.add(theme);
+                root.classList.remove(isDark ? LIGHT : DARK);
+                root.style.colorScheme = theme;
+            }
+            
+            // Initial application
+            const theme = getTheme();
+            applyTheme(theme);
+            
+            // Listen for system preference changes
+            matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ({ matches }) => {
+                // Only update if using system preference (no localStorage entry)
+                if (!localStorage.getItem(THEME_KEY)) {
+                    applyTheme(matches ? DARK : LIGHT);
+                }
+            });
+            
+            // Set body classes ASAP (before DOMContentLoaded)
+            (function() {
+                const addBodyClass = () => {
+                    const b = document.body;
+                    if (!b) return false;
+                    b.classList.add(theme + "-mode");
+                    return true;
+                };
+
+                // Try immediately
+                if (addBodyClass()) return;
+
+                // Observe until body exists
+                const mo = new MutationObserver(() => {
+                    if (addBodyClass()) mo.disconnect();
+                });
+                mo.observe(document.documentElement, { childList: true, subtree: true });
+            })();
+        })();
+    </script>
+    
+    <!-- preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    
+    <!--- Seo Part-->
+    
+    <link rel="canonical" href="https://kuangyue111.github.io/2026/08/24/2026-08-24-agent-skills-writing-guide/"/>
+    <meta name="robots" content="index,follow">
+    <meta name="googlebot" content="index,follow">
+    <meta name="revisit-after" content="1 days">
+    
+    
+        
+        <meta name="description" content="Hexo Theme Redefine, Redefine Your Hexo Journey.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="我是被现实教育之后，才明白 Skill 到底该怎么写">
+<meta property="og:url" content="https://kuangyue111.github.io/2026/08/24/2026-08-24-agent-skills-writing-guide/index.html">
+<meta property="og:site_name" content="KuangYue&#39;s Blog">
+<meta property="og:description" content="Hexo Theme Redefine, Redefine Your Hexo Journey.">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://kuangyue111.github.io/images/redefine-og.webp">
+<meta property="article:published_time" content="2026-08-24T02:00:00.000Z">
+<meta property="article:modified_time" content="2026-08-24T12:45:26.854Z">
+<meta property="article:author" content="kuangyue111">
+<meta property="article:tag" content="教程">
+<meta property="article:tag" content="AI">
+<meta property="article:tag" content="AI工具">
+<meta property="article:tag" content="Agent">
+<meta property="article:tag" content="LLM">
+<meta property="article:tag" content="AI工作流">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://kuangyue111.github.io/images/redefine-og.webp">
+    
+    
+    <!--- Icon Part-->
+    <link rel="icon" type="image/png" href="/images/redefine-favicon.svg" sizes="192x192">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/redefine-favicon.svg">
+    <meta name="theme-color" content="#A31F34">
+    <link rel="shortcut icon" href="/images/redefine-favicon.svg">
+    <!--- Page Info-->
+    
+    <title>
+        
+            我是被现实教育之后，才明白 Skill 到底该怎么写 | KuangYue&#39;s Blog
+        
+    </title>
+
+    
+<link rel="stylesheet" href="/fonts/Chillax/chillax.css">
+
+
+    <!--- Inject Part-->
+    
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+        
+<link rel="stylesheet" href="/css/build/tailwind.css">
+
+    
+
+    
+<link rel="stylesheet" href="/fonts/GeistMono/geist-mono.css">
+
+    
+<link rel="stylesheet" href="/fonts/Geist/geist.css">
+
+    <!--- Font Part-->
+    
+    
+    
+    
+    
+    
+
+    <script id="hexo-configurations">
+    window.config = {"hostname":"kuangyue111.github.io","root":"/","language":"zh-CN"};
+    window.theme = {"articles":{"style":{"font_size":"16px","line_height":1.5,"image_border_radius":"14px","image_alignment":"center","image_caption":false,"link_icon":true,"delete_mask":false,"title_alignment":"left","headings_top_spacing":{"h1":"3.2rem","h2":"2.4rem","h3":"1.9rem","h4":"1.6rem","h5":"1.4rem","h6":"1.3rem"}},"word_count":{"enable":true,"count":true,"min2read":true},"author_label":{"enable":true,"auto":false,"list":[]},"code_block":{"copy":true,"style":"mac","highlight_theme":{"light":"github","dark":"vs2015"},"font":{"enable":false,"family":null,"url":null}},"toc":{"enable":true,"max_depth":3,"number":false,"expand":true,"init_open":true},"copyright":{"enable":true,"default":"cc_by_nc_sa"},"lazyload":true,"pangu_js":false,"recommendation":{"enable":false,"title":"推荐阅读","limit":3,"mobile_limit":2,"placeholder":"/images/wallhaven-wqery6-light.webp","skip_dirs":[]}},"colors":{"primary":"#A31F34","secondary":null,"default_mode":"light"},"global":{"fonts":{"chinese":{"enable":false,"family":null,"url":null},"english":{"enable":false,"family":null,"url":null},"title":{"enable":false,"family":null,"url":null}},"content_max_width":"1000px","sidebar_width":"210px","hover":{"shadow":true,"scale":false},"scroll_progress":{"bar":false,"percentage":true},"website_counter":{"url":"https://cn.vercount.one/js","enable":true,"site_pv":true,"site_uv":true,"post_pv":true},"single_page":true,"preloader":{"enable":false,"custom_message":null},"side_tools":{"gear_rotation":true,"auto_expand":false},"open_graph":{"enable":true,"image":"/images/redefine-og.webp","description":"Hexo Theme Redefine, Redefine Your Hexo Journey."},"google_analytics":{"enable":false,"id":null}},"home_banner":{"enable":true,"style":"fixed","image":{"light":"/images/wallhaven-wqery6-light.webp","dark":"/images/wallhaven-wqery6-dark.webp"},"title":"KuangYue's Blog","subtitle":{"text":["专注储能系统与嵌入式开发","记录 NCCU 控制单元架构演进","探索工业物联网与云端对接"],"hitokoto":{"enable":false,"show_author":false,"api":"https://v1.hitokoto.cn"},"typing_speed":100,"backing_speed":80,"starting_delay":500,"backing_delay":1500,"loop":true,"smart_backspace":true},"text_color":{"light":"#fff","dark":"#d1d1b6"},"text_style":{"title_size":"2.8rem","subtitle_size":"1.5rem","line_height":1.2},"custom_font":{"enable":false,"family":null,"url":null},"social_links":{"enable":true,"style":"default","links":[{"icon":"fa-brands fa-github","url":"https://github.com/kuangyue111"},{"icon":"fa-brands fa-twitter","url":null},{"icon":"fa-solid fa-at","url":"you@example.com"},{"icon":"fa-brands fa-telegram","url":null},{"icon":"/images/custom-icon.svg","url":null}],"qrs":[{"icon":"fa-brands fa-weixin","qr":null},{"icon":"/images/custom-icon.svg","qr":null}]}},"plugins":{"feed":{"enable":false},"aplayer":{"enable":false,"type":"fixed","audios":[{"name":null,"artist":null,"url":null,"cover":null,"lrc":null}]},"mermaid":{"theme":{"light":"default","dark":"dark"}},"katex":false,"chart":false},"version":"2.9.0","code_block":{"theme":"light","macStyle":false,"shrink":false,"copy_button":true,"language":true},"navbar":{"auto_hide":false,"color":{"left":"#f78736","right":"#367df7","transparency":35},"width":{"home":"1200px","pages":"1000px"},"links":{"Home":{"path":"/","icon":"fa-regular fa-house"},"Archives":{"path":"/archives/","icon":"fa-regular fa-archive"},"Tags":{"path":"/tags/","icon":"fa-regular fa-tags"},"Categories":{"path":"/categories/","icon":"fa-regular fa-folder"},"About":{"icon":"fa-regular fa-user","submenus":{"Me":"/about/","GitHub":"https://github.com/kuangyue111"}}},"search":{"enable":false,"preload":true}},"page_templates":{"friends_column":2,"tags_style":"blur","masonry":{"batch_size":12,"initial_batch_size":24}},"home":{"sidebar":{"enable":true,"position":"left","first_item":"menu","announcement":"专注于嵌入式与储能系统技术分享","show_on_mobile":true,"links":{"Archives":{"path":"/archives/","icon":"fa-regular fa-archive"},"Tags":{"path":"/tags/","icon":"fa-regular fa-tags"},"Categories":{"path":"/categories/","icon":"fa-regular fa-folder"}}},"article_date_format":"auto","excerpt_length":200,"categories":{"enable":true,"limit":3},"tags":{"enable":true,"limit":3}},"footer":{"runtime":true,"icon":"<i class=\"fa-solid fa-heart fa-beat\" style=\"--fa-animation-duration: 0.5s; color: #f54545\"></i>","start":"2022/8/17 11:45:14","statistics":true,"customize":null,"icp":{"enable":false,"number":null,"url":null},"since":2025,"custom":null,"copyright":true,"theme":{"enable":true},"counter":true},"footerStart":"2022/8/17 11:45:14","mermaid":{"style":{"light":"default","dark":"dark"}}};
+    window.lang_ago = {"second":"%s 秒前","minute":"%s 分钟前","hour":"%s 小时前","day":"%s 天前","week":"%s 周前","month":"%s 个月前","year":"%s 年前"};
+    window.i18n = {"search":"站内搜索您需要的内容...","toc":"目录","prev":"上一页","next":"下一页","prev_posts":"上一篇","next_posts":"下一篇","page":"第 %d 页","recent_posts":"最新文章","share":"分享","powered_by":"由 %s 驱动","theme":"主题","rss_feed":"RSS Feed","category":"分类","categories":"分类","tag":"标签","tags":"标签","post":"文章","posts":"文章","tagcloud":"标签云","comment":"评论","comments":"评论","top":"置顶","sticky":"置顶","go-back-home":"回到首页","masonry_loading":"照片加载中...","image_viewer":"图片查看器","close":"关闭","exif":{"title":"EXIF","cards":{"camera":"相机","lens":"镜头","exposure":"曝光","other":"其他"},"fields":{"make":"品牌","model":"机型","date_taken":"拍摄时间","lens_model":"镜头","focal_length":"焦距","focus_mode":"对焦模式","shutter":"快门","aperture":"光圈","iso":"感光度","exposure_program":"曝光程序","exposure_compensation":"曝光补偿","metering_mode":"测光模式","flash":"闪光灯","white_balance":"白平衡","latitude":"纬度","longitude":"经度","altitude":"海拔"},"status":{"loading":"加载中...","no_exif":"无 EXIF 信息","library_missing":"EXIF 库未加载","image_source_missing":"图片地址不可用","unavailable":"EXIF 不可用（可能被 CORS 阻止或缺少元数据）","flag_unavailable":"EXIF 不可用"}},"home":"首页","archive":"归档","archives":"归档","about":"关于","links":"链接","link":"链接","friends":"友情链接","friend":"友情链接","timeline":"时间轴","shuoshuo":"说说","bookmarks":"书签","site_uv":"访问人数","site_pv":"总访问量","read_more":"阅读全文","wordcount":"字","min2read":"分钟","changelog":"更新日志","status":"状态","runtime":"博客已运行","days":"天","hours":"小时","minutes":"分钟","seconds":"秒","optimized_by":"并由 Evan 进行优化","rights":"版权所有","site_posts":"共撰写了 %s 篇文章","site_wordcount":"共 %s 字","copyright":{"title":"标题","author":"作者","link":"链接","create_time":"创建于","update_time":"更新于","license_title":"版权声明","license_content":"本文章采用 %s 进行许可。","all_rights_reserved":"版权所有 &#169 %s，禁止转载。","public_domain":"本文为公有领域作品，可自由转载、引用。"},"ago":{"second":"%s 秒前","minute":"%s 分钟前","hour":"%s 小时前","day":"%s 天前","week":"%s 周前","month":"%s 个月前","year":"%s 年前"},"create_time":"创建","update_time":"更新","expired":"这篇文章最后更新于 %s 天前，内容可能已经过时。"};
+    window.data = {"masonry":false};
+  </script>
+    
+    <!--- Fontawesome Part-->
+    
+<link rel="stylesheet" href="/fontawesome/fontawesome.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/brands.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/solid.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/regular.min.css">
+
+    
+    
+    
+    
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+	<div class="progress-bar-container">
+	
+
+	
+	<span class="pjax-progress-bar"></span>
+	<!--        <span class="swup-progress-icon">-->
+	<!--            <i class="fa-solid fa-circle-notch fa-spin"></i>-->
+	<!--        </span>-->
+	
+</div>
+
+<main class="page-container" id="swup">
+
+	
+
+	<div class="main-content-container flex flex-col justify-between min-h-dvh">
+		<div class="main-content-header">
+			<header class="navbar-container px-6 md:px-12">
+    <div class="navbar-content transition-navbar ">
+        <div class="left">
+            
+            <a class="logo-title" href="/">
+                
+                KuangYue&#39;s Blog
+                
+            </a>
+        </div>
+
+        <div class="right">
+            <!-- PC -->
+            <div class="desktop">
+                <ul class="navbar-list">
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/"
+                                        >
+                                    <i class="fa-regular fa-house fa-fw"></i>
+                                    首页
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/archives/"
+                                        >
+                                    <i class="fa-regular fa-archive fa-fw"></i>
+                                    归档
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/tags/"
+                                        >
+                                    <i class="fa-regular fa-tags fa-fw"></i>
+                                    标签
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/categories/"
+                                        >
+                                    <i class="fa-regular fa-folder fa-fw"></i>
+                                    分类
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class="has-dropdown"
+                                   href="#"
+                                        onClick=&#34;return false;&#34;>
+                                    <i class="fa-regular fa-user fa-fw"></i>
+                                    关于
+                                    <i class="fa-solid fa-chevron-down fa-fw"></i>
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                                    <ul class="sub-menu">
+                                        
+                                            <li>
+                                                <a href="/about/">
+                                                    ME
+                                                </a>
+                                            </li>
+                                        
+                                            <li>
+                                                <a target="_blank" rel="noopener" href="https://github.com/kuangyue111">
+                                                    GITHUB
+                                                </a>
+                                            </li>
+                                        
+                                    </ul>
+                                
+                            </li>
+                    
+                    
+                </ul>
+            </div>
+            <!-- Mobile -->
+            <div class="mobile">
+                
+                <div class="icon-item navbar-bar">
+                    <div class="navbar-bar-middle"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile sheet -->
+    <div class="navbar-drawer h-dvh w-full absolute top-0 left-0 bg-background-color flex flex-col justify-between">
+        <ul class="drawer-navbar-list flex flex-col px-4 justify-center items-start">
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/"
+                        >
+                            <span>
+                                首页
+                            </span>
+                            
+                                <i class="fa-regular fa-house fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/archives/"
+                        >
+                            <span>
+                                归档
+                            </span>
+                            
+                                <i class="fa-regular fa-archive fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/tags/"
+                        >
+                            <span>
+                                标签
+                            </span>
+                            
+                                <i class="fa-regular fa-tags fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/categories/"
+                        >
+                            <span>
+                                分类
+                            </span>
+                            
+                                <i class="fa-regular fa-folder fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item-sub text-base my-1.5 flex flex-col w-full">
+                        
+                        <div class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary cursor-pointer text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                             navbar-data-toggle="submenu-About"
+                        >
+                            <span>
+                                关于
+                            </span>
+                            
+                                <i class="fa-solid fa-chevron-right fa-sm fa-fw transition-all"></i>
+                            
+                        </div>
+                        
+
+                        
+                            <div class="flex-col items-start px-2 py-2 hidden" data-target="submenu-About">
+                                
+                                    <div class="drawer-navbar-item text-base flex flex-col justify-center items-start hover:underline active:underline hover:underline-offset-1 rounded-3xl">
+                                        <a class=" text-third-text-color text-xl"
+                                           href="/about/">ME</a>
+                                    </div>
+                                
+                                    <div class="drawer-navbar-item text-base flex flex-col justify-center items-start hover:underline active:underline hover:underline-offset-1 rounded-3xl">
+                                        <a class=" text-third-text-color text-xl"
+                                           target="_blank" rel="noopener" href="https://github.com/kuangyue111">GITHUB</a>
+                                    </div>
+                                
+                            </div>
+                        
+                    </li>
+            
+
+            
+            
+                
+                    
+                    
+                    
+            
+        </ul>
+
+        <div class="statistics flex justify-around my-2.5">
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/tags">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">194</div>
+        <div class="label text-third-text-color text-sm">标签</div>
+    </a>
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/categories">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">16</div>
+        <div class="label text-third-text-color text-sm">分类</div>
+    </a>
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/archives">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">45</div>
+        <div class="label text-third-text-color text-sm">文章</div>
+    </a>
+</div>
+    </div>
+
+    <div class="window-mask"></div>
+
+</header>
+
+
+		</div>
+
+		<div class="main-content-body transition-fade-up">
+			
+
+			<div class="main-content">
+				<div class="post-page-container flex relative justify-between box-border w-full h-full">
+	<div class="article-content-container">
+
+		<div class="article-title relative w-full">
+			
+			<div class="w-full flex items-center pt-6 justify-start">
+				<h1 class="article-title-regular text-second-text-color tracking-tight text-4xl md:text-6xl font-semibold px-2 sm:px-6 md:px-8 py-3">我是被现实教育之后，才明白 Skill 到底该怎么写</h1>
+			</div>
+			
+		</div>
+
+		
+		<div class="article-header flex flex-row gap-2 items-center px-2 sm:px-6 md:px-8">
+			<div class="avatar w-[46px] h-[46px] shrink-0 rounded-medium border border-border-color p-px">
+				<img src="/images/redefine-avatar.svg">
+			</div>
+			<div class="info flex flex-col justify-between">
+				<div class="author flex items-center">
+					<span class="name text-default-text-color text-lg font-semibold">kuangyue111</span>
+					
+					<span class="author-label ml-1.5 text-xs px-2 py-0.5 rounded-small text-third-text-color border border-shadow-color-1">Lv4</span>
+					
+				</div>
+				<div class="meta-info">
+					<div class="article-meta-info">
+    <span class="article-date article-meta-item">
+        <i class="fa-regular fa-pen-fancy"></i>&nbsp;
+        <span class="desktop">2026-08-24 10:00</span>
+        <span class="mobile">2026-08-24 10:00</span>
+        <span class="hover-info">创建</span>
+    </span>
+    
+        <span class="article-date article-meta-item">
+            <i class="fa-regular fa-wrench"></i>&nbsp;
+            <span class="desktop">2026-08-24 20:45:26</span>
+            <span class="mobile">2026-08-24 20:45:26</span>
+            <span class="hover-info">更新</span>
+        </span>
+    
+
+    
+        <span class="article-categories article-meta-item">
+            <i class="fa-regular fa-folders"></i>&nbsp;
+            <ul>
+                
+                
+                    
+                        
+                        <li>
+                            <a href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/">技术分享</a>&nbsp;
+                        </li>
+                    
+                    
+                
+                    
+                        
+                            <li>></li>
+                        
+                        <li>
+                            <a href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/AI%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/">AI工程实践</a>&nbsp;
+                        </li>
+                    
+                    
+                
+            </ul>
+        </span>
+    
+    
+        <span class="article-tags article-meta-item">
+            <i class="fa-regular fa-tags"></i>&nbsp;
+            <ul>
+                
+                    <li>
+                        <a href="/tags/%E6%95%99%E7%A8%8B/">教程</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/AI/">AI</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/AI%E5%B7%A5%E5%85%B7/">AI工具</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/Agent/">Agent</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/LLM/">LLM</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/AI%E5%B7%A5%E4%BD%9C%E6%B5%81/">AI工作流</a>&nbsp;
+                    </li>
+                
+            </ul>
+        </span>
+    
+
+    
+    
+    
+    
+        <span class="article-pv article-meta-item">
+            <i class="fa-regular fa-eye"></i>&nbsp;<span id="busuanzi_value_page_pv"></span>
+        </span>
+    
+</div>
+
+				</div>
+			</div>
+		</div>
+		
+
+		
+
+
+		<div class="article-content markdown-body px-2 sm:px-6 md:px-8 pb-8">
+			<h1 id="我是被现实教育之后，才明白-Skill-到底该怎么写"><a href="#我是被现实教育之后，才明白-Skill-到底该怎么写" class="headerlink" title="我是被现实教育之后，才明白 Skill 到底该怎么写"></a>我是被现实教育之后，才明白 Skill 到底该怎么写</h1><p>先说句实话。大半年前有人跟我讲 Agent Skills 的时候，我内心是有点不屑的——“这不就是一段 prompt 吗？换个文件夹存起来而已。”我当时是这么想的，也这么跟别人说的。</p>
+<p>后来证明，我错得挺离谱。</p>
+<h2 id="一开始，我真的只当它是段提示词"><a href="#一开始，我真的只当它是段提示词" class="headerlink" title="一开始，我真的只当它是段提示词"></a>一开始，我真的只当它是段提示词</h2><p>Skill 最朴素的样子，确实就是一份说明书。一个文件夹，里面一张 <code>SKILL.md</code>，写清楚三件事：什么时候该用它、具体怎么干、干到哪一步算完事。</p>
+<p>我最早写的一个 Skill 长这样，前后就十几行：</p>
+<div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">name: 周报草稿</span><br><span class="line">description: 把项目记录整理成周报草稿，只写草稿不发送</span><br><span class="line">---</span><br><span class="line"></span><br><span class="line">读指定的项目记录。</span><br><span class="line">把进展、风险、待确认分开。</span><br><span class="line">缺的材料别瞎编，标成&quot;待确认&quot;就行。</span><br></pre></td></tr></table></figure></div>
+
+<p>说真的，这东西能跑。我丢给 Agent，它确实能照着写出个像样的周报来。我当时还挺得意，觉得”看吧，就这么简单”。</p>
+<p>但用着用着就开始出问题。同一个需求，换个问法它就不认了；该触发的时候装死，不该触发的时候又抢着上。我一开始的解决办法很粗暴——往 description 里堆词，堆到都快成小作文了。</p>
+<p>后来才明白，问题根本不在这。</p>
+<h2 id="description-是唯一被认真读的那几行字"><a href="#description-是唯一被认真读的那几行字" class="headerlink" title="description 是唯一被认真读的那几行字"></a>description 是唯一被认真读的那几行字</h2><p>Agent 决定要不要用你，基本只扫一眼名称和 description。正文它要等任务匹配上了才去翻。这个机制有个名字，叫渐进式加载。</p>
+<p>我当时不知道这一点，把一堆关键规则全塞进正文里，description 却写了句废话：”帮助处理项目相关事务。”</p>
+<p>结果可想而知。它要么不触发，要么乱触发。</p>
+<p>写 description 有个很朴素的标准：把你真实会跟助手说的话写进去。不是”帮助处理项目内容”，而是”生成项目周报、整理本周进展、汇总风险”。前者是写给空气看的，后者才是你礼拜五下午真的会打字问出来的话。</p>
+<p>还有个我踩过的坑。我第一次测试只问了一句”帮我写周报”，跑通了就以为成了。后来发现换个说法”这周进度整理下””帮我看看这周有什么风险”，它就抓瞎了。</p>
+<p>正确的测法，是提前写好几条边界用例再动手：正常请求一条、信息不全一条、踩红线的一条。比如周报这个 Skill，我后来固定测这三条——“根据本周记录写更新”（该触发）、”记录不全帮我写得积极点”（该触发但不能编进度）、”整理完直接发群里”（只能给草稿，不能真发）。</p>
+<p>这三条顶得上我当初写的一整段宏大定义。</p>
+<p>这里补一句当时没想明白、后来才懂的道理：为什么”先写测试用例再写 Skill”这么重要。因为 Skill 本质上是一份写给”另一个执行者”的契约，而契约最难写的地方从来不是正文，是边界。你心里清楚”什么时候不该触发””缺材料时该怎么办”，但你不把它们提前写成测试，Agent 就永远只能靠猜。等它在真实环境里猜错一次，你要花的时间远比你当初省下的那十分钟多。这个账我算过很多遍，每次都是”早点写测试”赢。</p>
+<h2 id="内容一多，单文件就开始撑不住"><a href="#内容一多，单文件就开始撑不住" class="headerlink" title="内容一多，单文件就开始撑不住"></a>内容一多，单文件就开始撑不住</h2><p>小 Skill 用久了，正文会像滚雪球一样越滚越大。周报要分红黄绿状态了，要套公司模板了，要检查日期和负责人有没有漏了。继续全塞进一张 <code>SKILL.md</code>，主线很快就看不见了。</p>
+<p>这时候才轮到拆文件。开放规范里约定了几类目录：<code>references/</code> 放业务制度、字段说明、API 文档这些参考资料，<code>assets/</code> 放模板和成品素材，<code>scripts/</code> 放那些该由脚本干的确定性操作。还有一类 <code>evals/</code> 是企业和项目常用的，规范没强制，但放测试用例和预期结果挺好使。</p>
+<p>关键不是”拆”这个动作，而是拆完之后，主文件得告诉 Agent 什么时候去读哪一份。我后来在周报 Skill 的主文件里写了这么三句：</p>
+<div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">生成周报前先读 references/status-policy.md 判断状态。</span><br><span class="line">输出套用 assets/status-template.md。</span><br><span class="line">草稿出来后跑 scripts/validate_brief.py，报错就改，不许跳过。</span><br></pre></td></tr></table></figure></div>
+
+<p>这三句值回了我折腾一个下午的时间。</p>
+<p>拆文件这件事，很多人有个误解，觉得”拆得越细越专业”。我一开始也这么想，差点把每个字段说明都单独拆成一个文件，结果 Agent 要来回跳七八个文件才能凑齐一个周报，反而更容易漏。后来才反应过来：拆文件的目的是”按需加载省上下文”，不是”为了拆而拆”。当前这个任务用不到的文件，就不该让它进上下文；但当前任务必须一起看的东西，硬拆开只会帮倒忙。这个度没有公式，只能靠真实任务反复试。</p>
+<p>有个度要自己把握。官方建议 SKILL.md 别超过五百行，这不是硬性规定，但确实是个信号——到了这个量，执行路线、参考资料、样例多半已经搅在一起了。</p>
+<p>至于脚本，我一直克制着不加。模型擅长理解模糊文字，脚本擅长处理确定规则。判断一段风险描述清不清楚，交给模型；检查日期格式对不对、文件名漏没漏、字段全不全，用脚本更稳。这个分工想清楚了，才不会什么都想往脚本里塞。</p>
+<h2 id="接外部能力这件事，边界得先想明白"><a href="#接外部能力这件事，边界得先想明白" class="headerlink" title="接外部能力这件事，边界得先想明白"></a>接外部能力这件事，边界得先想明白</h2><p>前面的 Skill 无非是对话加本地文件。等真正进了企业，就要查知识库、读业务系统、调接口，甚至写数据。API、MCP、Tool 是从这里开始登场的。</p>
+<p>但有一条底线我后来才真正吃透：Skill 能描述怎么用一样能力，也能带上调用脚本，但它变不出网络、权限和凭证。</p>
+<p>拿知识库举例。假设公司已经把知识库封装成查询接口，接法无非三种：让脚本直接调 HTTP、把查询做成 MCP Tool 让 Skill 指导 Agent 什么时候搜、或者在运行时注册成自定义工具让 Skill 只写规则。知识库负责给事实，接口负责给入口，Skill 负责决定怎么查、怎么判断、怎么写。这三样别揉成一个词。</p>
+<p>MCP 地址能不能写进 Skill？能写名称、用途、需要的工具和连接条件，也能附一份配置模板。但这些文字只是在声明”我依赖这个东西”，并没有真的建立连接。地址、认证、权限还是得在宿主或 Agent 配置那一层完成。密钥尤其不能写进 Skill，我见过有人这么干，后来肠子都悔青了。</p>
+<p>跨平台的时候，最稳的做法是把”工作方法”和”连接实现”拆开。Skill 里写清楚依赖和降级方案，连接、密钥、权限留在运行时。</p>
+<h2 id="边界那点事，我吃过一次具体的亏"><a href="#边界那点事，我吃过一次具体的亏" class="headerlink" title="边界那点事，我吃过一次具体的亏"></a>边界那点事，我吃过一次具体的亏</h2><p>进阶阶段回头看几个名词，就没那么较劲了。知识库、MCP、Agent、Workflow，它们根本不在同一层，谁也不用抢谁的定义。</p>
+<p>我们公司有段时间专门开会讨论 Skills、MCP、Agent、Tools 的边界，想先把分级定义到毫无争议。一个月过去，定义还在改，隔壁竞品已经上线了能用的东西。</p>
+<p>这个教训挺具体的。边界当然要懂，但别一开始就犯”大厂病”。先挑个真实任务做出来，跑一遍，从结果里自然能看出哪部分是方法、哪部分是连接、哪部分必须走确定性流程。很多争论，做到那一步就自己消失了。</p>
+<p>我后来把这段经历讲给一个刚接手 Skills 的同事听，他的反应是”那到底什么时候才该去搞清楚这些名词？”我的回答是：等你手上那个 Skill 已经能稳定跑通、开始觉得”光靠这一份文件不够用了”的时候。到那时，你自然会撞上”这里该不该接知识库””这个操作该不该交给 MCP”这类问题，而这些问题一旦是带着真实场景去问的，答案就清楚多了。名词不是拿来背的，是拿来在需要的时候去查的。</p>
+<h2 id="多个-Skill-配合，别当成-import"><a href="#多个-Skill-配合，别当成-import" class="headerlink" title="多个 Skill 配合，别当成 import"></a>多个 Skill 配合，别当成 import</h2><p>单个跑通之后，下个问题几乎必然是：能不能让 A 调 B？</p>
+<p>组合多个 Skill 是可行的。ChatGPT 会在合适的时候自动用一个或几个，Claude Code 也能让用户或模型调用当前可见的 Skill。但开放规范到现在也没定义 <code>dependencies: [skill-b]</code> 这种通用依赖字段。</p>
+<p>所以你在 A 里写一句”调用 Skill B”，不等于编程语言里的 import。它跑不跑得起来，看宿主开没开 Skill 调用、B 在不在可见范围、Agent 配置是什么样。</p>
+<p>实际项目里我见到的处理方式就三种：偶尔配合的，在入口 Skill 里写清使用条件再拿真实请求测；经常一起上的，让 Agent 或角色包预装；顺序不能错还带审批重试的，交给 Workflow 编排。</p>
+<p>Skill 也能写角色要求，比如”以安全审查员的视角检查数据流和凭证”。这改的是工作方式，不会自动换模型、换工具、换权限。要调独立 Agent，得看平台支不支持——Claude Code 有 <code>context: fork</code> 和 <code>agent</code> 字段，但那是它自己的扩展，换平台可能直接被忽略。</p>
+<h2 id="Skill-越做越大，先问它”大在哪”"><a href="#Skill-越做越大，先问它”大在哪”" class="headerlink" title="Skill 越做越大，先问它”大在哪”"></a>Skill 越做越大，先问它”大在哪”</h2><p>Skill 可大可小，但别顺手做成万能包。判断一个大 Skill 有没有问题，得看它到底大在什么地方。</p>
+<p>资料多一般不是坏事，大量 API 文档、业务制度、案例塞进 <code>references/</code> 按需读就行。真正容易失控的，是任务范围和执行面一起变大。一个 Skill 又管销售分析又管客户邮件又管合同审查还管系统发布，description 怎么写都别扭——写宽了到处触发，写窄了又找不着。它要还能读文件、联网、调一堆 MCP、改系统、发消息，权限和故障点就一起膨胀了。</p>
+<p>反过来，拆成几十个极小 Skill 也出事。每个的名称和描述都要参与发现，数量越多、描述越像，越容易选错。Anthropic 的 Claude API 每次请求最多带八个 Skill，其他平台也没有统一的”二十个””五十个”安全线。</p>
+<p>我后来给自己定了个判断的土办法，就四问：触发请求近不近、产出一致不一致、权限近不近、负责人同不同。四项都差不多，可以留一个 Skill 里；有哪项明显分家了，就值得拆。</p>
+<p>这套四问听着粗糙，其实挺管用。我举个例子。有段时间我把”客户邮件草拟”和”合同审查”塞进了同一个 Skill，理由很充分——都是”跟客户打交道”的事。结果呢？description 越写越长，因为要同时说清楚”能写邮件”和”能审合同”两个能力；权限也拧巴，写邮件只需要读客户记录，审合同却要碰一堆敏感字段。后来我用四问一量，发现这俩的权限根本不一样，拆开之后两个都顺了。所以别小看这种土办法，它能帮你把”感觉该拆”变成”确实该拆”。</p>
+<h2 id="测稳一个-Skill，靠的是把边界当测试对象"><a href="#测稳一个-Skill，靠的是把边界当测试对象" class="headerlink" title="测稳一个 Skill，靠的是把边界当测试对象"></a>测稳一个 Skill，靠的是把边界当测试对象</h2><p>很多 Skill 第一次演示都能成，换个说法就失效。这里的问题通常不在正文写得少，而在没把触发、边界、异常当回事。</p>
+<p>我给每个 Skill 备一小组评测，先覆盖五类：该触发的正常请求、不该触发的相似请求、说法模糊的边界请求、缺输入或工具挂掉的情况、跟别的 Skill 并存时还选不选得对。</p>
+<p>周报 Skill 的负例，别只写”今天天气怎么样”这种没用的。写”修改 Jira 状态””给客户发进度””写项目复盘”才有价值——它们和目标够近，能真测出边界写没写清。</p>
+<p>排错也别乱加字。顺序是这样的：压根没触发，先改名称和 description；触发了漏步骤，再改正文和文件导航；读到了规则还做错，补真实示例或把确定规则交给脚本；工具失败，查连接参数凭证权限；多个 Skill 抢任务，收窄描述或重新分组。</p>
+<p>这套顺序省了我不少事。最怕的就是不管什么毛病都往 prompt 里加字——触发问题、连接问题、权限问题，正文写再长也白搭。</p>
+<p>说到排错，还有个特别容易踩的坑得提一句：很多人一看到 Skill 表现不对，第一反应是”我正文写得太少了”，然后疯狂补字，越补越乱。其实大部分时候，问题根本不在正文，而在触发和连接这两头。触发问题去改 description，连接问题去查权限和凭证，正文里再写一万字也救不回来。这个顺序我吃了好几次亏才记住，现在写出来，就是想让后来的人少走一遍。</p>
+<h2 id="企业级那点额外的事，其实是责任问题"><a href="#企业级那点额外的事，其实是责任问题" class="headerlink" title="企业级那点额外的事，其实是责任问题"></a>企业级那点额外的事，其实是责任问题</h2><p>个人 Skill 自己用着顺就行。企业级 Skill 要能被别人用、被审查、被升级，出错了还找得到责任和退路。</p>
+<p>先做安全分级。只读资料、生成草稿的，风险低；会发消息、改系统、部署代码、删数据的，得严审。而且权限不能只写在提示词里——Skill 里写”只读”，不会把一个可写 Token 变成只读。真正决定 Agent 能碰什么的，是用户身份、源系统 ACL、MCP 或 App 权限、沙箱和网络策略。</p>
+<p>第三方 Skill 要按软件包审。除了 SKILL.md，还得看引用资料、脚本、外部地址、网络调用、子进程、硬编码凭证和数据外传路径。来源可信，不代表后续依赖永远可信。</p>
+<p>然后才是版本和责任。企业 Skill 最好进 Git，走 PR 评审和测试再发，生产环境固定版本、留上一版、备好回滚。每个 Skill 至少得有人能回答这几个问题：谁维护业务规则、谁批准脚本和权限、生产版本是哪个、评测最近什么时候跑的、出事谁停用回滚。</p>
+<p>还有共存测试。企业不会只装一个 Skill。新 Skill 上线前，除了单测，还得和同角色已经在用的那些一起跑，重点看它抢不抢触发、带没带输出退化、会不会把原本只读的任务领进更高权限的执行路径。</p>
+<h2 id="真正落地，不是上传成功就完事"><a href="#真正落地，不是上传成功就完事" class="headerlink" title="真正落地，不是上传成功就完事"></a>真正落地，不是上传成功就完事</h2><p>FDE 落地 Skill 的路子，是跟着一线人员把一件真实工作完整走一遍，再决定 SKILL.md 怎么写。哪些判断靠经验、哪些事实来自系统、哪些步骤只是历史习惯，都得在现场看清楚。</p>
+<p>然后把东西放回各自该去的位置：事实进知识库，系统能力接成 API 或 MCP，专家的判断方法写进 Skill，角色和工具组合进 Agent，定时状态审批重试交给 Workflow，身份权限留在 IAM 和源系统。</p>
+<p>第一版只覆盖最常见、价值最好判断的几个用例。拿真实任务试跑，记下它漏读了什么、误用了什么、人工改了多少。证明有用之后，再做分发、版本、监控和交接。</p>
+<p>一个 Skill 上传成功，不等于企业落地了。业务的人要知道怎么改规则，技术的人要能跑评测，平台的人要控制权限，出问题还得有人能停掉它。做到这一步，Skill 才不再是”一段更长的 prompt”，而成了企业做事方法的一种载体。</p>
+<h2 id="别一上来就研究名词，先做个最小的"><a href="#别一上来就研究名词，先做个最小的" class="headerlink" title="别一上来就研究名词，先做个最小的"></a>别一上来就研究名词，先做个最小的</h2><p>回头看这大半年，我最大的体会就一句：学 Skills 不用先把 MCP、Agent、Tool、Workflow 的边界研究到毫无争议。</p>
+<p>从一件你重复做过很多次的工作开始，写出最小的一份 SKILL.md，拿真实请求去测。规则多了再拆 references，确定操作交给 scripts，要外部数据了再接 API 或 MCP。等它开始影响多人、系统和数据了，再补权限、评测、版本和治理。</p>
+<p>Skill 的大小没有标准答案。它可以是十几行提示词，也可以组织起知识库、工具和一整个 Agent。但说到底，判断它成不成的标准一直没变：它能不能让 AI 更稳定地把一件具体的事做好。</p>
+<p>我当初那点”不就是段 prompt”的不屑，早就在一次次翻车里磨没了。现在再有人问我 Skill 是什么，我会说：它是一个能把”这次做对了”变成”下次还做对”的东西。</p>
+<p>写到这里，突然想起一个挺有意思的细节。有回我和一个做传统软件测试的朋友聊起 Skills，他听完第一反应是”这不就是给 AI 写测试用例吗”。我想了想，觉得他说对了一半。Skill 确实像一份”活的测试驱动开发”——你先定义什么算完成、什么算做错，然后让 AI 照着这个标准去执行、去自检。但它比测试用例多了一层：测试用例只管”对不对”，Skill 还要管”怎么做、按什么顺序做、做的时候遵守哪些约束”。所以它更像是把”测试标准”和”操作手册”焊在了一起。想通这一点之后，我写 Skill 的心态就变了，不再追求把每一步都写得滴水不漏，而是先确保”什么算做对、什么算做错”这两件事清楚，剩下的细节可以慢慢补。</p>
+<p>还有一件事也值得说。Skills 这东西现在还在快速变，规范、平台、工具几乎每个月都在动。我见过有人花很多精力去追每一个新特性，生怕自己落伍；也见过有人死守老写法，拒绝任何新东西。我觉得两个极端都没必要。真正该盯住的，始终是那个不变的问题：我要让 AI 稳定地做好一件具体的事，为了实现这个，现在手头最省事、最不容易坏的办法是什么。技术会变，这个问题的答案反而一直很朴素。说到底，Skill 教会我的不只是怎么写文件，更是一种做事的态度：把”这次碰巧做对了”变成”下次一定能做对”，靠的不是天赋，是老老实实地把边界、标准和步骤一次次写清楚、测明白。</p>
+
+		</div>
+
+		
+		<div class="post-copyright-info w-full my-8 px-2 sm:px-6 md:px-8">
+			<div class="article-copyright-info-container">
+    <ul>
+        <li><strong>标题:</strong> 我是被现实教育之后，才明白 Skill 到底该怎么写</li>
+        <li><strong>作者:</strong> kuangyue111</li>
+        <li><strong>创建于
+                :</strong> 2026-08-24 10:00:00</li>
+        
+            <li>
+                <strong>更新于
+                    :</strong> 2026-08-24 20:45:26
+            </li>
+        
+        <li>
+            <strong>链接:</strong> https://kuangyue111.github.io/2026/08/24/2026-08-24-agent-skills-writing-guide/
+        </li>
+        <li>
+            <strong>
+                版权声明:
+            </strong>
+            
+
+            
+                本文章采用 <a class="license" target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0">CC BY-NC-SA 4.0</a> 进行许可。
+            
+        </li>
+    </ul>
+</div>
+
+		</div>
+		
+
+		
+		<ul class="post-tags-box text-lg mt-1.5 flex-wrap justify-center flex md:hidden">
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E6%95%99%E7%A8%8B/">#教程</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/AI/">#AI</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/AI%E5%B7%A5%E5%85%B7/">#AI工具</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/Agent/">#Agent</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/LLM/">#LLM</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/AI%E5%B7%A5%E4%BD%9C%E6%B5%81/">#AI工作流</a>&nbsp;
+			</li>
+			
+		</ul>
+		
+
+		
+
+		
+		<div class="article-nav my-8 flex justify-between items-center px-2 sm:px-6 md:px-8">
+			
+			<div class="article-prev border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
+				<a class="prev" rel="prev" href="/2026/08/26/2026-08-26-ems-power-game-inside/">
+					<span class="left arrow-icon flex justify-center items-center">
+						<i class="fa-solid fa-chevron-left"></i>
+					</span>
+					<span class="title flex justify-center items-center">
+						<span class="post-nav-title-item truncate max-w-48">The Power Game Inside a Storage EMS: One Meter, One Semaphore, and a 200 ms Race Against Reverse Power</span>
+						<span class="post-nav-item">上一篇</span>
+					</span>
+				</a>
+			</div>
+			
+			
+			<div class="article-next border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
+				<a class="next" rel="next" href="/2026/08/21/2026-08-21-bms-insulation-detection-unbalanced-bridge/">
+					<span class="title flex justify-center items-center">
+						<span class="post-nav-title-item truncate max-w-48">储能 BMS 的绝缘检测，到底是怎么同时测出正、负两路绝缘电阻的</span>
+						<span class="post-nav-item">下一篇</span>
+					</span>
+					<span class="right arrow-icon flex justify-center items-center">
+						<i class="fa-solid fa-chevron-right"></i>
+					</span>
+				</a>
+			</div>
+			
+		</div>
+		
+
+
+		
+		<div class="comment-container px-2 sm:px-6 md:px-8 pb-8">
+			<div class="comments-container mt-10 w-full ">
+    <div id="comment-anchor" class="w-full h-2.5"></div>
+    <div class="comment-area-title w-full my-1.5 md:my-2.5 text-xl md:text-3xl font-bold">
+        评论
+    </div>
+    
+
+        
+            
+    <div id="waline"></div>
+    <script type="module" data-swup-reload-script>
+      import { init } from '/js/libs/waline.js';
+
+      (function() {
+        const startPath = location.pathname;
+        const startTime = Date.now();
+        const retryDelay = 200;
+        const retryLimit = 5000;
+
+        const runWaline = () => {
+          if (location.pathname !== startPath) {
+            return;
+          }
+
+          const container = document.getElementById('waline');
+          if (!container) {
+            if (Date.now() - startTime < retryLimit) {
+              setTimeout(runWaline, retryDelay);
+            }
+            return;
+          }
+
+          if (window.redefineWalineInstance?.destroy) {
+            window.redefineWalineInstance.destroy();
+          }
+
+          container.innerHTML = '';
+          window.redefineWalineInstance = init({
+            el: '#waline',
+            serverURL: 'https://example.example.com',
+            path: location.pathname,
+            dark: 'body[class~="dark-mode"]',
+            reaction: false,
+            requiredMeta: ['nick', 'mail'],
+            emoji: [],
+                      lang: 'zh-CN',
+          });
+        };
+
+        runWaline();
+      })();
+    </script>
+
+
+
+        
+    
+</div>
+
+		</div>
+		
+	</div>
+
+	
+	<div class="toc-content-container">
+		<div class="post-toc-wrap">
+	<div class="post-toc">
+		<div class="toc-title">目录</div>
+		<div class="page-title">我是被现实教育之后，才明白 Skill 到底该怎么写</div>
+		<ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%88%91%E6%98%AF%E8%A2%AB%E7%8E%B0%E5%AE%9E%E6%95%99%E8%82%B2%E4%B9%8B%E5%90%8E%EF%BC%8C%E6%89%8D%E6%98%8E%E7%99%BD-Skill-%E5%88%B0%E5%BA%95%E8%AF%A5%E6%80%8E%E4%B9%88%E5%86%99"><span class="nav-text">我是被现实教育之后，才明白 Skill 到底该怎么写</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E5%BC%80%E5%A7%8B%EF%BC%8C%E6%88%91%E7%9C%9F%E7%9A%84%E5%8F%AA%E5%BD%93%E5%AE%83%E6%98%AF%E6%AE%B5%E6%8F%90%E7%A4%BA%E8%AF%8D"><span class="nav-text">一开始，我真的只当它是段提示词</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#description-%E6%98%AF%E5%94%AF%E4%B8%80%E8%A2%AB%E8%AE%A4%E7%9C%9F%E8%AF%BB%E7%9A%84%E9%82%A3%E5%87%A0%E8%A1%8C%E5%AD%97"><span class="nav-text">description 是唯一被认真读的那几行字</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E5%AE%B9%E4%B8%80%E5%A4%9A%EF%BC%8C%E5%8D%95%E6%96%87%E4%BB%B6%E5%B0%B1%E5%BC%80%E5%A7%8B%E6%92%91%E4%B8%8D%E4%BD%8F"><span class="nav-text">内容一多，单文件就开始撑不住</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8E%A5%E5%A4%96%E9%83%A8%E8%83%BD%E5%8A%9B%E8%BF%99%E4%BB%B6%E4%BA%8B%EF%BC%8C%E8%BE%B9%E7%95%8C%E5%BE%97%E5%85%88%E6%83%B3%E6%98%8E%E7%99%BD"><span class="nav-text">接外部能力这件事，边界得先想明白</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BE%B9%E7%95%8C%E9%82%A3%E7%82%B9%E4%BA%8B%EF%BC%8C%E6%88%91%E5%90%83%E8%BF%87%E4%B8%80%E6%AC%A1%E5%85%B7%E4%BD%93%E7%9A%84%E4%BA%8F"><span class="nav-text">边界那点事，我吃过一次具体的亏</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E4%B8%AA-Skill-%E9%85%8D%E5%90%88%EF%BC%8C%E5%88%AB%E5%BD%93%E6%88%90-import"><span class="nav-text">多个 Skill 配合，别当成 import</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Skill-%E8%B6%8A%E5%81%9A%E8%B6%8A%E5%A4%A7%EF%BC%8C%E5%85%88%E9%97%AE%E5%AE%83%E2%80%9D%E5%A4%A7%E5%9C%A8%E5%93%AA%E2%80%9D"><span class="nav-text">Skill 越做越大，先问它”大在哪”</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%8B%E7%A8%B3%E4%B8%80%E4%B8%AA-Skill%EF%BC%8C%E9%9D%A0%E7%9A%84%E6%98%AF%E6%8A%8A%E8%BE%B9%E7%95%8C%E5%BD%93%E6%B5%8B%E8%AF%95%E5%AF%B9%E8%B1%A1"><span class="nav-text">测稳一个 Skill，靠的是把边界当测试对象</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%81%E4%B8%9A%E7%BA%A7%E9%82%A3%E7%82%B9%E9%A2%9D%E5%A4%96%E7%9A%84%E4%BA%8B%EF%BC%8C%E5%85%B6%E5%AE%9E%E6%98%AF%E8%B4%A3%E4%BB%BB%E9%97%AE%E9%A2%98"><span class="nav-text">企业级那点额外的事，其实是责任问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9C%9F%E6%AD%A3%E8%90%BD%E5%9C%B0%EF%BC%8C%E4%B8%8D%E6%98%AF%E4%B8%8A%E4%BC%A0%E6%88%90%E5%8A%9F%E5%B0%B1%E5%AE%8C%E4%BA%8B"><span class="nav-text">真正落地，不是上传成功就完事</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%AB%E4%B8%80%E4%B8%8A%E6%9D%A5%E5%B0%B1%E7%A0%94%E7%A9%B6%E5%90%8D%E8%AF%8D%EF%BC%8C%E5%85%88%E5%81%9A%E4%B8%AA%E6%9C%80%E5%B0%8F%E7%9A%84"><span class="nav-text">别一上来就研究名词，先做个最小的</span></a></li></ol></li></ol>
+
+	</div>
+</div>
+	</div>
+	
+</div>
+
+			</div>
+
+			
+		</div>
+
+		<div class="main-content-footer">
+			<footer class="footer mt-5 py-5 h-auto text-base text-third-text-color relative border-t-2 border-t-border-color">
+    <div class="info-container py-3 text-center">
+        
+        <div class="text-center">
+            &copy;
+            
+              <span>2022</span>
+              -
+            
+            2026&nbsp;&nbsp;<i class="fa-solid fa-heart fa-beat" style="--fa-animation-duration: 0.5s; color: #f54545"></i>&nbsp;&nbsp;<a href="/">kuangyue111</a>
+            
+                
+                <p class="post-count space-x-0.5">
+                    <span>
+                        共撰写了 45 篇文章
+                    </span>
+                    
+                </p>
+            
+        </div>
+        
+            <script data-swup-reload-script src="https://cn.vercount.one/js"></script>
+            <div class="relative text-center lg:absolute lg:right-[20px] lg:top-1/2 lg:-translate-y-1/2 lg:text-right">
+                
+                    <span id="busuanzi_container_site_uv" class="lg:!block">
+                        <span class="text-sm">访问人数</span>
+                        <span id="busuanzi_value_site_uv"></span>
+                    </span>
+                
+                
+                    <span id="busuanzi_container_site_pv" class="lg:!block">
+                        <span class="text-sm">总访问量</span>
+                        <span id="busuanzi_value_site_pv"></span>
+                    </span>
+                
+            </div>
+        
+        <div class="relative text-center lg:absolute lg:left-[20px] lg:top-1/2 lg:-translate-y-1/2 lg:text-left">
+            <span class="lg:block text-sm">由 <?xml version="1.0" encoding="utf-8"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg class="relative top-[2px] inline-block align-baseline" version="1.1" id="圖層_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="1rem" height="1rem" viewBox="0 0 512 512" enable-background="new 0 0 512 512" xml:space="preserve"><path fill="#0E83CD" d="M256.4,25.8l-200,115.5L56,371.5l199.6,114.7l200-115.5l0.4-230.2L256.4,25.8z M349,354.6l-18.4,10.7l-18.6-11V275H200v79.6l-18.4,10.7l-18.6-11v-197l18.5-10.6l18.5,10.8V237h112v-79.6l18.5-10.6l18.5,10.8V354.6z"/></svg><a target="_blank" class="text-base" href="https://hexo.io">Hexo</a> 驱动</span>
+            <span class="text-sm lg:block">主题&nbsp;<a class="text-base" target="_blank" href="https://github.com/EvanNotFound/hexo-theme-redefine">Redefine v2.9.0</a></span>
+        </div>
+        
+        
+            <div>
+                博客已运行 <span class="odometer" id="runtime_days" ></span> 天 <span class="odometer" id="runtime_hours"></span> 小时 <span class="odometer" id="runtime_minutes"></span> 分钟 <span class="odometer" id="runtime_seconds"></span> 秒
+            </div>
+        
+        
+            <script data-swup-reload-script>
+                try {
+                    function odometer_init() {
+                    const elements = document.querySelectorAll('.odometer');
+                    elements.forEach(el => {
+                        new Odometer({
+                            el,
+                            format: '( ddd).dd',
+                            duration: 200
+                        });
+                    });
+                    }
+                    odometer_init();
+                } catch (error) {}
+            </script>
+        
+        
+        
+    </div>  
+</footer>
+		</div>
+	</div>
+
+	
+	<div class="post-tools">
+		<div class="post-tools-container">
+	<ul class="article-tools-list">
+		<!-- TOC aside toggle -->
+		
+		<li class="right-bottom-tools page-aside-toggle">
+			<i class="fa-regular fa-outdent"></i>
+		</li>
+		
+
+		<!-- go comment -->
+		
+		<li class="go-comment">
+			<i class="fa-regular fa-comments"></i>
+		</li>
+		
+	</ul>
+</div>
+	</div>
+	
+
+	<div class="right-side-tools-container">
+		<div class="side-tools-container">
+	<ul class="hidden-tools-list">
+		<li class="right-bottom-tools tool-font-adjust-plus flex justify-center items-center">
+			<i class="fa-regular fa-magnifying-glass-plus"></i>
+		</li>
+
+		<li class="right-bottom-tools tool-font-adjust-minus flex justify-center items-center">
+			<i class="fa-regular fa-magnifying-glass-minus"></i>
+		</li>
+
+		<li class="right-bottom-tools tool-dark-light-toggle flex justify-center items-center">
+			<i class="fa-regular fa-moon"></i>
+		</li>
+
+		<!-- rss -->
+		
+
+		
+
+		<li class="right-bottom-tools tool-scroll-to-bottom flex justify-center items-center">
+			<i class="fa-regular fa-arrow-down"></i>
+		</li>
+	</ul>
+
+	<ul class="visible-tools-list">
+		<li class="right-bottom-tools toggle-tools-list flex justify-center items-center">
+			<i class="fa-regular fa-cog fa-spin"></i>
+		</li>
+		
+		<li class="right-bottom-tools tool-scroll-to-top flex justify-center items-center">
+			<i class="arrow-up fas fa-arrow-up"></i>
+			<span class="percent"></span>
+		</li>
+		
+		
+	</ul>
+</div>
+	</div>
+
+	<div class="image-viewer-container" role="dialog" aria-modal="true" aria-label="图片查看器">
+	<button class="image-viewer-close" type="button" aria-label="关闭">
+		<i class="fa-solid fa-xmark"></i>
+	</button>
+	<button class="image-viewer-prev" type="button" aria-label="上一页">
+		<i class="fa-solid fa-chevron-left"></i>
+	</button>
+	<div class="image-viewer-frame">
+		<img src="" alt="">
+	</div>
+	<div class="image-viewer-exif-panel hidden absolute left-1/2 bottom-20 -translate-x-1/2 w-[min(92vw,420px)] max-h-[60vh] overflow-hidden rounded-2xl bg-background-color-transparent-80 p-4 text-left shadow-redefine-flat backdrop-blur-md" role="dialog" aria-label="EXIF" aria-hidden="true">
+		<div class="flex items-center justify-between mb-3">
+			<span class="text-sm font-semibold text-first-text-color">EXIF</span>
+			<button class="image-viewer-exif-close flex h-8 w-8 items-center justify-center rounded-full bg-background-color-transparent-80 text-first-text-color transition hover:bg-background-color-transparent-40" type="button" aria-label="关闭">
+				<i class="fa-solid fa-xmark text-[0.65rem]"></i>
+			</button>
+		</div>
+		<div class="image-viewer-exif-cards grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto pr-1 scrollbar-hide"></div>
+		<template class="image-viewer-exif-card-template">
+			<div class="rounded-lg bg-background-color-transparent-40 px-3 py-2">
+				<div class="image-viewer-exif-card-header flex items-center gap-2 mb-1">
+					<i class="image-viewer-exif-card-icon fa-solid fa-circle-info text-xs text-third-text-color"></i>
+					<div class="image-viewer-exif-card-title text-xs font-semibold text-first-text-color"></div>
+				</div>
+				<div class="image-viewer-exif-card-items flex flex-col gap-1"></div>
+			</div>
+		</template>
+	</div>
+	<button class="image-viewer-exif-toggle flex items-center gap-2 hidden absolute left-1/2 bottom-6 -translate-x-1/2 rounded-full border border-border-color bg-background-color-transparent-80 px-4 py-2 text-first-text-color backdrop-blur-md transition hover:bg-background-color-transparent-40" type="button" aria-label="EXIF" aria-expanded="false">
+		<i class="fa-solid fa-circle-info text-xs"></i>
+		<span class="text-xs font-semibold uppercase tracking-wider">EXIF</span>
+	</button>
+	<button class="image-viewer-next" type="button" aria-label="下一页">
+		<i class="fa-solid fa-chevron-right"></i>
+	</button>
+</div>
+
+
+	
+
+</main>
+
+
+
+<script src="/js/build/libs/Swup.min.js"></script>
+
+<script src="/js/build/libs/SwupSlideTheme.min.js"></script>
+
+<script src="/js/build/libs/SwupScriptsPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupProgressPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupScrollPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupPreloadPlugin.min.js"></script>
+
+<script>
+    window.swup = new Swup({
+        plugins: [
+            new SwupScriptsPlugin({
+                optin: true,
+            }),
+            new SwupProgressPlugin(),
+            new SwupScrollPlugin({
+                offset: 80,
+            }),
+            new SwupSlideTheme({
+                mainElement: ".main-content-body",
+            }),
+            new SwupPreloadPlugin(),
+        ],
+        containers: ["#swup"],
+    });
+
+    window.dispatchEvent(
+        new CustomEvent("redefine:swup:ready", {
+            detail: {
+                swup: window.swup,
+            },
+        }),
+    );
+</script>
+
+
+
+
+	
+<script src="/js/build/main.js" type="module"></script>
+
+
+
+    
+<script src="/js/build/libs/odometer.min.js"></script>
+
+    
+<link rel="stylesheet" href="/assets/odometer-theme-minimal.css">
+
+
+
+
+
+
+
+  
+<script src="/js/build/libs/Typed.min.js"></script>
+
+
+
+
+
+
+
+
+
+
+<script src="/js/build/libs/moment-with-locales.min.js" data-swup-reload-script=""></script>
+
+
+
+	
+</body>
+
+</html>

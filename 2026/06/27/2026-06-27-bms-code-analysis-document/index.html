@@ -1,0 +1,1399 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="keywords" content="Hexo Theme Redefine">
+    
+    
+    <meta name="author" content="kuangyue111">
+    
+    <!-- Completely eliminate flash of wrong theme -->
+    <script>
+        (function() {
+            const THEME_KEY = "REDEFINE-THEME-STATUS";
+            const DARK = "dark", LIGHT = "light";
+            
+            // Get preferred theme
+            function getTheme() {
+                try {
+                    const saved = localStorage.getItem(THEME_KEY);
+                    if (saved) {
+                        const { isDark } = JSON.parse(saved);
+                        return isDark ? DARK : LIGHT;
+                    }
+                } catch (e) {}
+                
+                return matchMedia("(prefers-color-scheme: dark)").matches ? DARK : LIGHT;
+            }
+            
+            // Apply theme to document
+            function applyTheme(theme) {
+                const isDark = theme === DARK;
+                const root = document.documentElement;
+                
+                // Set classes for compatibility
+                root.classList.add(theme);
+                root.classList.remove(isDark ? LIGHT : DARK);
+                root.style.colorScheme = theme;
+            }
+            
+            // Initial application
+            const theme = getTheme();
+            applyTheme(theme);
+            
+            // Listen for system preference changes
+            matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ({ matches }) => {
+                // Only update if using system preference (no localStorage entry)
+                if (!localStorage.getItem(THEME_KEY)) {
+                    applyTheme(matches ? DARK : LIGHT);
+                }
+            });
+            
+            // Set body classes ASAP (before DOMContentLoaded)
+            (function() {
+                const addBodyClass = () => {
+                    const b = document.body;
+                    if (!b) return false;
+                    b.classList.add(theme + "-mode");
+                    return true;
+                };
+
+                // Try immediately
+                if (addBodyClass()) return;
+
+                // Observe until body exists
+                const mo = new MutationObserver(() => {
+                    if (addBodyClass()) mo.disconnect();
+                });
+                mo.observe(document.documentElement, { childList: true, subtree: true });
+            })();
+        })();
+    </script>
+    
+    <!-- preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    
+    <!--- Seo Part-->
+    
+    <link rel="canonical" href="https://kuangyue111.github.io/2026/06/27/2026-06-27-bms-code-analysis-document/"/>
+    <meta name="robots" content="index,follow">
+    <meta name="googlebot" content="index,follow">
+    <meta name="revisit-after" content="1 days">
+    
+    
+        
+        <meta name="description" content="Hexo Theme Redefine, Redefine Your Hexo Journey.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="电池管理系统工程代码分析文档">
+<meta property="og:url" content="https://kuangyue111.github.io/2026/06/27/2026-06-27-bms-code-analysis-document/index.html">
+<meta property="og:site_name" content="KuangYue&#39;s Blog">
+<meta property="og:description" content="Hexo Theme Redefine, Redefine Your Hexo Journey.">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://kuangyue111.github.io/images/redefine-og.webp">
+<meta property="article:published_time" content="2026-06-27T09:00:00.000Z">
+<meta property="article:modified_time" content="2026-06-27T09:54:15.362Z">
+<meta property="article:author" content="kuangyue111">
+<meta property="article:tag" content="嵌入式">
+<meta property="article:tag" content="BMS">
+<meta property="article:tag" content="SOC">
+<meta property="article:tag" content="SOH">
+<meta property="article:tag" content="FreeRTOS">
+<meta property="article:tag" content="S32K146">
+<meta property="article:tag" content="代码分析">
+<meta property="article:tag" content="系统架构">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://kuangyue111.github.io/images/redefine-og.webp">
+    
+    
+    <!--- Icon Part-->
+    <link rel="icon" type="image/png" href="/images/redefine-favicon.svg" sizes="192x192">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/redefine-favicon.svg">
+    <meta name="theme-color" content="#A31F34">
+    <link rel="shortcut icon" href="/images/redefine-favicon.svg">
+    <!--- Page Info-->
+    
+    <title>
+        
+            电池管理系统工程代码分析文档 | KuangYue&#39;s Blog
+        
+    </title>
+
+    
+<link rel="stylesheet" href="/fonts/Chillax/chillax.css">
+
+
+    <!--- Inject Part-->
+    
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+        
+<link rel="stylesheet" href="/css/build/tailwind.css">
+
+    
+
+    
+<link rel="stylesheet" href="/fonts/GeistMono/geist-mono.css">
+
+    
+<link rel="stylesheet" href="/fonts/Geist/geist.css">
+
+    <!--- Font Part-->
+    
+    
+    
+    
+    
+    
+
+    <script id="hexo-configurations">
+    window.config = {"hostname":"kuangyue111.github.io","root":"/","language":"zh-CN"};
+    window.theme = {"articles":{"style":{"font_size":"16px","line_height":1.5,"image_border_radius":"14px","image_alignment":"center","image_caption":false,"link_icon":true,"delete_mask":false,"title_alignment":"left","headings_top_spacing":{"h1":"3.2rem","h2":"2.4rem","h3":"1.9rem","h4":"1.6rem","h5":"1.4rem","h6":"1.3rem"}},"word_count":{"enable":true,"count":true,"min2read":true},"author_label":{"enable":true,"auto":false,"list":[]},"code_block":{"copy":true,"style":"mac","highlight_theme":{"light":"github","dark":"vs2015"},"font":{"enable":false,"family":null,"url":null}},"toc":{"enable":true,"max_depth":3,"number":false,"expand":true,"init_open":true},"copyright":{"enable":true,"default":"cc_by_nc_sa"},"lazyload":true,"pangu_js":false,"recommendation":{"enable":false,"title":"推荐阅读","limit":3,"mobile_limit":2,"placeholder":"/images/wallhaven-wqery6-light.webp","skip_dirs":[]}},"colors":{"primary":"#A31F34","secondary":null,"default_mode":"light"},"global":{"fonts":{"chinese":{"enable":false,"family":null,"url":null},"english":{"enable":false,"family":null,"url":null},"title":{"enable":false,"family":null,"url":null}},"content_max_width":"1000px","sidebar_width":"210px","hover":{"shadow":true,"scale":false},"scroll_progress":{"bar":false,"percentage":true},"website_counter":{"url":"https://cn.vercount.one/js","enable":true,"site_pv":true,"site_uv":true,"post_pv":true},"single_page":true,"preloader":{"enable":false,"custom_message":null},"side_tools":{"gear_rotation":true,"auto_expand":false},"open_graph":{"enable":true,"image":"/images/redefine-og.webp","description":"Hexo Theme Redefine, Redefine Your Hexo Journey."},"google_analytics":{"enable":false,"id":null}},"home_banner":{"enable":true,"style":"fixed","image":{"light":"/images/wallhaven-wqery6-light.webp","dark":"/images/wallhaven-wqery6-dark.webp"},"title":"KuangYue's Blog","subtitle":{"text":["专注储能系统与嵌入式开发","记录 NCCU 控制单元架构演进","探索工业物联网与云端对接"],"hitokoto":{"enable":false,"show_author":false,"api":"https://v1.hitokoto.cn"},"typing_speed":100,"backing_speed":80,"starting_delay":500,"backing_delay":1500,"loop":true,"smart_backspace":true},"text_color":{"light":"#fff","dark":"#d1d1b6"},"text_style":{"title_size":"2.8rem","subtitle_size":"1.5rem","line_height":1.2},"custom_font":{"enable":false,"family":null,"url":null},"social_links":{"enable":true,"style":"default","links":[{"icon":"fa-brands fa-github","url":"https://github.com/kuangyue111"},{"icon":"fa-brands fa-twitter","url":null},{"icon":"fa-solid fa-at","url":"you@example.com"},{"icon":"fa-brands fa-telegram","url":null},{"icon":"/images/custom-icon.svg","url":null}],"qrs":[{"icon":"fa-brands fa-weixin","qr":null},{"icon":"/images/custom-icon.svg","qr":null}]}},"plugins":{"feed":{"enable":false},"aplayer":{"enable":false,"type":"fixed","audios":[{"name":null,"artist":null,"url":null,"cover":null,"lrc":null}]},"mermaid":{"theme":{"light":"default","dark":"dark"}},"katex":false,"chart":false},"version":"2.9.0","code_block":{"theme":"light","macStyle":false,"shrink":false,"copy_button":true,"language":true},"navbar":{"auto_hide":false,"color":{"left":"#f78736","right":"#367df7","transparency":35},"width":{"home":"1200px","pages":"1000px"},"links":{"Home":{"path":"/","icon":"fa-regular fa-house"},"Archives":{"path":"/archives/","icon":"fa-regular fa-archive"},"Tags":{"path":"/tags/","icon":"fa-regular fa-tags"},"Categories":{"path":"/categories/","icon":"fa-regular fa-folder"},"About":{"icon":"fa-regular fa-user","submenus":{"Me":"/about/","GitHub":"https://github.com/kuangyue111"}}},"search":{"enable":false,"preload":true}},"page_templates":{"friends_column":2,"tags_style":"blur","masonry":{"batch_size":12,"initial_batch_size":24}},"home":{"sidebar":{"enable":true,"position":"left","first_item":"menu","announcement":"专注于嵌入式与储能系统技术分享","show_on_mobile":true,"links":{"Archives":{"path":"/archives/","icon":"fa-regular fa-archive"},"Tags":{"path":"/tags/","icon":"fa-regular fa-tags"},"Categories":{"path":"/categories/","icon":"fa-regular fa-folder"}}},"article_date_format":"auto","excerpt_length":200,"categories":{"enable":true,"limit":3},"tags":{"enable":true,"limit":3}},"footer":{"runtime":true,"icon":"<i class=\"fa-solid fa-heart fa-beat\" style=\"--fa-animation-duration: 0.5s; color: #f54545\"></i>","start":"2022/8/17 11:45:14","statistics":true,"customize":null,"icp":{"enable":false,"number":null,"url":null},"since":2025,"custom":null,"copyright":true,"theme":{"enable":true},"counter":true},"footerStart":"2022/8/17 11:45:14","mermaid":{"style":{"light":"default","dark":"dark"}}};
+    window.lang_ago = {"second":"%s 秒前","minute":"%s 分钟前","hour":"%s 小时前","day":"%s 天前","week":"%s 周前","month":"%s 个月前","year":"%s 年前"};
+    window.i18n = {"search":"站内搜索您需要的内容...","toc":"目录","prev":"上一页","next":"下一页","prev_posts":"上一篇","next_posts":"下一篇","page":"第 %d 页","recent_posts":"最新文章","share":"分享","powered_by":"由 %s 驱动","theme":"主题","rss_feed":"RSS Feed","category":"分类","categories":"分类","tag":"标签","tags":"标签","post":"文章","posts":"文章","tagcloud":"标签云","comment":"评论","comments":"评论","top":"置顶","sticky":"置顶","go-back-home":"回到首页","masonry_loading":"照片加载中...","image_viewer":"图片查看器","close":"关闭","exif":{"title":"EXIF","cards":{"camera":"相机","lens":"镜头","exposure":"曝光","other":"其他"},"fields":{"make":"品牌","model":"机型","date_taken":"拍摄时间","lens_model":"镜头","focal_length":"焦距","focus_mode":"对焦模式","shutter":"快门","aperture":"光圈","iso":"感光度","exposure_program":"曝光程序","exposure_compensation":"曝光补偿","metering_mode":"测光模式","flash":"闪光灯","white_balance":"白平衡","latitude":"纬度","longitude":"经度","altitude":"海拔"},"status":{"loading":"加载中...","no_exif":"无 EXIF 信息","library_missing":"EXIF 库未加载","image_source_missing":"图片地址不可用","unavailable":"EXIF 不可用（可能被 CORS 阻止或缺少元数据）","flag_unavailable":"EXIF 不可用"}},"home":"首页","archive":"归档","archives":"归档","about":"关于","links":"链接","link":"链接","friends":"友情链接","friend":"友情链接","timeline":"时间轴","shuoshuo":"说说","bookmarks":"书签","site_uv":"访问人数","site_pv":"总访问量","read_more":"阅读全文","wordcount":"字","min2read":"分钟","changelog":"更新日志","status":"状态","runtime":"博客已运行","days":"天","hours":"小时","minutes":"分钟","seconds":"秒","optimized_by":"并由 Evan 进行优化","rights":"版权所有","site_posts":"共撰写了 %s 篇文章","site_wordcount":"共 %s 字","copyright":{"title":"标题","author":"作者","link":"链接","create_time":"创建于","update_time":"更新于","license_title":"版权声明","license_content":"本文章采用 %s 进行许可。","all_rights_reserved":"版权所有 &#169 %s，禁止转载。","public_domain":"本文为公有领域作品，可自由转载、引用。"},"ago":{"second":"%s 秒前","minute":"%s 分钟前","hour":"%s 小时前","day":"%s 天前","week":"%s 周前","month":"%s 个月前","year":"%s 年前"},"create_time":"创建","update_time":"更新","expired":"这篇文章最后更新于 %s 天前，内容可能已经过时。"};
+    window.data = {"masonry":false};
+  </script>
+    
+    <!--- Fontawesome Part-->
+    
+<link rel="stylesheet" href="/fontawesome/fontawesome.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/brands.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/solid.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/regular.min.css">
+
+    
+    
+    
+    
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+	<div class="progress-bar-container">
+	
+
+	
+	<span class="pjax-progress-bar"></span>
+	<!--        <span class="swup-progress-icon">-->
+	<!--            <i class="fa-solid fa-circle-notch fa-spin"></i>-->
+	<!--        </span>-->
+	
+</div>
+
+<main class="page-container" id="swup">
+
+	
+
+	<div class="main-content-container flex flex-col justify-between min-h-dvh">
+		<div class="main-content-header">
+			<header class="navbar-container px-6 md:px-12">
+    <div class="navbar-content transition-navbar ">
+        <div class="left">
+            
+            <a class="logo-title" href="/">
+                
+                KuangYue&#39;s Blog
+                
+            </a>
+        </div>
+
+        <div class="right">
+            <!-- PC -->
+            <div class="desktop">
+                <ul class="navbar-list">
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/"
+                                        >
+                                    <i class="fa-regular fa-house fa-fw"></i>
+                                    首页
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/archives/"
+                                        >
+                                    <i class="fa-regular fa-archive fa-fw"></i>
+                                    归档
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/tags/"
+                                        >
+                                    <i class="fa-regular fa-tags fa-fw"></i>
+                                    标签
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/categories/"
+                                        >
+                                    <i class="fa-regular fa-folder fa-fw"></i>
+                                    分类
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class="has-dropdown"
+                                   href="#"
+                                        onClick=&#34;return false;&#34;>
+                                    <i class="fa-regular fa-user fa-fw"></i>
+                                    关于
+                                    <i class="fa-solid fa-chevron-down fa-fw"></i>
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                                    <ul class="sub-menu">
+                                        
+                                            <li>
+                                                <a href="/about/">
+                                                    ME
+                                                </a>
+                                            </li>
+                                        
+                                            <li>
+                                                <a target="_blank" rel="noopener" href="https://github.com/kuangyue111">
+                                                    GITHUB
+                                                </a>
+                                            </li>
+                                        
+                                    </ul>
+                                
+                            </li>
+                    
+                    
+                </ul>
+            </div>
+            <!-- Mobile -->
+            <div class="mobile">
+                
+                <div class="icon-item navbar-bar">
+                    <div class="navbar-bar-middle"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile sheet -->
+    <div class="navbar-drawer h-dvh w-full absolute top-0 left-0 bg-background-color flex flex-col justify-between">
+        <ul class="drawer-navbar-list flex flex-col px-4 justify-center items-start">
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/"
+                        >
+                            <span>
+                                首页
+                            </span>
+                            
+                                <i class="fa-regular fa-house fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/archives/"
+                        >
+                            <span>
+                                归档
+                            </span>
+                            
+                                <i class="fa-regular fa-archive fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/tags/"
+                        >
+                            <span>
+                                标签
+                            </span>
+                            
+                                <i class="fa-regular fa-tags fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/categories/"
+                        >
+                            <span>
+                                分类
+                            </span>
+                            
+                                <i class="fa-regular fa-folder fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item-sub text-base my-1.5 flex flex-col w-full">
+                        
+                        <div class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary cursor-pointer text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                             navbar-data-toggle="submenu-About"
+                        >
+                            <span>
+                                关于
+                            </span>
+                            
+                                <i class="fa-solid fa-chevron-right fa-sm fa-fw transition-all"></i>
+                            
+                        </div>
+                        
+
+                        
+                            <div class="flex-col items-start px-2 py-2 hidden" data-target="submenu-About">
+                                
+                                    <div class="drawer-navbar-item text-base flex flex-col justify-center items-start hover:underline active:underline hover:underline-offset-1 rounded-3xl">
+                                        <a class=" text-third-text-color text-xl"
+                                           href="/about/">ME</a>
+                                    </div>
+                                
+                                    <div class="drawer-navbar-item text-base flex flex-col justify-center items-start hover:underline active:underline hover:underline-offset-1 rounded-3xl">
+                                        <a class=" text-third-text-color text-xl"
+                                           target="_blank" rel="noopener" href="https://github.com/kuangyue111">GITHUB</a>
+                                    </div>
+                                
+                            </div>
+                        
+                    </li>
+            
+
+            
+            
+                
+                    
+                    
+                    
+            
+        </ul>
+
+        <div class="statistics flex justify-around my-2.5">
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/tags">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">194</div>
+        <div class="label text-third-text-color text-sm">标签</div>
+    </a>
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/categories">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">16</div>
+        <div class="label text-third-text-color text-sm">分类</div>
+    </a>
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/archives">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">45</div>
+        <div class="label text-third-text-color text-sm">文章</div>
+    </a>
+</div>
+    </div>
+
+    <div class="window-mask"></div>
+
+</header>
+
+
+		</div>
+
+		<div class="main-content-body transition-fade-up">
+			
+
+			<div class="main-content">
+				<div class="post-page-container flex relative justify-between box-border w-full h-full">
+	<div class="article-content-container">
+
+		<div class="article-title relative w-full">
+			
+			<div class="w-full flex items-center pt-6 justify-start">
+				<h1 class="article-title-regular text-second-text-color tracking-tight text-4xl md:text-6xl font-semibold px-2 sm:px-6 md:px-8 py-3">电池管理系统工程代码分析文档</h1>
+			</div>
+			
+		</div>
+
+		
+		<div class="article-header flex flex-row gap-2 items-center px-2 sm:px-6 md:px-8">
+			<div class="avatar w-[46px] h-[46px] shrink-0 rounded-medium border border-border-color p-px">
+				<img src="/images/redefine-avatar.svg">
+			</div>
+			<div class="info flex flex-col justify-between">
+				<div class="author flex items-center">
+					<span class="name text-default-text-color text-lg font-semibold">kuangyue111</span>
+					
+					<span class="author-label ml-1.5 text-xs px-2 py-0.5 rounded-small text-third-text-color border border-shadow-color-1">Lv4</span>
+					
+				</div>
+				<div class="meta-info">
+					<div class="article-meta-info">
+    <span class="article-date article-meta-item">
+        <i class="fa-regular fa-pen-fancy"></i>&nbsp;
+        <span class="desktop">2026-06-27 17:00</span>
+        <span class="mobile">2026-06-27 17:00</span>
+        <span class="hover-info">创建</span>
+    </span>
+    
+        <span class="article-date article-meta-item">
+            <i class="fa-regular fa-wrench"></i>&nbsp;
+            <span class="desktop">2026-06-27 17:54:15</span>
+            <span class="mobile">2026-06-27 17:54:15</span>
+            <span class="hover-info">更新</span>
+        </span>
+    
+
+    
+        <span class="article-categories article-meta-item">
+            <i class="fa-regular fa-folders"></i>&nbsp;
+            <ul>
+                
+                
+                    
+                        
+                        <li>
+                            <a href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/">技术分享</a>&nbsp;
+                        </li>
+                    
+                    
+                
+                    
+                        
+                            <li>></li>
+                        
+                        <li>
+                            <a href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/%E5%B5%8C%E5%85%A5%E5%BC%8F%E5%BC%80%E5%8F%91/">嵌入式开发</a>&nbsp;
+                        </li>
+                    
+                    
+                
+            </ul>
+        </span>
+    
+    
+        <span class="article-tags article-meta-item">
+            <i class="fa-regular fa-tags"></i>&nbsp;
+            <ul>
+                
+                    <li>
+                        <a href="/tags/%E5%B5%8C%E5%85%A5%E5%BC%8F/">嵌入式</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/BMS/">BMS</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/SOC/">SOC</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/SOH/">SOH</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/FreeRTOS/">FreeRTOS</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/S32K146/">S32K146</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E4%BB%A3%E7%A0%81%E5%88%86%E6%9E%90/">代码分析</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/">系统架构</a>&nbsp;
+                    </li>
+                
+            </ul>
+        </span>
+    
+
+    
+    
+    
+    
+        <span class="article-pv article-meta-item">
+            <i class="fa-regular fa-eye"></i>&nbsp;<span id="busuanzi_value_page_pv"></span>
+        </span>
+    
+</div>
+
+				</div>
+			</div>
+		</div>
+		
+
+		
+
+
+		<div class="article-content markdown-body px-2 sm:px-6 md:px-8 pb-8">
+			<h1 id="电池管理系统工程代码分析文档"><a href="#电池管理系统工程代码分析文档" class="headerlink" title="电池管理系统工程代码分析文档"></a>电池管理系统工程代码分析文档</h1><h2 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h2><ol>
+<li><a href="#%E5%B7%A5%E7%A8%8B%E6%A6%82%E8%BF%B0">工程概述</a></li>
+<li><a href="#%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84">系统架构</a></li>
+<li><a href="#rtos%E8%BF%90%E8%A1%8C%E6%9C%BA%E5%88%B6">RTOS运行机制</a></li>
+<li><a href="#%E6%A0%B8%E5%BF%83%E6%A8%A1%E5%9D%97%E5%88%86%E6%9E%90">核心模块分析</a></li>
+<li><a href="#soc%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3">SOC算法详解</a></li>
+<li><a href="#soh%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3">SOH算法详解</a></li>
+<li><a href="#%E7%B3%BB%E7%BB%9F%E8%BF%90%E8%A1%8C%E6%B5%81%E7%A8%8B">系统运行流程</a></li>
+<li><a href="#%E5%85%B3%E9%94%AE%E6%8E%A5%E5%8F%A3%E8%AF%B4%E6%98%8E">关键接口说明</a></li>
+</ol>
+<hr>
+<h2 id="工程概述"><a href="#工程概述" class="headerlink" title="工程概述"></a>工程概述</h2><h3 id="项目信息"><a href="#项目信息" class="headerlink" title="项目信息"></a>项目信息</h3><ul>
+<li><strong>项目名称</strong>: BMS</li>
+<li><strong>处理器</strong>: NXP S32K146</li>
+<li><strong>RTOS</strong>: FreeRTOS</li>
+<li><strong>功能</strong>: 电池管理系统(BMS - Battery Management System)</li>
+</ul>
+<h3 id="主要功能"><a href="#主要功能" class="headerlink" title="主要功能"></a>主要功能</h3><ul>
+<li>电池组电压、电流、温度监测</li>
+<li>SOC(State of Charge)状态估算</li>
+<li>SOH(State of Health)健康度评估</li>
+<li>SOE(State of Energy)能量状态计算</li>
+<li>电池保护与故障诊断</li>
+<li>CAN&#x2F;Modbus通信</li>
+<li>均衡控制</li>
+<li>绝缘检测</li>
+<li>数据记录与统计</li>
+</ul>
+<hr>
+<h2 id="系统架构"><a href="#系统架构" class="headerlink" title="系统架构"></a>系统架构</h2><h3 id="目录结构"><a href="#目录结构" class="headerlink" title="目录结构"></a>目录结构</h3><div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">S32K146OFBMU_B/</span><br><span class="line">├── Sources/                    # 源代码目录</span><br><span class="line">│   ├── main.c                 # 主程序入口</span><br><span class="line">│   ├── OSUser/                # RTOS用户层</span><br><span class="line">│   │   └── OSUserHOOK.c       # RTOS任务钩子函数</span><br><span class="line">│   ├── BSPSys/                # BSP系统层</span><br><span class="line">│   │   ├── Driver/            # 硬件驱动层</span><br><span class="line">│   │   └── Util/              # 工具函数</span><br><span class="line">│   ├── Funtion/               # 功能模块</span><br><span class="line">│   │   ├── SocLib/            # SOC/SOE算法库</span><br><span class="line">│   │   ├── EnergyCalc/        # 能量计算模块</span><br><span class="line">│   │   ├── Measurement/       # 测量采样模块</span><br><span class="line">│   │   ├── Diagnosis/         # 故障诊断模块</span><br><span class="line">│   │   ├── DataCalc/          # 数据计算模块</span><br><span class="line">│   │   ├── CanLib/            # CAN通信库</span><br><span class="line">│   │   ├── ModbusLib/         # Modbus通信库</span><br><span class="line">│   │   ├── Parameter/        # 参数管理模块</span><br><span class="line">│   │   ├── Statistics/       # 统计模块</span><br><span class="line">│   │   ├── Recording/         # 记录模块</span><br><span class="line">│   │   └── PowerManag/        # 电源管理模块</span><br><span class="line">│   ├── Logics/                # 逻辑控制层</span><br><span class="line">│   │   ├── Tactics/           # 策略控制</span><br><span class="line">│   │   ├── Balance/           # 均衡控制</span><br><span class="line">│   │   ├── FstChg/            # 快充策略</span><br><span class="line">│   │   ├── CanUser/           # CAN用户层</span><br><span class="line">│   │   └── EventUser/         # 事件处理</span><br><span class="line">│   └── SaftyCheck/            # 安全检测模块</span><br><span class="line">│       └── SafetyLib/      # 安全库</span><br><span class="line">├── SDK/                       # SDK库文件</span><br><span class="line">├── Generated_Code/            # 自动生成代码</span><br><span class="line">└── Project_Settings/          # 项目配置</span><br><span class="line"></span><br></pre></td></tr></table></figure></div>
+
+<h3 id="系统分层架构"><a href="#系统分层架构" class="headerlink" title="系统分层架构"></a>系统分层架构</h3><div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">┌─────────────────────────────────────┐</span><br><span class="line">│        应用层 (Application)          │</span><br><span class="line">│  (策略控制、均衡、快充、事件处理)      │</span><br><span class="line">├─────────────────────────────────────┤</span><br><span class="line">│        功能层 (Function)             │</span><br><span class="line">│  (SOC/SOH算法、测量、诊断、通信)      │</span><br><span class="line">├─────────────────────────────────────┤</span><br><span class="line">│        BSP层 (Board Support)         │</span><br><span class="line">│  (驱动、硬件抽象、中断处理)            │</span><br><span class="line">├─────────────────────────────────────┤</span><br><span class="line">│        RTOS层 (FreeRTOS)            │</span><br><span class="line">│  (任务调度、定时器、队列、信号量)      │</span><br><span class="line">├─────────────────────────────────────┤</span><br><span class="line">│        硬件层 (Hardware)             │</span><br><span class="line">│  (S32K146 MCU、外设)                 │</span><br><span class="line">└─────────────────────────────────────┘</span><br></pre></td></tr></table></figure></div>
+
+<hr>
+<h2 id="RTOS运行机制"><a href="#RTOS运行机制" class="headerlink" title="RTOS运行机制"></a>RTOS运行机制</h2><h3 id="FreeRTOS配置"><a href="#FreeRTOS配置" class="headerlink" title="FreeRTOS配置"></a>FreeRTOS配置</h3><p>系统使用FreeRTOS作为实时操作系统，主要配置如下：</p>
+<ul>
+<li><strong>时钟频率</strong>: 80MHz (configCPU_CLOCK_HZ)</li>
+<li><strong>Tick频率</strong>: 1000Hz (configTICK_RATE_HZ &#x3D; 1ms)</li>
+<li><strong>最大优先级</strong>: 8级</li>
+<li><strong>调度方式</strong>: 抢占式调度 (configUSE_PREEMPTION &#x3D; 1)</li>
+<li><strong>时间片</strong>: 启用 (configUSE_TIME_SLICING &#x3D; 1)</li>
+</ul>
+<h3 id="任务创建与调度"><a href="#任务创建与调度" class="headerlink" title="任务创建与调度"></a>任务创建与调度</h3><h4 id="1-软件定时器任务"><a href="#1-软件定时器任务" class="headerlink" title="1. 软件定时器任务"></a>1. 软件定时器任务</h4><p>系统创建了10个周期性软件定时器，用于执行不同周期的任务：</p>
+<table>
+<thead>
+<tr>
+<th>定时器</th>
+<th>周期</th>
+<th>主要功能</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Timer5ms</td>
+<td>5ms</td>
+<td>CAN通信包发送、SBC诊断、CATL协议</td>
+</tr>
+<tr>
+<td>Timer10ms</td>
+<td>10ms</td>
+<td>电流限值计算、电压温度计算、故障诊断、电能量计算、均衡控制、绝缘检测</td>
+</tr>
+<tr>
+<td>Timer50ms</td>
+<td>50ms</td>
+<td>故障滤波检测、SOC&#x2F;SOE算法包总任务、远程升级</td>
+</tr>
+<tr>
+<td>Timer100ms</td>
+<td>100ms</td>
+<td>电池组工作状态检测、充放电状态检测、安全等级诊断、保护控制</td>
+</tr>
+<tr>
+<td>Timer200ms</td>
+<td>200ms</td>
+<td>热管理控制、电压限值计算、工作模式检测、通信诊断、校准</td>
+</tr>
+<tr>
+<td>Timer300ms</td>
+<td>300ms</td>
+<td>单次循环充放电量统计、在线升级</td>
+</tr>
+<tr>
+<td>Timer400ms</td>
+<td>400ms</td>
+<td>累计充放电量统计、累计充放电能统计</td>
+</tr>
+<tr>
+<td>Timer500ms</td>
+<td>500ms</td>
+<td>外围故障检测、快充策略、历史记录处理</td>
+</tr>
+<tr>
+<td>Timer1000ms</td>
+<td>1000ms</td>
+<td>外围输出口控制、充放电次数统计、DOD统计</td>
+</tr>
+<tr>
+<td>Timer2000ms</td>
+<td>2000ms</td>
+<td>系统下电保护、故障告警统计、系统时间记录</td>
+</tr>
+</tbody></table>
+<h4 id="2-独立任务"><a href="#2-独立任务" class="headerlink" title="2. 独立任务"></a>2. 独立任务</h4><p>系统创建了6个独立的任务，用于处理实时性要求高的操作：</p>
+<table>
+<thead>
+<tr>
+<th>任务名称</th>
+<th>优先级</th>
+<th>功能描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>HigInfoSampleTask</td>
+<td>RTOS_ID_HV_SAMP</td>
+<td>高压信息采样任务</td>
+</tr>
+<tr>
+<td>CellInfoSampleTask</td>
+<td>RTOS_ID_CELL_SAMP</td>
+<td>电池信息采样任务</td>
+</tr>
+<tr>
+<td>LowInfoSampleTask</td>
+<td>RTOS_ID_LV_SAMP</td>
+<td>低压信息采样任务</td>
+</tr>
+<tr>
+<td>BSPCANSendTask</td>
+<td>RTOS_ID_CAN_SEND</td>
+<td>CAN信息发送任务</td>
+</tr>
+<tr>
+<td>BSPCANRcvTask</td>
+<td>RTOS_ID_CAN_RCV</td>
+<td>CAN信息接收任务</td>
+</tr>
+<tr>
+<td>BSPUARTRcvTask</td>
+<td>RTOS_ID_UART_RCV</td>
+<td>UART信息接收任务</td>
+</tr>
+</tbody></table>
+<h3 id="任务调度流程"><a href="#任务调度流程" class="headerlink" title="任务调度流程"></a>任务调度流程</h3><div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">main()</span><br><span class="line">  ├── BSPUserCfgInit()          # BSP配置初始化</span><br><span class="line">  ├── BSPDriverInit()            # BSP驱动初始化</span><br><span class="line">  ├── BSPDisIRQUserInit()       # 中断初始化(禁用中断)</span><br><span class="line">  ├── BSPEnIRQUserInit()        # 中断初始化(使能中断)</span><br><span class="line">  └── RtosTaskStart()           # RTOS任务启动</span><br><span class="line">      ├── 创建10个软件定时器</span><br><span class="line">      ├── 创建6个独立任务</span><br><span class="line">      └── vTaskStartScheduler()  # 启动任务调度器</span><br></pre></td></tr></table></figure></div>
+
+<h3 id="任务执行时序"><a href="#任务执行时序" class="headerlink" title="任务执行时序"></a>任务执行时序</h3><div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">时间轴:</span><br><span class="line">0ms    5ms    10ms   50ms   100ms  200ms  300ms  400ms  500ms  1000ms 2000ms</span><br><span class="line">│      │      │      │      │      │      │      │      │      │      │</span><br><span class="line">├─5ms──┼─10ms─┼─50ms─┼─100ms┼─200ms┼─300ms┼─400ms┼─500ms┼─1000ms┼─2000ms─┤</span><br><span class="line">│      │      │      │      │      │      │      │      │      │      │</span><br><span class="line">定时器  定时器  定时器  定时器  定时器  定时器  定时器  定时器  定时器  定时器</span><br><span class="line">任务    任务    任务    任务    任务    任务    任务    任务    任务    任务</span><br><span class="line"></span><br><span class="line">独立任务(持续运行):</span><br><span class="line">- 采样任务(高压/电池/低压)</span><br><span class="line">- CAN发送/接收任务</span><br><span class="line">- UART接收任务</span><br></pre></td></tr></table></figure></div>
+
+<hr>
+<h2 id="核心模块分析"><a href="#核心模块分析" class="headerlink" title="核心模块分析"></a>核心模块分析</h2><h3 id="1-测量采样模块-Measurement"><a href="#1-测量采样模块-Measurement" class="headerlink" title="1. 测量采样模块 (Measurement)"></a>1. 测量采样模块 (Measurement)</h3><h4 id="1-1-电池信息采样-CellAFESamp-c"><a href="#1-1-电池信息采样-CellAFESamp-c" class="headerlink" title="1.1 电池信息采样 (CellAFESamp.c)"></a>1.1 电池信息采样 (CellAFESamp.c)</h4><ul>
+<li><strong>功能</strong>: 采集单体电池电压、温度</li>
+<li><strong>采样频率</strong>: 独立任务实时采样</li>
+<li><strong>处理</strong>: 滤波、校准、异常检测</li>
+</ul>
+<h4 id="1-2-高压采样-HigAFESamp-c"><a href="#1-2-高压采样-HigAFESamp-c" class="headerlink" title="1.2 高压采样 (HigAFESamp.c)"></a>1.2 高压采样 (HigAFESamp.c)</h4><ul>
+<li><strong>功能</strong>: 采集电池组总电压、预充电压</li>
+<li><strong>采样频率</strong>: 独立任务实时采样</li>
+<li><strong>处理</strong>: 高压校准、异常检测</li>
+</ul>
+<h4 id="1-3-电流采样-CurrSample-c"><a href="#1-3-电流采样-CurrSample-c" class="headerlink" title="1.3 电流采样 (CurrSample.c)"></a>1.3 电流采样 (CurrSample.c)</h4><ul>
+<li><strong>功能</strong>: 采集充放电电流</li>
+<li><strong>采样频率</strong>: 独立任务实时采样</li>
+<li><strong>处理</strong>: 电流积分、方向判断</li>
+</ul>
+<h4 id="1-4-绝缘检测-InsuCheck-c"><a href="#1-4-绝缘检测-InsuCheck-c" class="headerlink" title="1.4 绝缘检测 (InsuCheck.c)"></a>1.4 绝缘检测 (InsuCheck.c)</h4><ul>
+<li><strong>功能</strong>: 检测电池组对地绝缘电阻</li>
+<li><strong>检测周期</strong>: 10ms任务中调用</li>
+<li><strong>算法</strong>: 通过注入信号测量绝缘值</li>
+<li><strong>保护</strong>: 绝缘值过低时触发保护</li>
+</ul>
+<h3 id="2-数据计算模块-DataCalc"><a href="#2-数据计算模块-DataCalc" class="headerlink" title="2. 数据计算模块 (DataCalc)"></a>2. 数据计算模块 (DataCalc)</h3><h4 id="2-1-电流限值计算-CurrLimCalc-c"><a href="#2-1-电流限值计算-CurrLimCalc-c" class="headerlink" title="2.1 电流限值计算 (CurrLimCalc.c)"></a>2.1 电流限值计算 (CurrLimCalc.c)</h4><ul>
+<li><strong>功能</strong>: 根据电压、温度、SOC计算充放电电流限值</li>
+<li><strong>算法</strong>: PID控制、限值衰减</li>
+<li><strong>周期</strong>: 10ms</li>
+</ul>
+<h4 id="2-2-电压限值计算-VoltLimCalc-c"><a href="#2-2-电压限值计算-VoltLimCalc-c" class="headerlink" title="2.2 电压限值计算 (VoltLimCalc.c)"></a>2.2 电压限值计算 (VoltLimCalc.c)</h4><ul>
+<li><strong>功能</strong>: 计算充放电电压限值</li>
+<li><strong>周期</strong>: 200ms</li>
+</ul>
+<h4 id="2-3-特征计算-CharactCalc-c"><a href="#2-3-特征计算-CharactCalc-c" class="headerlink" title="2.3 特征计算 (CharactCalc.c)"></a>2.3 特征计算 (CharactCalc.c)</h4><ul>
+<li><strong>功能</strong>: 计算电压、温度特征值</li>
+<li><strong>周期</strong>: 10ms</li>
+</ul>
+<h3 id="3-故障诊断模块-Diagnosis"><a href="#3-故障诊断模块-Diagnosis" class="headerlink" title="3. 故障诊断模块 (Diagnosis)"></a>3. 故障诊断模块 (Diagnosis)</h3><h4 id="3-1-故障检测-DiagCheck-c"><a href="#3-1-故障检测-DiagCheck-c" class="headerlink" title="3.1 故障检测 (DiagCheck.c)"></a>3.1 故障检测 (DiagCheck.c)</h4><ul>
+<li><strong>功能</strong>: 检测各类故障</li>
+<li><strong>类型</strong>: 电压异常、温度异常、电流异常、通信异常等</li>
+<li><strong>周期</strong>: 10ms&#x2F;100ms&#x2F;500ms</li>
+</ul>
+<h4 id="3-2-故障滤波-DiagFilter-c"><a href="#3-2-故障滤波-DiagFilter-c" class="headerlink" title="3.2 故障滤波 (DiagFilter.c)"></a>3.2 故障滤波 (DiagFilter.c)</h4><ul>
+<li><strong>功能</strong>: 对故障进行滤波，避免误报</li>
+<li><strong>算法</strong>: 时间滤波、计数滤波</li>
+</ul>
+<h4 id="3-3-故障生成-DiagMaker-c"><a href="#3-3-故障生成-DiagMaker-c" class="headerlink" title="3.3 故障生成 (DiagMaker.c)"></a>3.3 故障生成 (DiagMaker.c)</h4><ul>
+<li><strong>功能</strong>: 根据检测结果生成故障码</li>
+<li><strong>等级</strong>: A级(警告)、B级(故障)</li>
+</ul>
+<h4 id="3-4-安全等级-DiagSos-c"><a href="#3-4-安全等级-DiagSos-c" class="headerlink" title="3.4 安全等级 (DiagSos.c)"></a>3.4 安全等级 (DiagSos.c)</h4><ul>
+<li><strong>功能</strong>: 计算系统安全等级(SOS)</li>
+<li><strong>等级</strong>: 0-4级，级别越高越危险</li>
+</ul>
+<h3 id="4-通信模块"><a href="#4-通信模块" class="headerlink" title="4. 通信模块"></a>4. 通信模块</h3><h4 id="4-1-CAN通信-CanLib"><a href="#4-1-CAN通信-CanLib" class="headerlink" title="4.1 CAN通信 (CanLib&#x2F;)"></a>4.1 CAN通信 (CanLib&#x2F;)</h4><ul>
+<li><strong>功能</strong>: CAN总线通信</li>
+<li><strong>协议</strong>: 自定义协议、CATL协议</li>
+<li><strong>任务</strong>: 独立发送&#x2F;接收任务</li>
+</ul>
+<h4 id="4-2-Modbus通信-ModbusLib"><a href="#4-2-Modbus通信-ModbusLib" class="headerlink" title="4.2 Modbus通信 (ModbusLib&#x2F;)"></a>4.2 Modbus通信 (ModbusLib&#x2F;)</h4><ul>
+<li><strong>功能</strong>: Modbus RTU&#x2F;TCP通信</li>
+<li><strong>应用</strong>: 上位机通信、参数配置</li>
+</ul>
+<h3 id="5-参数管理模块-Parameter"><a href="#5-参数管理模块-Parameter" class="headerlink" title="5. 参数管理模块 (Parameter)"></a>5. 参数管理模块 (Parameter)</h3><h4 id="5-1-参数存储"><a href="#5-1-参数存储" class="headerlink" title="5.1 参数存储"></a>5.1 参数存储</h4><ul>
+<li><strong>存储位置</strong>: EEPROM、内部Flash、外部Flash</li>
+<li><strong>参数类型</strong>: 通用参数、高级参数、只读参数</li>
+</ul>
+<h4 id="5-2-参数读写"><a href="#5-2-参数读写" class="headerlink" title="5.2 参数读写"></a>5.2 参数读写</h4><ul>
+<li><strong>接口</strong>: ParaRead、ParaWrite</li>
+<li><strong>保护</strong>: 参数校验、备份恢复</li>
+</ul>
+<h3 id="6-记录统计模块"><a href="#6-记录统计模块" class="headerlink" title="6. 记录统计模块"></a>6. 记录统计模块</h3><h4 id="6-1-数据记录-Recording"><a href="#6-1-数据记录-Recording" class="headerlink" title="6.1 数据记录 (Recording&#x2F;)"></a>6.1 数据记录 (Recording&#x2F;)</h4><ul>
+<li><strong>功能</strong>: 记录故障波形、历史数据</li>
+<li><strong>存储</strong>: 外部Flash</li>
+</ul>
+<h4 id="6-2-统计分析-Statistics"><a href="#6-2-统计分析-Statistics" class="headerlink" title="6.2 统计分析 (Statistics&#x2F;)"></a>6.2 统计分析 (Statistics&#x2F;)</h4><ul>
+<li><strong>功能</strong>: 充放电次数、能量统计、DOD统计</li>
+<li><strong>周期</strong>: 300ms&#x2F;400ms&#x2F;1000ms</li>
+</ul>
+<hr>
+<h2 id="SOC算法详解"><a href="#SOC算法详解" class="headerlink" title="SOC算法详解"></a>SOC算法详解</h2><h3 id="SOC-State-of-Charge-状态估算"><a href="#SOC-State-of-Charge-状态估算" class="headerlink" title="SOC (State of Charge) 状态估算"></a>SOC (State of Charge) 状态估算</h3><p>SOC表示电池的剩余容量百分比，是BMS的核心算法之一。</p>
+<h3 id="1-SOC计算架构"><a href="#1-SOC计算架构" class="headerlink" title="1. SOC计算架构"></a>1. SOC计算架构</h3><div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">SOC算法包 (SocLib/)</span><br><span class="line">├── CapInfoCalc.c          # 容量信息计算</span><br><span class="line">├── SocSoeCorr.c           # SOC/SOE修正</span><br><span class="line">├── SocSoeSync.c           # SOC/SOE同步</span><br><span class="line">└── SocUserAPI.c           # SOC用户接口</span><br></pre></td></tr></table></figure></div>
+
+<h3 id="2-核心计算方法"><a href="#2-核心计算方法" class="headerlink" title="2. 核心计算方法"></a>2. 核心计算方法</h3><h4 id="2-1-安时积分法-Coulomb-Counting"><a href="#2-1-安时积分法-Coulomb-Counting" class="headerlink" title="2.1 安时积分法 (Coulomb Counting)"></a>2.1 安时积分法 (Coulomb Counting)</h4><p><strong>原理</strong>: 通过积分电流计算容量变化</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 当前容量计算</span></span><br><span class="line">sCapForm.nowCap = sCapForm.nowCap + ΔQ</span><br><span class="line"><span class="comment">// ΔQ = I × Δt (电流积分)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// SOC计算</span></span><br><span class="line">SOC = (nowCap - baseCap) / (topCap - baseCap) × <span class="number">100</span>%</span><br></pre></td></tr></table></figure></div>
+
+<p><strong>位置</strong>: <code>CapInfoCalc.c</code> - <code>CalcGroupNowCapHandle()</code></p>
+<p><strong>特点</strong>:</p>
+<ul>
+<li>实时性好</li>
+<li>需要初始SOC</li>
+<li>存在累积误差</li>
+</ul>
+<h4 id="2-2-温度修正"><a href="#2-2-温度修正" class="headerlink" title="2.2 温度修正"></a>2.2 温度修正</h4><p><strong>原理</strong>: 温度影响电池可用容量</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 温度修正后的可用容量</span></span><br><span class="line">nowCap = remainCap × tempCapPercent / <span class="number">1000</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 温度修正后的SOC</span></span><br><span class="line">soc = nowCap × <span class="number">1000</span> / totalCap</span><br></pre></td></tr></table></figure></div>
+
+<p><strong>位置</strong>: <code>SocSoeCorr.c</code> - <code>SocSoeTempCorrDeal()</code></p>
+<p><strong>温度表</strong>: <code>cTempCapPercent[]</code> - 不同温度下的容量百分比</p>
+<h4 id="2-3-电压末端修正"><a href="#2-3-电压末端修正" class="headerlink" title="2.3 电压末端修正"></a>2.3 电压末端修正</h4><p><strong>原理</strong>: 充放电末端根据电压进行SOC修正</p>
+<p><strong>充电末端修正</strong>:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 当电压达到充电截止电压附近时</span></span><br><span class="line"><span class="keyword">if</span> (cellMaxVolt &gt;= startVolt &amp;&amp; cellMaxVolt &lt; finVolt) &#123;</span><br><span class="line">    <span class="comment">// 使用线性插值: SOC = K × (voltage - startVolt) + B</span></span><br><span class="line">    voltStepSoc = socVoltCorrK * (cellMaxVolt - startVolt) / <span class="number">1000</span> + socVoltCorrB;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p><strong>放电末端修正</strong>:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 当电压达到放电截止电压附近时</span></span><br><span class="line"><span class="keyword">if</span> (cellMinVolt &lt;= startVolt &amp;&amp; cellMinVolt &gt; finVolt) &#123;</span><br><span class="line">    <span class="comment">// 使用线性插值: SOC = B - K × (startVolt - voltage)</span></span><br><span class="line">    voltStepSoc = socVoltCorrB - (socVoltCorrK * (startVolt - cellMinVolt) / <span class="number">1000</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p><strong>位置</strong>: <code>SocSoeCorr.c</code> - <code>SocSoeVStepCorrDeal()</code></p>
+<h3 id="3-SOC修正策略"><a href="#3-SOC修正策略" class="headerlink" title="3. SOC修正策略"></a>3. SOC修正策略</h3><h4 id="3-1-多源融合修正"><a href="#3-1-多源融合修正" class="headerlink" title="3.1 多源融合修正"></a>3.1 多源融合修正</h4><p>系统采用多源融合的方式修正SOC：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 1. 温度修正SOC</span></span><br><span class="line">sTCapCorrSoc = 温度修正后的SOC</span><br><span class="line"></span><br><span class="line"><span class="comment">// 2. 电压末端修正SOC</span></span><br><span class="line">sVStepCorrSoc = 电压修正后的SOC</span><br><span class="line"></span><br><span class="line"><span class="comment">// 3. 当前SOC</span></span><br><span class="line">nowSoc = 安时积分计算的SOC</span><br><span class="line"></span><br><span class="line"><span class="comment">// 4. 融合策略</span></span><br><span class="line"><span class="keyword">if</span> (温度修正SOC与电压修正SOC误差 &lt;= <span class="number">3</span>%) &#123;</span><br><span class="line">    calcSoc = (温度修正SOC + 电压修正SOC) / <span class="number">2</span>;</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (温度修正SOC与当前SOC误差 &lt;= <span class="number">3</span>%) &#123;</span><br><span class="line">    calcSoc = (温度修正SOC + 当前SOC) / <span class="number">2</span>;</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (电压修正SOC与当前SOC误差 &lt;= <span class="number">3</span>%) &#123;</span><br><span class="line">    calcSoc = (电压修正SOC + 当前SOC) / <span class="number">2</span>;</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    calcSoc = (温度修正SOC + 电压修正SOC + 当前SOC) / <span class="number">3</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 5. 执行修正(修正量 &gt;= 0.5%才修正)</span></span><br><span class="line"><span class="keyword">if</span> (ABS(calcSoc, nowSoc) &gt;= <span class="number">5</span>) &#123;</span><br><span class="line">    CorrGNowCapBySocAPI(calcSoc);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p><strong>位置</strong>: <code>SocSoeCorr.c</code> - <code>SocSoeAllCorrTask()</code></p>
+<h3 id="4-SOC平滑显示"><a href="#4-SOC平滑显示" class="headerlink" title="4. SOC平滑显示"></a>4. SOC平滑显示</h3><p><strong>原理</strong>: 避免SOC跳变，平滑过渡到目标值</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 根据目标SOC与当前显示SOC的差值，计算步进值</span></span><br><span class="line"><span class="keyword">if</span> (aimSoc &gt;= <span class="number">97.5</span>%) &#123;</span><br><span class="line">    stepSoc = (aimSoc - copySoc) / <span class="number">50</span>;  <span class="comment">// 5s内到达目标值</span></span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (aimSoc &gt;= <span class="number">95</span>%) &#123;</span><br><span class="line">    stepSoc = (aimSoc - copySoc) / <span class="number">150</span>; <span class="comment">// 15s内到达目标值</span></span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (aimSoc &gt;= <span class="number">93</span>%) &#123;</span><br><span class="line">    stepSoc = (aimSoc - copySoc) / <span class="number">200</span>; <span class="comment">// 20s内到达目标值</span></span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (aimSoc &gt;= <span class="number">90</span>%) &#123;</span><br><span class="line">    stepSoc = (aimSoc - copySoc) / <span class="number">300</span>; <span class="comment">// 30s内到达目标值</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">copySoc += stepSoc;  <span class="comment">// 平滑更新显示SOC</span></span><br></pre></td></tr></table></figure></div>
+
+<p><strong>位置</strong>: <code>SocDisplay.c</code> - <code>CalcSocSlowChang()</code></p>
+<h3 id="5-SOC算法执行流程"><a href="#5-SOC算法执行流程" class="headerlink" title="5. SOC算法执行流程"></a>5. SOC算法执行流程</h3><div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">50ms周期任务 (SocSoeLibAllTask)</span><br><span class="line">├── 1s周期: 总容量总能量自动标定</span><br><span class="line">├── 500ms周期: SOC/SOE扩展卡尔曼算法(预留)</span><br><span class="line">├── 500ms周期: SOC/SOE相互同步</span><br><span class="line">├── 500ms周期: SOC/SOE组间同步</span><br><span class="line">└── 500ms周期: SOC/SOE修正总任务</span><br><span class="line">    ├── 温度修正处理</span><br><span class="line">    ├── 电压末端修正处理</span><br><span class="line">    └── 多源融合修正</span><br></pre></td></tr></table></figure></div>
+
+<h3 id="6-总容量自动标定"><a href="#6-总容量自动标定" class="headerlink" title="6. 总容量自动标定"></a>6. 总容量自动标定</h3><p><strong>原理</strong>: 通过完整的充放电循环自动标定总容量</p>
+<p><strong>充电标定</strong>:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 记录低压点到高压点的充电容量</span></span><br><span class="line">chgCap = (高压点充电容量 - 低压点充电容量) × 充放电比</span><br><span class="line">dhgCap = (高压点放电容量 - 低压点放电容量)</span><br><span class="line"></span><br><span class="line"><span class="comment">// 计算实际充电容量</span></span><br><span class="line">calcCap = (chgCap - dhgCap) × <span class="number">1000</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 电流温度修正</span></span><br><span class="line">calcCap = CalcTotalCapEnerByCTCorr(<span class="number">0</span>, calcCap, finCurr, finTemp)</span><br><span class="line"></span><br><span class="line"><span class="comment">// 修正总容量(误差校验)</span></span><br><span class="line"><span class="keyword">if</span> (calcCap与历史值误差 &lt;= <span class="number">20</span>%) &#123;</span><br><span class="line">    totalCap = (calcCap + 历史值) / <span class="number">2</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p><strong>放电标定</strong>:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 记录高压点到低压点的放电容量</span></span><br><span class="line">dhgCap = (低压点放电容量 - 高压点放电容量)</span><br><span class="line">chgCap = (低压点充电容量 - 高压点充电容量) × 充放电比</span><br><span class="line"></span><br><span class="line"><span class="comment">// 计算实际放电容量</span></span><br><span class="line">calcCap = (dhgCap - chgCap) × <span class="number">1000</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 电流温度修正后修正总容量</span></span><br></pre></td></tr></table></figure></div>
+
+<p><strong>位置</strong>: <code>CapEnerCorr.c</code> - <code>TotalCapEnerCorrTask()</code></p>
+<hr>
+<h2 id="SOH算法详解"><a href="#SOH算法详解" class="headerlink" title="SOH算法详解"></a>SOH算法详解</h2><h3 id="SOH-State-of-Health-健康度评估"><a href="#SOH-State-of-Health-健康度评估" class="headerlink" title="SOH (State of Health) 健康度评估"></a>SOH (State of Health) 健康度评估</h3><p>SOH表示电池的健康状态，反映电池的衰减程度。</p>
+<h3 id="1-SOH计算架构"><a href="#1-SOH计算架构" class="headerlink" title="1. SOH计算架构"></a>1. SOH计算架构</h3><div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SOH算法 (EnergyCalc/)</span><br><span class="line">├── CellFadeCalc.c         # 电池衰减计算</span><br><span class="line">└── SohDisplay.c           # SOH显示</span><br></pre></td></tr></table></figure></div>
+
+<h3 id="2-SOH计算方法"><a href="#2-SOH计算方法" class="headerlink" title="2. SOH计算方法"></a>2. SOH计算方法</h3><h4 id="2-1-容量法计算SOH"><a href="#2-1-容量法计算SOH" class="headerlink" title="2.1 容量法计算SOH"></a>2.1 容量法计算SOH</h4><p><strong>原理</strong>: 通过实际总容量与额定容量的比值计算</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 容量法SOH</span></span><br><span class="line"><span class="keyword">if</span> (ratedCap &gt; <span class="number">0</span>) &#123;</span><br><span class="line">    capSoh = (totalCap × <span class="number">10</span>) / ratedCap;  <span class="comment">// 单位: 0.1%</span></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">if</span> (capSoh &gt; <span class="number">1000</span>) &#123;</span><br><span class="line">        capSoh = <span class="number">1000</span>;  <span class="comment">// 限制最大100%</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p><strong>位置</strong>: <code>CellFadeCalc.c</code> - <code>CalcGroupCellFadeHandle()</code></p>
+<h4 id="2-2-循环次数法计算SOH"><a href="#2-2-循环次数法计算SOH" class="headerlink" title="2.2 循环次数法计算SOH"></a>2.2 循环次数法计算SOH</h4><p><strong>原理</strong>: 通过充放电循环次数计算衰减</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 循环次数法SOH</span></span><br><span class="line"><span class="keyword">if</span> (ratedCycle &gt; <span class="number">0</span> &amp;&amp; ratedCycle &gt;= fadeCycle) &#123;</span><br><span class="line">    <span class="comment">// SOH = 100% - (实际循环次数 / 额定循环次数) × 20%</span></span><br><span class="line">    timSoh = <span class="number">1000</span> - (fadeCycle × <span class="number">200</span> / ratedCycle);</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    timSoh = <span class="number">800</span>;  <span class="comment">// 默认80%</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p><strong>位置</strong>: <code>CellFadeCalc.c</code> - <code>CalcGroupCellFadeHandle()</code></p>
+<h3 id="3-SOH融合策略"><a href="#3-SOH融合策略" class="headerlink" title="3. SOH融合策略"></a>3. SOH融合策略</h3><p>系统采用容量法和循环次数法融合计算SOH：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 1. 计算两种方法的SOH</span></span><br><span class="line">capSoh = 容量法计算的SOH</span><br><span class="line">timSoh = 循环次数法计算的SOH</span><br><span class="line"></span><br><span class="line"><span class="comment">// 2. 判断两种方法的一致性</span></span><br><span class="line"><span class="keyword">if</span> (ABS(capSoh, timSoh) &lt;= <span class="number">50</span>) &#123;  <span class="comment">// 误差 &lt;= 5%</span></span><br><span class="line">    <span class="comment">// 误差小，以循环次数法为准(防止跳变)</span></span><br><span class="line">    capSoh = timSoh;</span><br><span class="line">    fadeCap = ratedCap × capSoh / <span class="number">1000</span>;</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">// 误差大，取平均值</span></span><br><span class="line">    capSoh = (capSoh + timSoh) / <span class="number">2</span>;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// SOH不能增大</span></span><br><span class="line">    <span class="keyword">if</span> (capSoh &gt; currentSoh) &#123;</span><br><span class="line">        capSoh = currentSoh;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// SOH每次最大下降0.5%</span></span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> (ABS(capSoh, currentSoh) &gt; <span class="number">5</span>) &#123;</span><br><span class="line">        capSoh = currentSoh - <span class="number">5</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 反算衰减容量</span></span><br><span class="line">    fadeCap = ratedCap × capSoh / <span class="number">1000</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 3. 更新SOH</span></span><br><span class="line"><span class="keyword">if</span> (capSoh != currentSoh) &#123;</span><br><span class="line">    EnerChangEepGNowCapSohHook(capSoh);  <span class="comment">// 保存到EEPROM</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p><strong>位置</strong>: <code>CellFadeCalc.c</code> - <code>CalcGroupCellFadeHandle()</code></p>
+<h3 id="4-SOH计算触发条件"><a href="#4-SOH计算触发条件" class="headerlink" title="4. SOH计算触发条件"></a>4. SOH计算触发条件</h3><p>SOH在以下情况重新计算：</p>
+<ul>
+<li>充放电循环次数变化</li>
+<li>总容量被修正</li>
+</ul>
+<p><strong>周期</strong>: 100ms任务中调用 <code>GroupFadeSohCalcTask()</code></p>
+<h3 id="5-SOH显示"><a href="#5-SOH显示" class="headerlink" title="5. SOH显示"></a>5. SOH显示</h3><p>SOH直接显示计算值，无需平滑处理：</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 获取当前SOH</span></span><br><span class="line">soh = GetGRealSohMilliAPI();  <span class="comment">// 单位: 0.1%</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 更新显示值</span></span><br><span class="line">gGSysCapInfo_61[eSysCapInfo61_SOH] = soh;</span><br></pre></td></tr></table></figure></div>
+
+<p><strong>位置</strong>: <code>SohDisplay.c</code> - <code>GroupSohDisplayTask()</code></p>
+<hr>
+<h2 id="系统运行流程"><a href="#系统运行流程" class="headerlink" title="系统运行流程"></a>系统运行流程</h2><h3 id="1-系统启动流程"><a href="#1-系统启动流程" class="headerlink" title="1. 系统启动流程"></a>1. 系统启动流程</h3><div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">系统上电</span><br><span class="line">  ├── 硬件初始化</span><br><span class="line">  │   ├── 时钟配置</span><br><span class="line">  │   ├── GPIO配置</span><br><span class="line">  │   └── 外设初始化</span><br><span class="line">  ├── BSP初始化</span><br><span class="line">  │   ├── BSPUserCfgInit()      # BSP配置</span><br><span class="line">  │   ├── BSPDriverInit()       # 驱动初始化</span><br><span class="line">  │   ├── BSPDisIRQUserInit()   # 中断初始化(禁用)</span><br><span class="line">  │   └── BSPEnIRQUserInit()    # 中断初始化(使能)</span><br><span class="line">  ├── RTOS启动</span><br><span class="line">  │   ├── 创建软件定时器</span><br><span class="line">  │   ├── 创建独立任务</span><br><span class="line">  │   └── vTaskStartScheduler() # 启动调度器</span><br><span class="line">  └── 系统运行</span><br><span class="line">      ├── 采样任务持续运行</span><br><span class="line">      ├── 定时器任务周期性执行</span><br><span class="line">      └── 通信任务处理数据交互</span><br></pre></td></tr></table></figure></div>
+
+<h3 id="2-数据采集流程"><a href="#2-数据采集流程" class="headerlink" title="2. 数据采集流程"></a>2. 数据采集流程</h3><div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">硬件采样</span><br><span class="line">  ├── 电池信息采样任务</span><br><span class="line">  │   ├── 单体电压采样</span><br><span class="line">  │   ├── 温度采样</span><br><span class="line">  │   └── 数据滤波处理</span><br><span class="line">  ├── 高压采样任务</span><br><span class="line">  │   ├── 总电压采样</span><br><span class="line">  │   ├── 预充电压采样</span><br><span class="line">  │   └── 数据校准</span><br><span class="line">  └── 低压采样任务</span><br><span class="line">      ├── 辅助电压采样</span><br><span class="line">      └── 数据校准</span><br><span class="line"></span><br><span class="line">数据处理</span><br><span class="line">  ├── 电流积分计算</span><br><span class="line">  ├── 特征值计算</span><br><span class="line">  └── 异常检测</span><br></pre></td></tr></table></figure></div>
+
+<h3 id="3-SOC-SOH计算流程"><a href="#3-SOC-SOH计算流程" class="headerlink" title="3. SOC&#x2F;SOH计算流程"></a>3. SOC&#x2F;SOH计算流程</h3><div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">10ms任务</span><br><span class="line">  ├── 电流积分</span><br><span class="line">  │   └── 更新当前容量</span><br><span class="line">  ├── 特征值计算</span><br><span class="line">  │   ├── 电压特征</span><br><span class="line">  │   └── 温度特征</span><br><span class="line">  └── 电能量计算</span><br><span class="line">      ├── SOC计算</span><br><span class="line">      └── SOE计算</span><br><span class="line"></span><br><span class="line">50ms任务</span><br><span class="line">  └── SOC/SOE算法包</span><br><span class="line">      ├── 总容量标定</span><br><span class="line">      ├── SOC/SOE同步</span><br><span class="line">      └── SOC/SOE修正</span><br><span class="line"></span><br><span class="line">100ms任务</span><br><span class="line">  └── SOH计算</span><br><span class="line">      ├── 容量法SOH</span><br><span class="line">      ├── 循环次数法SOH</span><br><span class="line">      └── SOH融合</span><br></pre></td></tr></table></figure></div>
+
+<h3 id="4-保护控制流程"><a href="#4-保护控制流程" class="headerlink" title="4. 保护控制流程"></a>4. 保护控制流程</h3><div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">10ms任务</span><br><span class="line">  ├── 故障诊断</span><br><span class="line">  │   ├── 电压异常检测</span><br><span class="line">  │   ├── 温度异常检测</span><br><span class="line">  │   └── 电流异常检测</span><br><span class="line">  └── 均衡控制</span><br><span class="line">      └── 电压均衡策略</span><br><span class="line"></span><br><span class="line">100ms任务</span><br><span class="line">  ├── 工作状态检测</span><br><span class="line">  ├── 充放电状态检测</span><br><span class="line">  ├── 安全等级诊断</span><br><span class="line">  └── 保护控制</span><br><span class="line">      ├── 故障保护</span><br><span class="line">      └── 接触器控制</span><br><span class="line"></span><br><span class="line">200ms任务</span><br><span class="line">  └── 电压限值计算</span><br></pre></td></tr></table></figure></div>
+
+<h3 id="5-通信流程"><a href="#5-通信流程" class="headerlink" title="5. 通信流程"></a>5. 通信流程</h3><div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">CAN通信</span><br><span class="line">  ├── 发送任务</span><br><span class="line">  │   ├── 周期发送</span><br><span class="line">  │   └── 事件发送</span><br><span class="line">  └── 接收任务</span><br><span class="line">      ├── 消息解析</span><br><span class="line">      └── 命令处理</span><br><span class="line"></span><br><span class="line">Modbus通信</span><br><span class="line">  ├── 服务器模式</span><br><span class="line">  │   ├── 参数读写</span><br><span class="line">  │   └── 数据查询</span><br><span class="line">  └── 客户端模式</span><br><span class="line">      └── 主动上报</span><br></pre></td></tr></table></figure></div>
+
+<hr>
+<h2 id="关键接口说明"><a href="#关键接口说明" class="headerlink" title="关键接口说明"></a>关键接口说明</h2><h3 id="1-SOC相关接口"><a href="#1-SOC相关接口" class="headerlink" title="1. SOC相关接口"></a>1. SOC相关接口</h3><div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 获取当前SOC (单位: 0.1%)</span></span><br><span class="line">u16 <span class="title function_">GetGRealSocMilliAPI</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取显示SOC (单位: 0.1%)</span></span><br><span class="line">u16 <span class="title function_">GetGBattSocAPI</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 根据SOC修正当前容量</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">CorrGNowCapBySocAPI</span><span class="params">(u16 soc)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 根据SOC修正剩余容量</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">CorrGRemainCapBySocAPI</span><span class="params">(u16 soc)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 修正总容量</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">CorrGroupTotalCapAPI</span><span class="params">(u32 cap)</span>;</span><br></pre></td></tr></table></figure></div>
+
+<h3 id="2-SOH相关接口"><a href="#2-SOH相关接口" class="headerlink" title="2. SOH相关接口"></a>2. SOH相关接口</h3><div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 获取当前SOH (单位: 0.1%)</span></span><br><span class="line">u16 <span class="title function_">GetGRealSohMilliAPI</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取衰减后的总容量</span></span><br><span class="line">u16 <span class="title function_">GetGFadeTotalCapAPI</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取额定容量</span></span><br><span class="line">u16 <span class="title function_">GetGroupRatedCapAPI</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取实际循环次数</span></span><br><span class="line">u16 <span class="title function_">GetGroupFadeCycleAPI</span><span class="params">(<span class="type">void</span>)</span>;</span><br></pre></td></tr></table></figure></div>
+
+<h3 id="3-SOE相关接口"><a href="#3-SOE相关接口" class="headerlink" title="3. SOE相关接口"></a>3. SOE相关接口</h3><div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 获取当前SOE (单位: 0.1%)</span></span><br><span class="line">u16 <span class="title function_">GetGRealSoeMilliAPI</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取显示SOE (单位: 0.1%)</span></span><br><span class="line">u16 <span class="title function_">GetGBattSoeAPI</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 根据SOE修正当前能量</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">CorrGNowEnerBySoeAPI</span><span class="params">(u16 soe)</span>;</span><br></pre></td></tr></table></figure></div>
+
+<h3 id="4-电池信息接口"><a href="#4-电池信息接口" class="headerlink" title="4. 电池信息接口"></a>4. 电池信息接口</h3><div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 获取电池组总电压 (单位: 0.1V)</span></span><br><span class="line">u16 <span class="title function_">GetGSampSumVoltAPI</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取输出电流 (单位: 0.1A)</span></span><br><span class="line">s16 <span class="title function_">GetGSampOutCurrAPI</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取单体最大电压 (单位: 1mV)</span></span><br><span class="line">u16 <span class="title function_">GetGCellMaxVoltAPI</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取单体最小电压 (单位: 1mV)</span></span><br><span class="line">u16 <span class="title function_">GetGCellMinVoltAPI</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取平均温度 (单位: 1℃)</span></span><br><span class="line">s8 <span class="title function_">GetGCellAvgTempAPI</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取充放电状态</span></span><br><span class="line">u16 <span class="title function_">GetGChgDhgStateAPI</span><span class="params">(<span class="type">void</span>)</span>;  <span class="comment">// eCURR_CHG/eCURR_DHG/eCURR_IDLE</span></span><br></pre></td></tr></table></figure></div>
+
+<h3 id="5-保护控制接口"><a href="#5-保护控制接口" class="headerlink" title="5. 保护控制接口"></a>5. 保护控制接口</h3><div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 获取工作状态</span></span><br><span class="line">u16 <span class="title function_">GetGWorkStateAPI</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取工作模式</span></span><br><span class="line">u16 <span class="title function_">GetGWorkModeAPI</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取安全等级</span></span><br><span class="line">u16 <span class="title function_">GetGSosLevelAPI</span><span class="params">(<span class="type">void</span>)</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 设置故障状态</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">DiagSetErrNowStateAPI</span><span class="params">(u16 errId, u16 errLevel)</span>;</span><br></pre></td></tr></table></figure></div>
+
+<hr>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><h3 id="系统特点"><a href="#系统特点" class="headerlink" title="系统特点"></a>系统特点</h3><ol>
+<li><strong>实时性</strong>: 采用FreeRTOS多任务架构，关键任务5-10ms周期执行</li>
+<li><strong>可靠性</strong>: 多重故障检测与保护机制</li>
+<li><strong>精确性</strong>: SOC&#x2F;SOH算法采用多源融合，提高估算精度</li>
+<li><strong>可扩展性</strong>: 模块化设计，便于功能扩展</li>
+<li><strong>安全性</strong>: 完善的故障诊断与安全保护</li>
+</ol>
+<h3 id="关键技术"><a href="#关键技术" class="headerlink" title="关键技术"></a>关键技术</h3><ol>
+<li><strong>SOC算法</strong>: 安时积分 + 温度修正 + 电压末端修正 + 多源融合</li>
+<li><strong>SOH算法</strong>: 容量法 + 循环次数法融合</li>
+<li><strong>总容量标定</strong>: 自动标定，电流温度修正</li>
+<li><strong>故障诊断</strong>: 多级滤波，分级保护</li>
+<li><strong>均衡控制</strong>: 主动均衡策略</li>
+</ol>
+<h3 id="应用场景"><a href="#应用场景" class="headerlink" title="应用场景"></a>应用场景</h3><ul>
+<li>电动汽车电池管理系统</li>
+<li>储能系统电池管理</li>
+<li>工业电池组管理</li>
+<li>其他需要精确电池管理的应用</li>
+</ul>
+<hr>
+
+		</div>
+
+		
+		<div class="post-copyright-info w-full my-8 px-2 sm:px-6 md:px-8">
+			<div class="article-copyright-info-container">
+    <ul>
+        <li><strong>标题:</strong> 电池管理系统工程代码分析文档</li>
+        <li><strong>作者:</strong> kuangyue111</li>
+        <li><strong>创建于
+                :</strong> 2026-06-27 17:00:00</li>
+        
+            <li>
+                <strong>更新于
+                    :</strong> 2026-06-27 17:54:15
+            </li>
+        
+        <li>
+            <strong>链接:</strong> https://kuangyue111.github.io/2026/06/27/2026-06-27-bms-code-analysis-document/
+        </li>
+        <li>
+            <strong>
+                版权声明:
+            </strong>
+            
+
+            
+                本文章采用 <a class="license" target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0">CC BY-NC-SA 4.0</a> 进行许可。
+            
+        </li>
+    </ul>
+</div>
+
+		</div>
+		
+
+		
+		<ul class="post-tags-box text-lg mt-1.5 flex-wrap justify-center flex md:hidden">
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E5%B5%8C%E5%85%A5%E5%BC%8F/">#嵌入式</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/BMS/">#BMS</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/SOC/">#SOC</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/SOH/">#SOH</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/FreeRTOS/">#FreeRTOS</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/S32K146/">#S32K146</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E4%BB%A3%E7%A0%81%E5%88%86%E6%9E%90/">#代码分析</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/">#系统架构</a>&nbsp;
+			</li>
+			
+		</ul>
+		
+
+		
+
+		
+		<div class="article-nav my-8 flex justify-between items-center px-2 sm:px-6 md:px-8">
+			
+			<div class="article-prev border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
+				<a class="prev" rel="prev" href="/2026/06/29/2026-06-29-agent-everos-persistent-memory/">
+					<span class="left arrow-icon flex justify-center items-center">
+						<i class="fa-solid fa-chevron-left"></i>
+					</span>
+					<span class="title flex justify-center items-center">
+						<span class="post-nav-title-item truncate max-w-48">30分钟给你的Agent搭好永久记忆：能cat能git能直接编辑，保姆级教程零门槛上手</span>
+						<span class="post-nav-item">上一篇</span>
+					</span>
+				</a>
+			</div>
+			
+			
+			<div class="article-next border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
+				<a class="next" rel="next" href="/2026/06/27/2026-06-27-bms-engineering-evaluation-report/">
+					<span class="title flex justify-center items-center">
+						<span class="post-nav-title-item truncate max-w-48">BMS工程专业评价报告</span>
+						<span class="post-nav-item">下一篇</span>
+					</span>
+					<span class="right arrow-icon flex justify-center items-center">
+						<i class="fa-solid fa-chevron-right"></i>
+					</span>
+				</a>
+			</div>
+			
+		</div>
+		
+
+
+		
+		<div class="comment-container px-2 sm:px-6 md:px-8 pb-8">
+			<div class="comments-container mt-10 w-full ">
+    <div id="comment-anchor" class="w-full h-2.5"></div>
+    <div class="comment-area-title w-full my-1.5 md:my-2.5 text-xl md:text-3xl font-bold">
+        评论
+    </div>
+    
+
+        
+            
+    <div id="waline"></div>
+    <script type="module" data-swup-reload-script>
+      import { init } from '/js/libs/waline.js';
+
+      (function() {
+        const startPath = location.pathname;
+        const startTime = Date.now();
+        const retryDelay = 200;
+        const retryLimit = 5000;
+
+        const runWaline = () => {
+          if (location.pathname !== startPath) {
+            return;
+          }
+
+          const container = document.getElementById('waline');
+          if (!container) {
+            if (Date.now() - startTime < retryLimit) {
+              setTimeout(runWaline, retryDelay);
+            }
+            return;
+          }
+
+          if (window.redefineWalineInstance?.destroy) {
+            window.redefineWalineInstance.destroy();
+          }
+
+          container.innerHTML = '';
+          window.redefineWalineInstance = init({
+            el: '#waline',
+            serverURL: 'https://example.example.com',
+            path: location.pathname,
+            dark: 'body[class~="dark-mode"]',
+            reaction: false,
+            requiredMeta: ['nick', 'mail'],
+            emoji: [],
+                      lang: 'zh-CN',
+          });
+        };
+
+        runWaline();
+      })();
+    </script>
+
+
+
+        
+    
+</div>
+
+		</div>
+		
+	</div>
+
+	
+	<div class="toc-content-container">
+		<div class="post-toc-wrap">
+	<div class="post-toc">
+		<div class="toc-title">目录</div>
+		<div class="page-title">电池管理系统工程代码分析文档</div>
+		<ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%94%B5%E6%B1%A0%E7%AE%A1%E7%90%86%E7%B3%BB%E7%BB%9F%E5%B7%A5%E7%A8%8B%E4%BB%A3%E7%A0%81%E5%88%86%E6%9E%90%E6%96%87%E6%A1%A3"><span class="nav-text">电池管理系统工程代码分析文档</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%AE%E5%BD%95"><span class="nav-text">目录</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B7%A5%E7%A8%8B%E6%A6%82%E8%BF%B0"><span class="nav-text">工程概述</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A1%B9%E7%9B%AE%E4%BF%A1%E6%81%AF"><span class="nav-text">项目信息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BB%E8%A6%81%E5%8A%9F%E8%83%BD"><span class="nav-text">主要功能</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84"><span class="nav-text">系统架构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84"><span class="nav-text">目录结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B3%BB%E7%BB%9F%E5%88%86%E5%B1%82%E6%9E%B6%E6%9E%84"><span class="nav-text">系统分层架构</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#RTOS%E8%BF%90%E8%A1%8C%E6%9C%BA%E5%88%B6"><span class="nav-text">RTOS运行机制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#FreeRTOS%E9%85%8D%E7%BD%AE"><span class="nav-text">FreeRTOS配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A1%E5%88%9B%E5%BB%BA%E4%B8%8E%E8%B0%83%E5%BA%A6"><span class="nav-text">任务创建与调度</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A1%E8%B0%83%E5%BA%A6%E6%B5%81%E7%A8%8B"><span class="nav-text">任务调度流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A1%E6%89%A7%E8%A1%8C%E6%97%B6%E5%BA%8F"><span class="nav-text">任务执行时序</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E6%A8%A1%E5%9D%97%E5%88%86%E6%9E%90"><span class="nav-text">核心模块分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E6%B5%8B%E9%87%8F%E9%87%87%E6%A0%B7%E6%A8%A1%E5%9D%97-Measurement"><span class="nav-text">1. 测量采样模块 (Measurement)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E6%95%B0%E6%8D%AE%E8%AE%A1%E7%AE%97%E6%A8%A1%E5%9D%97-DataCalc"><span class="nav-text">2. 数据计算模块 (DataCalc)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-%E6%95%85%E9%9A%9C%E8%AF%8A%E6%96%AD%E6%A8%A1%E5%9D%97-Diagnosis"><span class="nav-text">3. 故障诊断模块 (Diagnosis)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-%E9%80%9A%E4%BF%A1%E6%A8%A1%E5%9D%97"><span class="nav-text">4. 通信模块</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-%E5%8F%82%E6%95%B0%E7%AE%A1%E7%90%86%E6%A8%A1%E5%9D%97-Parameter"><span class="nav-text">5. 参数管理模块 (Parameter)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-%E8%AE%B0%E5%BD%95%E7%BB%9F%E8%AE%A1%E6%A8%A1%E5%9D%97"><span class="nav-text">6. 记录统计模块</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SOC%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3"><span class="nav-text">SOC算法详解</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#SOC-State-of-Charge-%E7%8A%B6%E6%80%81%E4%BC%B0%E7%AE%97"><span class="nav-text">SOC (State of Charge) 状态估算</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-SOC%E8%AE%A1%E7%AE%97%E6%9E%B6%E6%9E%84"><span class="nav-text">1. SOC计算架构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E6%A0%B8%E5%BF%83%E8%AE%A1%E7%AE%97%E6%96%B9%E6%B3%95"><span class="nav-text">2. 核心计算方法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-SOC%E4%BF%AE%E6%AD%A3%E7%AD%96%E7%95%A5"><span class="nav-text">3. SOC修正策略</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-SOC%E5%B9%B3%E6%BB%91%E6%98%BE%E7%A4%BA"><span class="nav-text">4. SOC平滑显示</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-SOC%E7%AE%97%E6%B3%95%E6%89%A7%E8%A1%8C%E6%B5%81%E7%A8%8B"><span class="nav-text">5. SOC算法执行流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-%E6%80%BB%E5%AE%B9%E9%87%8F%E8%87%AA%E5%8A%A8%E6%A0%87%E5%AE%9A"><span class="nav-text">6. 总容量自动标定</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SOH%E7%AE%97%E6%B3%95%E8%AF%A6%E8%A7%A3"><span class="nav-text">SOH算法详解</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#SOH-State-of-Health-%E5%81%A5%E5%BA%B7%E5%BA%A6%E8%AF%84%E4%BC%B0"><span class="nav-text">SOH (State of Health) 健康度评估</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-SOH%E8%AE%A1%E7%AE%97%E6%9E%B6%E6%9E%84"><span class="nav-text">1. SOH计算架构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-SOH%E8%AE%A1%E7%AE%97%E6%96%B9%E6%B3%95"><span class="nav-text">2. SOH计算方法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-SOH%E8%9E%8D%E5%90%88%E7%AD%96%E7%95%A5"><span class="nav-text">3. SOH融合策略</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-SOH%E8%AE%A1%E7%AE%97%E8%A7%A6%E5%8F%91%E6%9D%A1%E4%BB%B6"><span class="nav-text">4. SOH计算触发条件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-SOH%E6%98%BE%E7%A4%BA"><span class="nav-text">5. SOH显示</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B3%BB%E7%BB%9F%E8%BF%90%E8%A1%8C%E6%B5%81%E7%A8%8B"><span class="nav-text">系统运行流程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E7%B3%BB%E7%BB%9F%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B"><span class="nav-text">1. 系统启动流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E6%95%B0%E6%8D%AE%E9%87%87%E9%9B%86%E6%B5%81%E7%A8%8B"><span class="nav-text">2. 数据采集流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-SOC-SOH%E8%AE%A1%E7%AE%97%E6%B5%81%E7%A8%8B"><span class="nav-text">3. SOC&#x2F;SOH计算流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-%E4%BF%9D%E6%8A%A4%E6%8E%A7%E5%88%B6%E6%B5%81%E7%A8%8B"><span class="nav-text">4. 保护控制流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-%E9%80%9A%E4%BF%A1%E6%B5%81%E7%A8%8B"><span class="nav-text">5. 通信流程</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B3%E9%94%AE%E6%8E%A5%E5%8F%A3%E8%AF%B4%E6%98%8E"><span class="nav-text">关键接口说明</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-SOC%E7%9B%B8%E5%85%B3%E6%8E%A5%E5%8F%A3"><span class="nav-text">1. SOC相关接口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-SOH%E7%9B%B8%E5%85%B3%E6%8E%A5%E5%8F%A3"><span class="nav-text">2. SOH相关接口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-SOE%E7%9B%B8%E5%85%B3%E6%8E%A5%E5%8F%A3"><span class="nav-text">3. SOE相关接口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-%E7%94%B5%E6%B1%A0%E4%BF%A1%E6%81%AF%E6%8E%A5%E5%8F%A3"><span class="nav-text">4. 电池信息接口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-%E4%BF%9D%E6%8A%A4%E6%8E%A7%E5%88%B6%E6%8E%A5%E5%8F%A3"><span class="nav-text">5. 保护控制接口</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-text">总结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B3%BB%E7%BB%9F%E7%89%B9%E7%82%B9"><span class="nav-text">系统特点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B3%E9%94%AE%E6%8A%80%E6%9C%AF"><span class="nav-text">关键技术</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="nav-text">应用场景</span></a></li></ol></li></ol></li></ol>
+
+	</div>
+</div>
+	</div>
+	
+</div>
+
+			</div>
+
+			
+		</div>
+
+		<div class="main-content-footer">
+			<footer class="footer mt-5 py-5 h-auto text-base text-third-text-color relative border-t-2 border-t-border-color">
+    <div class="info-container py-3 text-center">
+        
+        <div class="text-center">
+            &copy;
+            
+              <span>2022</span>
+              -
+            
+            2026&nbsp;&nbsp;<i class="fa-solid fa-heart fa-beat" style="--fa-animation-duration: 0.5s; color: #f54545"></i>&nbsp;&nbsp;<a href="/">kuangyue111</a>
+            
+                
+                <p class="post-count space-x-0.5">
+                    <span>
+                        共撰写了 45 篇文章
+                    </span>
+                    
+                </p>
+            
+        </div>
+        
+            <script data-swup-reload-script src="https://cn.vercount.one/js"></script>
+            <div class="relative text-center lg:absolute lg:right-[20px] lg:top-1/2 lg:-translate-y-1/2 lg:text-right">
+                
+                    <span id="busuanzi_container_site_uv" class="lg:!block">
+                        <span class="text-sm">访问人数</span>
+                        <span id="busuanzi_value_site_uv"></span>
+                    </span>
+                
+                
+                    <span id="busuanzi_container_site_pv" class="lg:!block">
+                        <span class="text-sm">总访问量</span>
+                        <span id="busuanzi_value_site_pv"></span>
+                    </span>
+                
+            </div>
+        
+        <div class="relative text-center lg:absolute lg:left-[20px] lg:top-1/2 lg:-translate-y-1/2 lg:text-left">
+            <span class="lg:block text-sm">由 <?xml version="1.0" encoding="utf-8"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg class="relative top-[2px] inline-block align-baseline" version="1.1" id="圖層_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="1rem" height="1rem" viewBox="0 0 512 512" enable-background="new 0 0 512 512" xml:space="preserve"><path fill="#0E83CD" d="M256.4,25.8l-200,115.5L56,371.5l199.6,114.7l200-115.5l0.4-230.2L256.4,25.8z M349,354.6l-18.4,10.7l-18.6-11V275H200v79.6l-18.4,10.7l-18.6-11v-197l18.5-10.6l18.5,10.8V237h112v-79.6l18.5-10.6l18.5,10.8V354.6z"/></svg><a target="_blank" class="text-base" href="https://hexo.io">Hexo</a> 驱动</span>
+            <span class="text-sm lg:block">主题&nbsp;<a class="text-base" target="_blank" href="https://github.com/EvanNotFound/hexo-theme-redefine">Redefine v2.9.0</a></span>
+        </div>
+        
+        
+            <div>
+                博客已运行 <span class="odometer" id="runtime_days" ></span> 天 <span class="odometer" id="runtime_hours"></span> 小时 <span class="odometer" id="runtime_minutes"></span> 分钟 <span class="odometer" id="runtime_seconds"></span> 秒
+            </div>
+        
+        
+            <script data-swup-reload-script>
+                try {
+                    function odometer_init() {
+                    const elements = document.querySelectorAll('.odometer');
+                    elements.forEach(el => {
+                        new Odometer({
+                            el,
+                            format: '( ddd).dd',
+                            duration: 200
+                        });
+                    });
+                    }
+                    odometer_init();
+                } catch (error) {}
+            </script>
+        
+        
+        
+    </div>  
+</footer>
+		</div>
+	</div>
+
+	
+	<div class="post-tools">
+		<div class="post-tools-container">
+	<ul class="article-tools-list">
+		<!-- TOC aside toggle -->
+		
+		<li class="right-bottom-tools page-aside-toggle">
+			<i class="fa-regular fa-outdent"></i>
+		</li>
+		
+
+		<!-- go comment -->
+		
+		<li class="go-comment">
+			<i class="fa-regular fa-comments"></i>
+		</li>
+		
+	</ul>
+</div>
+	</div>
+	
+
+	<div class="right-side-tools-container">
+		<div class="side-tools-container">
+	<ul class="hidden-tools-list">
+		<li class="right-bottom-tools tool-font-adjust-plus flex justify-center items-center">
+			<i class="fa-regular fa-magnifying-glass-plus"></i>
+		</li>
+
+		<li class="right-bottom-tools tool-font-adjust-minus flex justify-center items-center">
+			<i class="fa-regular fa-magnifying-glass-minus"></i>
+		</li>
+
+		<li class="right-bottom-tools tool-dark-light-toggle flex justify-center items-center">
+			<i class="fa-regular fa-moon"></i>
+		</li>
+
+		<!-- rss -->
+		
+
+		
+
+		<li class="right-bottom-tools tool-scroll-to-bottom flex justify-center items-center">
+			<i class="fa-regular fa-arrow-down"></i>
+		</li>
+	</ul>
+
+	<ul class="visible-tools-list">
+		<li class="right-bottom-tools toggle-tools-list flex justify-center items-center">
+			<i class="fa-regular fa-cog fa-spin"></i>
+		</li>
+		
+		<li class="right-bottom-tools tool-scroll-to-top flex justify-center items-center">
+			<i class="arrow-up fas fa-arrow-up"></i>
+			<span class="percent"></span>
+		</li>
+		
+		
+	</ul>
+</div>
+	</div>
+
+	<div class="image-viewer-container" role="dialog" aria-modal="true" aria-label="图片查看器">
+	<button class="image-viewer-close" type="button" aria-label="关闭">
+		<i class="fa-solid fa-xmark"></i>
+	</button>
+	<button class="image-viewer-prev" type="button" aria-label="上一页">
+		<i class="fa-solid fa-chevron-left"></i>
+	</button>
+	<div class="image-viewer-frame">
+		<img src="" alt="">
+	</div>
+	<div class="image-viewer-exif-panel hidden absolute left-1/2 bottom-20 -translate-x-1/2 w-[min(92vw,420px)] max-h-[60vh] overflow-hidden rounded-2xl bg-background-color-transparent-80 p-4 text-left shadow-redefine-flat backdrop-blur-md" role="dialog" aria-label="EXIF" aria-hidden="true">
+		<div class="flex items-center justify-between mb-3">
+			<span class="text-sm font-semibold text-first-text-color">EXIF</span>
+			<button class="image-viewer-exif-close flex h-8 w-8 items-center justify-center rounded-full bg-background-color-transparent-80 text-first-text-color transition hover:bg-background-color-transparent-40" type="button" aria-label="关闭">
+				<i class="fa-solid fa-xmark text-[0.65rem]"></i>
+			</button>
+		</div>
+		<div class="image-viewer-exif-cards grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto pr-1 scrollbar-hide"></div>
+		<template class="image-viewer-exif-card-template">
+			<div class="rounded-lg bg-background-color-transparent-40 px-3 py-2">
+				<div class="image-viewer-exif-card-header flex items-center gap-2 mb-1">
+					<i class="image-viewer-exif-card-icon fa-solid fa-circle-info text-xs text-third-text-color"></i>
+					<div class="image-viewer-exif-card-title text-xs font-semibold text-first-text-color"></div>
+				</div>
+				<div class="image-viewer-exif-card-items flex flex-col gap-1"></div>
+			</div>
+		</template>
+	</div>
+	<button class="image-viewer-exif-toggle flex items-center gap-2 hidden absolute left-1/2 bottom-6 -translate-x-1/2 rounded-full border border-border-color bg-background-color-transparent-80 px-4 py-2 text-first-text-color backdrop-blur-md transition hover:bg-background-color-transparent-40" type="button" aria-label="EXIF" aria-expanded="false">
+		<i class="fa-solid fa-circle-info text-xs"></i>
+		<span class="text-xs font-semibold uppercase tracking-wider">EXIF</span>
+	</button>
+	<button class="image-viewer-next" type="button" aria-label="下一页">
+		<i class="fa-solid fa-chevron-right"></i>
+	</button>
+</div>
+
+
+	
+
+</main>
+
+
+
+<script src="/js/build/libs/Swup.min.js"></script>
+
+<script src="/js/build/libs/SwupSlideTheme.min.js"></script>
+
+<script src="/js/build/libs/SwupScriptsPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupProgressPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupScrollPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupPreloadPlugin.min.js"></script>
+
+<script>
+    window.swup = new Swup({
+        plugins: [
+            new SwupScriptsPlugin({
+                optin: true,
+            }),
+            new SwupProgressPlugin(),
+            new SwupScrollPlugin({
+                offset: 80,
+            }),
+            new SwupSlideTheme({
+                mainElement: ".main-content-body",
+            }),
+            new SwupPreloadPlugin(),
+        ],
+        containers: ["#swup"],
+    });
+
+    window.dispatchEvent(
+        new CustomEvent("redefine:swup:ready", {
+            detail: {
+                swup: window.swup,
+            },
+        }),
+    );
+</script>
+
+
+
+
+	
+<script src="/js/build/main.js" type="module"></script>
+
+
+
+    
+<script src="/js/build/libs/odometer.min.js"></script>
+
+    
+<link rel="stylesheet" href="/assets/odometer-theme-minimal.css">
+
+
+
+
+
+
+
+  
+<script src="/js/build/libs/Typed.min.js"></script>
+
+
+
+
+
+
+
+
+
+
+<script src="/js/build/libs/moment-with-locales.min.js" data-swup-reload-script=""></script>
+
+
+
+	
+</body>
+
+</html>

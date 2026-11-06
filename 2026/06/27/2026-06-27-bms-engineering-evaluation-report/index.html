@@ -1,0 +1,1612 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="keywords" content="Hexo Theme Redefine">
+    
+    
+    <meta name="author" content="kuangyue111">
+    
+    <!-- Completely eliminate flash of wrong theme -->
+    <script>
+        (function() {
+            const THEME_KEY = "REDEFINE-THEME-STATUS";
+            const DARK = "dark", LIGHT = "light";
+            
+            // Get preferred theme
+            function getTheme() {
+                try {
+                    const saved = localStorage.getItem(THEME_KEY);
+                    if (saved) {
+                        const { isDark } = JSON.parse(saved);
+                        return isDark ? DARK : LIGHT;
+                    }
+                } catch (e) {}
+                
+                return matchMedia("(prefers-color-scheme: dark)").matches ? DARK : LIGHT;
+            }
+            
+            // Apply theme to document
+            function applyTheme(theme) {
+                const isDark = theme === DARK;
+                const root = document.documentElement;
+                
+                // Set classes for compatibility
+                root.classList.add(theme);
+                root.classList.remove(isDark ? LIGHT : DARK);
+                root.style.colorScheme = theme;
+            }
+            
+            // Initial application
+            const theme = getTheme();
+            applyTheme(theme);
+            
+            // Listen for system preference changes
+            matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ({ matches }) => {
+                // Only update if using system preference (no localStorage entry)
+                if (!localStorage.getItem(THEME_KEY)) {
+                    applyTheme(matches ? DARK : LIGHT);
+                }
+            });
+            
+            // Set body classes ASAP (before DOMContentLoaded)
+            (function() {
+                const addBodyClass = () => {
+                    const b = document.body;
+                    if (!b) return false;
+                    b.classList.add(theme + "-mode");
+                    return true;
+                };
+
+                // Try immediately
+                if (addBodyClass()) return;
+
+                // Observe until body exists
+                const mo = new MutationObserver(() => {
+                    if (addBodyClass()) mo.disconnect();
+                });
+                mo.observe(document.documentElement, { childList: true, subtree: true });
+            })();
+        })();
+    </script>
+    
+    <!-- preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    
+    <!--- Seo Part-->
+    
+    <link rel="canonical" href="https://kuangyue111.github.io/2026/06/27/2026-06-27-bms-engineering-evaluation-report/"/>
+    <meta name="robots" content="index,follow">
+    <meta name="googlebot" content="index,follow">
+    <meta name="revisit-after" content="1 days">
+    
+    
+        
+        <meta name="description" content="Hexo Theme Redefine, Redefine Your Hexo Journey.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="BMS工程专业评价报告">
+<meta property="og:url" content="https://kuangyue111.github.io/2026/06/27/2026-06-27-bms-engineering-evaluation-report/index.html">
+<meta property="og:site_name" content="KuangYue&#39;s Blog">
+<meta property="og:description" content="Hexo Theme Redefine, Redefine Your Hexo Journey.">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://kuangyue111.github.io/images/redefine-og.webp">
+<meta property="article:published_time" content="2026-06-27T08:00:00.000Z">
+<meta property="article:modified_time" content="2026-06-27T09:54:14.435Z">
+<meta property="article:author" content="kuangyue111">
+<meta property="article:tag" content="嵌入式">
+<meta property="article:tag" content="BMS">
+<meta property="article:tag" content="FreeRTOS">
+<meta property="article:tag" content="系统架构">
+<meta property="article:tag" content="工程评价">
+<meta property="article:tag" content="代码质量">
+<meta property="article:tag" content="SOC算法">
+<meta property="article:tag" content="SOH算法">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://kuangyue111.github.io/images/redefine-og.webp">
+    
+    
+    <!--- Icon Part-->
+    <link rel="icon" type="image/png" href="/images/redefine-favicon.svg" sizes="192x192">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/redefine-favicon.svg">
+    <meta name="theme-color" content="#A31F34">
+    <link rel="shortcut icon" href="/images/redefine-favicon.svg">
+    <!--- Page Info-->
+    
+    <title>
+        
+            BMS工程专业评价报告 | KuangYue&#39;s Blog
+        
+    </title>
+
+    
+<link rel="stylesheet" href="/fonts/Chillax/chillax.css">
+
+
+    <!--- Inject Part-->
+    
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+        
+<link rel="stylesheet" href="/css/build/tailwind.css">
+
+    
+
+    
+<link rel="stylesheet" href="/fonts/GeistMono/geist-mono.css">
+
+    
+<link rel="stylesheet" href="/fonts/Geist/geist.css">
+
+    <!--- Font Part-->
+    
+    
+    
+    
+    
+    
+
+    <script id="hexo-configurations">
+    window.config = {"hostname":"kuangyue111.github.io","root":"/","language":"zh-CN"};
+    window.theme = {"articles":{"style":{"font_size":"16px","line_height":1.5,"image_border_radius":"14px","image_alignment":"center","image_caption":false,"link_icon":true,"delete_mask":false,"title_alignment":"left","headings_top_spacing":{"h1":"3.2rem","h2":"2.4rem","h3":"1.9rem","h4":"1.6rem","h5":"1.4rem","h6":"1.3rem"}},"word_count":{"enable":true,"count":true,"min2read":true},"author_label":{"enable":true,"auto":false,"list":[]},"code_block":{"copy":true,"style":"mac","highlight_theme":{"light":"github","dark":"vs2015"},"font":{"enable":false,"family":null,"url":null}},"toc":{"enable":true,"max_depth":3,"number":false,"expand":true,"init_open":true},"copyright":{"enable":true,"default":"cc_by_nc_sa"},"lazyload":true,"pangu_js":false,"recommendation":{"enable":false,"title":"推荐阅读","limit":3,"mobile_limit":2,"placeholder":"/images/wallhaven-wqery6-light.webp","skip_dirs":[]}},"colors":{"primary":"#A31F34","secondary":null,"default_mode":"light"},"global":{"fonts":{"chinese":{"enable":false,"family":null,"url":null},"english":{"enable":false,"family":null,"url":null},"title":{"enable":false,"family":null,"url":null}},"content_max_width":"1000px","sidebar_width":"210px","hover":{"shadow":true,"scale":false},"scroll_progress":{"bar":false,"percentage":true},"website_counter":{"url":"https://cn.vercount.one/js","enable":true,"site_pv":true,"site_uv":true,"post_pv":true},"single_page":true,"preloader":{"enable":false,"custom_message":null},"side_tools":{"gear_rotation":true,"auto_expand":false},"open_graph":{"enable":true,"image":"/images/redefine-og.webp","description":"Hexo Theme Redefine, Redefine Your Hexo Journey."},"google_analytics":{"enable":false,"id":null}},"home_banner":{"enable":true,"style":"fixed","image":{"light":"/images/wallhaven-wqery6-light.webp","dark":"/images/wallhaven-wqery6-dark.webp"},"title":"KuangYue's Blog","subtitle":{"text":["专注储能系统与嵌入式开发","记录 NCCU 控制单元架构演进","探索工业物联网与云端对接"],"hitokoto":{"enable":false,"show_author":false,"api":"https://v1.hitokoto.cn"},"typing_speed":100,"backing_speed":80,"starting_delay":500,"backing_delay":1500,"loop":true,"smart_backspace":true},"text_color":{"light":"#fff","dark":"#d1d1b6"},"text_style":{"title_size":"2.8rem","subtitle_size":"1.5rem","line_height":1.2},"custom_font":{"enable":false,"family":null,"url":null},"social_links":{"enable":true,"style":"default","links":[{"icon":"fa-brands fa-github","url":"https://github.com/kuangyue111"},{"icon":"fa-brands fa-twitter","url":null},{"icon":"fa-solid fa-at","url":"you@example.com"},{"icon":"fa-brands fa-telegram","url":null},{"icon":"/images/custom-icon.svg","url":null}],"qrs":[{"icon":"fa-brands fa-weixin","qr":null},{"icon":"/images/custom-icon.svg","qr":null}]}},"plugins":{"feed":{"enable":false},"aplayer":{"enable":false,"type":"fixed","audios":[{"name":null,"artist":null,"url":null,"cover":null,"lrc":null}]},"mermaid":{"theme":{"light":"default","dark":"dark"}},"katex":false,"chart":false},"version":"2.9.0","code_block":{"theme":"light","macStyle":false,"shrink":false,"copy_button":true,"language":true},"navbar":{"auto_hide":false,"color":{"left":"#f78736","right":"#367df7","transparency":35},"width":{"home":"1200px","pages":"1000px"},"links":{"Home":{"path":"/","icon":"fa-regular fa-house"},"Archives":{"path":"/archives/","icon":"fa-regular fa-archive"},"Tags":{"path":"/tags/","icon":"fa-regular fa-tags"},"Categories":{"path":"/categories/","icon":"fa-regular fa-folder"},"About":{"icon":"fa-regular fa-user","submenus":{"Me":"/about/","GitHub":"https://github.com/kuangyue111"}}},"search":{"enable":false,"preload":true}},"page_templates":{"friends_column":2,"tags_style":"blur","masonry":{"batch_size":12,"initial_batch_size":24}},"home":{"sidebar":{"enable":true,"position":"left","first_item":"menu","announcement":"专注于嵌入式与储能系统技术分享","show_on_mobile":true,"links":{"Archives":{"path":"/archives/","icon":"fa-regular fa-archive"},"Tags":{"path":"/tags/","icon":"fa-regular fa-tags"},"Categories":{"path":"/categories/","icon":"fa-regular fa-folder"}}},"article_date_format":"auto","excerpt_length":200,"categories":{"enable":true,"limit":3},"tags":{"enable":true,"limit":3}},"footer":{"runtime":true,"icon":"<i class=\"fa-solid fa-heart fa-beat\" style=\"--fa-animation-duration: 0.5s; color: #f54545\"></i>","start":"2022/8/17 11:45:14","statistics":true,"customize":null,"icp":{"enable":false,"number":null,"url":null},"since":2025,"custom":null,"copyright":true,"theme":{"enable":true},"counter":true},"footerStart":"2022/8/17 11:45:14","mermaid":{"style":{"light":"default","dark":"dark"}}};
+    window.lang_ago = {"second":"%s 秒前","minute":"%s 分钟前","hour":"%s 小时前","day":"%s 天前","week":"%s 周前","month":"%s 个月前","year":"%s 年前"};
+    window.i18n = {"search":"站内搜索您需要的内容...","toc":"目录","prev":"上一页","next":"下一页","prev_posts":"上一篇","next_posts":"下一篇","page":"第 %d 页","recent_posts":"最新文章","share":"分享","powered_by":"由 %s 驱动","theme":"主题","rss_feed":"RSS Feed","category":"分类","categories":"分类","tag":"标签","tags":"标签","post":"文章","posts":"文章","tagcloud":"标签云","comment":"评论","comments":"评论","top":"置顶","sticky":"置顶","go-back-home":"回到首页","masonry_loading":"照片加载中...","image_viewer":"图片查看器","close":"关闭","exif":{"title":"EXIF","cards":{"camera":"相机","lens":"镜头","exposure":"曝光","other":"其他"},"fields":{"make":"品牌","model":"机型","date_taken":"拍摄时间","lens_model":"镜头","focal_length":"焦距","focus_mode":"对焦模式","shutter":"快门","aperture":"光圈","iso":"感光度","exposure_program":"曝光程序","exposure_compensation":"曝光补偿","metering_mode":"测光模式","flash":"闪光灯","white_balance":"白平衡","latitude":"纬度","longitude":"经度","altitude":"海拔"},"status":{"loading":"加载中...","no_exif":"无 EXIF 信息","library_missing":"EXIF 库未加载","image_source_missing":"图片地址不可用","unavailable":"EXIF 不可用（可能被 CORS 阻止或缺少元数据）","flag_unavailable":"EXIF 不可用"}},"home":"首页","archive":"归档","archives":"归档","about":"关于","links":"链接","link":"链接","friends":"友情链接","friend":"友情链接","timeline":"时间轴","shuoshuo":"说说","bookmarks":"书签","site_uv":"访问人数","site_pv":"总访问量","read_more":"阅读全文","wordcount":"字","min2read":"分钟","changelog":"更新日志","status":"状态","runtime":"博客已运行","days":"天","hours":"小时","minutes":"分钟","seconds":"秒","optimized_by":"并由 Evan 进行优化","rights":"版权所有","site_posts":"共撰写了 %s 篇文章","site_wordcount":"共 %s 字","copyright":{"title":"标题","author":"作者","link":"链接","create_time":"创建于","update_time":"更新于","license_title":"版权声明","license_content":"本文章采用 %s 进行许可。","all_rights_reserved":"版权所有 &#169 %s，禁止转载。","public_domain":"本文为公有领域作品，可自由转载、引用。"},"ago":{"second":"%s 秒前","minute":"%s 分钟前","hour":"%s 小时前","day":"%s 天前","week":"%s 周前","month":"%s 个月前","year":"%s 年前"},"create_time":"创建","update_time":"更新","expired":"这篇文章最后更新于 %s 天前，内容可能已经过时。"};
+    window.data = {"masonry":false};
+  </script>
+    
+    <!--- Fontawesome Part-->
+    
+<link rel="stylesheet" href="/fontawesome/fontawesome.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/brands.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/solid.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/regular.min.css">
+
+    
+    
+    
+    
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+	<div class="progress-bar-container">
+	
+
+	
+	<span class="pjax-progress-bar"></span>
+	<!--        <span class="swup-progress-icon">-->
+	<!--            <i class="fa-solid fa-circle-notch fa-spin"></i>-->
+	<!--        </span>-->
+	
+</div>
+
+<main class="page-container" id="swup">
+
+	
+
+	<div class="main-content-container flex flex-col justify-between min-h-dvh">
+		<div class="main-content-header">
+			<header class="navbar-container px-6 md:px-12">
+    <div class="navbar-content transition-navbar ">
+        <div class="left">
+            
+            <a class="logo-title" href="/">
+                
+                KuangYue&#39;s Blog
+                
+            </a>
+        </div>
+
+        <div class="right">
+            <!-- PC -->
+            <div class="desktop">
+                <ul class="navbar-list">
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/"
+                                        >
+                                    <i class="fa-regular fa-house fa-fw"></i>
+                                    首页
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/archives/"
+                                        >
+                                    <i class="fa-regular fa-archive fa-fw"></i>
+                                    归档
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/tags/"
+                                        >
+                                    <i class="fa-regular fa-tags fa-fw"></i>
+                                    标签
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/categories/"
+                                        >
+                                    <i class="fa-regular fa-folder fa-fw"></i>
+                                    分类
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class="has-dropdown"
+                                   href="#"
+                                        onClick=&#34;return false;&#34;>
+                                    <i class="fa-regular fa-user fa-fw"></i>
+                                    关于
+                                    <i class="fa-solid fa-chevron-down fa-fw"></i>
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                                    <ul class="sub-menu">
+                                        
+                                            <li>
+                                                <a href="/about/">
+                                                    ME
+                                                </a>
+                                            </li>
+                                        
+                                            <li>
+                                                <a target="_blank" rel="noopener" href="https://github.com/kuangyue111">
+                                                    GITHUB
+                                                </a>
+                                            </li>
+                                        
+                                    </ul>
+                                
+                            </li>
+                    
+                    
+                </ul>
+            </div>
+            <!-- Mobile -->
+            <div class="mobile">
+                
+                <div class="icon-item navbar-bar">
+                    <div class="navbar-bar-middle"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile sheet -->
+    <div class="navbar-drawer h-dvh w-full absolute top-0 left-0 bg-background-color flex flex-col justify-between">
+        <ul class="drawer-navbar-list flex flex-col px-4 justify-center items-start">
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/"
+                        >
+                            <span>
+                                首页
+                            </span>
+                            
+                                <i class="fa-regular fa-house fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/archives/"
+                        >
+                            <span>
+                                归档
+                            </span>
+                            
+                                <i class="fa-regular fa-archive fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/tags/"
+                        >
+                            <span>
+                                标签
+                            </span>
+                            
+                                <i class="fa-regular fa-tags fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/categories/"
+                        >
+                            <span>
+                                分类
+                            </span>
+                            
+                                <i class="fa-regular fa-folder fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item-sub text-base my-1.5 flex flex-col w-full">
+                        
+                        <div class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary cursor-pointer text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                             navbar-data-toggle="submenu-About"
+                        >
+                            <span>
+                                关于
+                            </span>
+                            
+                                <i class="fa-solid fa-chevron-right fa-sm fa-fw transition-all"></i>
+                            
+                        </div>
+                        
+
+                        
+                            <div class="flex-col items-start px-2 py-2 hidden" data-target="submenu-About">
+                                
+                                    <div class="drawer-navbar-item text-base flex flex-col justify-center items-start hover:underline active:underline hover:underline-offset-1 rounded-3xl">
+                                        <a class=" text-third-text-color text-xl"
+                                           href="/about/">ME</a>
+                                    </div>
+                                
+                                    <div class="drawer-navbar-item text-base flex flex-col justify-center items-start hover:underline active:underline hover:underline-offset-1 rounded-3xl">
+                                        <a class=" text-third-text-color text-xl"
+                                           target="_blank" rel="noopener" href="https://github.com/kuangyue111">GITHUB</a>
+                                    </div>
+                                
+                            </div>
+                        
+                    </li>
+            
+
+            
+            
+                
+                    
+                    
+                    
+            
+        </ul>
+
+        <div class="statistics flex justify-around my-2.5">
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/tags">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">194</div>
+        <div class="label text-third-text-color text-sm">标签</div>
+    </a>
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/categories">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">16</div>
+        <div class="label text-third-text-color text-sm">分类</div>
+    </a>
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/archives">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">45</div>
+        <div class="label text-third-text-color text-sm">文章</div>
+    </a>
+</div>
+    </div>
+
+    <div class="window-mask"></div>
+
+</header>
+
+
+		</div>
+
+		<div class="main-content-body transition-fade-up">
+			
+
+			<div class="main-content">
+				<div class="post-page-container flex relative justify-between box-border w-full h-full">
+	<div class="article-content-container">
+
+		<div class="article-title relative w-full">
+			
+			<div class="w-full flex items-center pt-6 justify-start">
+				<h1 class="article-title-regular text-second-text-color tracking-tight text-4xl md:text-6xl font-semibold px-2 sm:px-6 md:px-8 py-3">BMS工程专业评价报告</h1>
+			</div>
+			
+		</div>
+
+		
+		<div class="article-header flex flex-row gap-2 items-center px-2 sm:px-6 md:px-8">
+			<div class="avatar w-[46px] h-[46px] shrink-0 rounded-medium border border-border-color p-px">
+				<img src="/images/redefine-avatar.svg">
+			</div>
+			<div class="info flex flex-col justify-between">
+				<div class="author flex items-center">
+					<span class="name text-default-text-color text-lg font-semibold">kuangyue111</span>
+					
+					<span class="author-label ml-1.5 text-xs px-2 py-0.5 rounded-small text-third-text-color border border-shadow-color-1">Lv4</span>
+					
+				</div>
+				<div class="meta-info">
+					<div class="article-meta-info">
+    <span class="article-date article-meta-item">
+        <i class="fa-regular fa-pen-fancy"></i>&nbsp;
+        <span class="desktop">2026-06-27 16:00</span>
+        <span class="mobile">2026-06-27 16:00</span>
+        <span class="hover-info">创建</span>
+    </span>
+    
+        <span class="article-date article-meta-item">
+            <i class="fa-regular fa-wrench"></i>&nbsp;
+            <span class="desktop">2026-06-27 17:54:14</span>
+            <span class="mobile">2026-06-27 17:54:14</span>
+            <span class="hover-info">更新</span>
+        </span>
+    
+
+    
+        <span class="article-categories article-meta-item">
+            <i class="fa-regular fa-folders"></i>&nbsp;
+            <ul>
+                
+                
+                    
+                        
+                        <li>
+                            <a href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/">技术分享</a>&nbsp;
+                        </li>
+                    
+                    
+                
+                    
+                        
+                            <li>></li>
+                        
+                        <li>
+                            <a href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/%E5%B5%8C%E5%85%A5%E5%BC%8F%E5%BC%80%E5%8F%91/">嵌入式开发</a>&nbsp;
+                        </li>
+                    
+                    
+                
+            </ul>
+        </span>
+    
+    
+        <span class="article-tags article-meta-item">
+            <i class="fa-regular fa-tags"></i>&nbsp;
+            <ul>
+                
+                    <li>
+                        <a href="/tags/%E5%B5%8C%E5%85%A5%E5%BC%8F/">嵌入式</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/BMS/">BMS</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/FreeRTOS/">FreeRTOS</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/">系统架构</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E5%B7%A5%E7%A8%8B%E8%AF%84%E4%BB%B7/">工程评价</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E4%BB%A3%E7%A0%81%E8%B4%A8%E9%87%8F/">代码质量</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/SOC%E7%AE%97%E6%B3%95/">SOC算法</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/SOH%E7%AE%97%E6%B3%95/">SOH算法</a>&nbsp;
+                    </li>
+                
+            </ul>
+        </span>
+    
+
+    
+    
+    
+    
+        <span class="article-pv article-meta-item">
+            <i class="fa-regular fa-eye"></i>&nbsp;<span id="busuanzi_value_page_pv"></span>
+        </span>
+    
+</div>
+
+				</div>
+			</div>
+		</div>
+		
+
+		
+
+
+		<div class="article-content markdown-body px-2 sm:px-6 md:px-8 pb-8">
+			<h1 id="BMS工程专业评价报告"><a href="#BMS工程专业评价报告" class="headerlink" title="BMS工程专业评价报告"></a>BMS工程专业评价报告</h1><h2 id="一、总体评价"><a href="#一、总体评价" class="headerlink" title="一、总体评价"></a>一、总体评价</h2><h3 id="1-1-专业性评分"><a href="#1-1-专业性评分" class="headerlink" title="1.1 专业性评分"></a>1.1 专业性评分</h3><table>
+<thead>
+<tr>
+<th>评价维度</th>
+<th>评分</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>算法实现</strong></td>
+<td>⭐⭐⭐⭐☆ (4&#x2F;5)</td>
+<td>SOC&#x2F;SOH算法较为专业，但缺少高级算法</td>
+</tr>
+<tr>
+<td><strong>系统架构</strong></td>
+<td>⭐⭐⭐⭐⭐ (5&#x2F;5)</td>
+<td>分层清晰，模块化设计优秀</td>
+</tr>
+<tr>
+<td><strong>安全保护</strong></td>
+<td>⭐⭐⭐⭐☆ (4&#x2F;5)</td>
+<td>保护机制完善，但部分细节可优化</td>
+</tr>
+<tr>
+<td><strong>功能完整性</strong></td>
+<td>⭐⭐⭐⭐☆ (4&#x2F;5)</td>
+<td>核心功能齐全，部分高级功能缺失</td>
+</tr>
+<tr>
+<td><strong>代码质量</strong></td>
+<td>⭐⭐⭐⭐☆ (4&#x2F;5)</td>
+<td>代码规范，注释清晰，但部分可优化</td>
+</tr>
+<tr>
+<td><strong>实时性</strong></td>
+<td>⭐⭐⭐⭐⭐ (5&#x2F;5)</td>
+<td>RTOS任务调度合理，实时性良好</td>
+</tr>
+</tbody></table>
+<p><strong>综合评分</strong>: ⭐⭐⭐⭐☆ (4.2&#x2F;5) - <strong>专业级BMS系统</strong></p>
+<hr>
+<h2 id="二、优点分析"><a href="#二、优点分析" class="headerlink" title="二、优点分析"></a>二、优点分析</h2><h3 id="2-1-系统架构优势-✅"><a href="#2-1-系统架构优势-✅" class="headerlink" title="2.1 系统架构优势 ✅"></a>2.1 系统架构优势 ✅</h3><h4 id="1-清晰的分层架构"><a href="#1-清晰的分层架构" class="headerlink" title="1. 清晰的分层架构"></a>1. <strong>清晰的分层架构</strong></h4><div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">应用层 → 功能层 → BSP层 → RTOS层 → 硬件层</span><br></pre></td></tr></table></figure></div>
+<ul>
+<li><strong>优点</strong>: 层次分明，便于维护和扩展</li>
+<li><strong>专业评价</strong>: 符合嵌入式系统设计最佳实践</li>
+</ul>
+<h4 id="2-模块化设计"><a href="#2-模块化设计" class="headerlink" title="2. 模块化设计"></a>2. <strong>模块化设计</strong></h4><ul>
+<li>各功能模块独立，接口清晰</li>
+<li>便于单元测试和功能验证</li>
+<li>符合软件工程模块化原则</li>
+</ul>
+<h4 id="3-RTOS任务调度合理"><a href="#3-RTOS任务调度合理" class="headerlink" title="3. RTOS任务调度合理"></a>3. <strong>RTOS任务调度合理</strong></h4><ul>
+<li>10个不同周期的定时器任务，覆盖5ms-2000ms</li>
+<li>6个独立实时任务处理采样和通信</li>
+<li>任务优先级设置合理</li>
+</ul>
+<h3 id="2-2-SOC算法优势-✅"><a href="#2-2-SOC算法优势-✅" class="headerlink" title="2.2 SOC算法优势 ✅"></a>2.2 SOC算法优势 ✅</h3><h4 id="1-多源融合算法"><a href="#1-多源融合算法" class="headerlink" title="1. 多源融合算法"></a>1. <strong>多源融合算法</strong></h4><div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 温度修正 + 电压末端修正 + 安时积分融合</span></span><br><span class="line">calcSoc = (sTCapCorrSoc + sVStepCorrSoc + nowSoc) / <span class="number">3</span>;</span><br></pre></td></tr></table></figure></div>
+<ul>
+<li><strong>优点</strong>: <ul>
+<li>结合了安时积分、温度修正、电压修正三种方法</li>
+<li>多源融合提高SOC估算精度</li>
+<li>修正策略考虑了误差范围，避免跳变</li>
+</ul>
+</li>
+</ul>
+<h4 id="2-温度修正"><a href="#2-温度修正" class="headerlink" title="2. 温度修正"></a>2. <strong>温度修正</strong></h4><ul>
+<li>考虑了温度对容量的影响</li>
+<li>使用温度-容量百分比表进行修正</li>
+<li>符合锂电池特性</li>
+</ul>
+<h4 id="3-电压末端修正"><a href="#3-电压末端修正" class="headerlink" title="3. 电压末端修正"></a>3. <strong>电压末端修正</strong></h4><ul>
+<li>充放电末端使用线性插值修正SOC</li>
+<li>确保充放电截止时SOC平滑到达目标值</li>
+<li>使用K-B值计算，算法合理</li>
+</ul>
+<h4 id="4-总容量自动标定"><a href="#4-总容量自动标定" class="headerlink" title="4. 总容量自动标定"></a>4. <strong>总容量自动标定</strong></h4><ul>
+<li>通过完整充放电循环自动标定总容量</li>
+<li>考虑了电流和温度修正</li>
+<li>误差校验机制完善（20%误差范围）</li>
+</ul>
+<h4 id="5-SOC平滑显示"><a href="#5-SOC平滑显示" class="headerlink" title="5. SOC平滑显示"></a>5. <strong>SOC平滑显示</strong></h4><ul>
+<li>避免SOC跳变，用户体验好</li>
+<li>根据目标SOC与当前SOC差值动态调整步进</li>
+<li>不同SOC区间使用不同平滑速度</li>
+</ul>
+<h3 id="2-3-SOH算法优势-✅"><a href="#2-3-SOH算法优势-✅" class="headerlink" title="2.3 SOH算法优势 ✅"></a>2.3 SOH算法优势 ✅</h3><h4 id="1-双方法融合"><a href="#1-双方法融合" class="headerlink" title="1. 双方法融合"></a>1. <strong>双方法融合</strong></h4><div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 容量法 + 循环次数法</span></span><br><span class="line">capSoh = (totalCap × <span class="number">10</span>) / ratedCap;</span><br><span class="line">timSoh = <span class="number">1000</span> - (fadeCycle × <span class="number">200</span> / ratedCycle);</span><br></pre></td></tr></table></figure></div>
+<ul>
+<li><strong>优点</strong>: <ul>
+<li>容量法和循环次数法相互验证</li>
+<li>误差判断机制（误差&lt;&#x3D;5%时以循环次数法为准）</li>
+<li>SOH下降限制（每次最大下降0.5%），避免跳变</li>
+</ul>
+</li>
+</ul>
+<h3 id="2-4-保护机制优势-✅"><a href="#2-4-保护机制优势-✅" class="headerlink" title="2.4 保护机制优势 ✅"></a>2.4 保护机制优势 ✅</h3><h4 id="1-分级保护"><a href="#1-分级保护" class="headerlink" title="1. 分级保护"></a>1. <strong>分级保护</strong></h4><ul>
+<li>系统故障保护</li>
+<li>充放电保护</li>
+<li>充放电限制保护</li>
+<li>保护延时机制，避免误保护</li>
+</ul>
+<h4 id="2-接触器控制"><a href="#2-接触器控制" class="headerlink" title="2. 接触器控制"></a>2. <strong>接触器控制</strong></h4><div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 根据电流方向确定先断哪个接触器</span></span><br><span class="line"><span class="keyword">if</span>(eCURR_CHG == GetGChgDhgStateAPI()) &#123;</span><br><span class="line">    TacCtrlGroupSwhStateAPI(eGroupSwh_Neg, ePSTATE_OFF);  <span class="comment">// 先断负极</span></span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    TacCtrlGroupSwhStateAPI(eGroupSwh_Mai, ePSTATE_OFF);  <span class="comment">// 先断正极</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+<ul>
+<li><strong>优点</strong>: <ul>
+<li>根据充放电方向选择断开顺序</li>
+<li>接触器粘连检测</li>
+<li>电流切断验证</li>
+</ul>
+</li>
+</ul>
+<h4 id="3-重复保护机制"><a href="#3-重复保护机制" class="headerlink" title="3. 重复保护机制"></a>3. <strong>重复保护机制</strong></h4><ul>
+<li>10分钟内连续3次保护则不恢复</li>
+<li>防止频繁保护-恢复循环</li>
+<li>保护间隔1小时后允许再尝试</li>
+</ul>
+<h3 id="2-5-均衡控制优势-✅"><a href="#2-5-均衡控制优势-✅" class="headerlink" title="2.5 均衡控制优势 ✅"></a>2.5 均衡控制优势 ✅</h3><h4 id="1-压差积分均衡"><a href="#1-压差积分均衡" class="headerlink" title="1. 压差积分均衡"></a>1. <strong>压差积分均衡</strong></h4><div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 计算单体与最小值/平均值的压差积分</span></span><br><span class="line">sGBalanSubVolt[i] += ((s32)GetGCellVoltAPI(i) - (s32)GetGCellMinVoltAPI());</span><br></pre></td></tr></table></figure></div>
+<ul>
+<li><strong>优点</strong>: <ul>
+<li>使用积分而非瞬时值，更稳定</li>
+<li>被动均衡和主动均衡都支持</li>
+<li>均衡温度保护</li>
+</ul>
+</li>
+</ul>
+<h4 id="2-均衡策略"><a href="#2-均衡策略" class="headerlink" title="2. 均衡策略"></a>2. <strong>均衡策略</strong></h4><ul>
+<li>平台区和非平台区使用不同压差阈值</li>
+<li>均衡节数限制（最多8节）</li>
+<li>温度过高时关闭均衡</li>
+</ul>
+<h3 id="2-6-故障诊断优势-✅"><a href="#2-6-故障诊断优势-✅" class="headerlink" title="2.6 故障诊断优势 ✅"></a>2.6 故障诊断优势 ✅</h3><h4 id="1-多级故障诊断"><a href="#1-多级故障诊断" class="headerlink" title="1. 多级故障诊断"></a>1. <strong>多级故障诊断</strong></h4><ul>
+<li>A级故障（警告）</li>
+<li>B级故障（保护）</li>
+<li>故障滤波机制，避免误报</li>
+</ul>
+<h4 id="2-安全等级（SOS）"><a href="#2-安全等级（SOS）" class="headerlink" title="2. 安全等级（SOS）"></a>2. <strong>安全等级（SOS）</strong></h4><ul>
+<li>0-4级安全等级</li>
+<li>根据故障严重程度分级</li>
+</ul>
+<h3 id="2-7-其他优势-✅"><a href="#2-7-其他优势-✅" class="headerlink" title="2.7 其他优势 ✅"></a>2.7 其他优势 ✅</h3><ol>
+<li><strong>绝缘检测</strong>: 完整的绝缘检测算法</li>
+<li><strong>数据记录</strong>: 故障录波、历史数据记录</li>
+<li><strong>通信功能</strong>: CAN、Modbus通信完善</li>
+<li><strong>参数管理</strong>: EEPROM、Flash多级存储</li>
+<li><strong>统计功能</strong>: 充放电次数、能量统计、DOD统计</li>
+</ol>
+<hr>
+<h2 id="三、需要改进的地方"><a href="#三、需要改进的地方" class="headerlink" title="三、需要改进的地方"></a>三、需要改进的地方</h2><h3 id="3-1-SOC算法改进建议-⚠️"><a href="#3-1-SOC算法改进建议-⚠️" class="headerlink" title="3.1 SOC算法改进建议 ⚠️"></a>3.1 SOC算法改进建议 ⚠️</h3><h4 id="1-缺少高级算法"><a href="#1-缺少高级算法" class="headerlink" title="1. 缺少高级算法"></a>1. <strong>缺少高级算法</strong></h4><p><strong>现状</strong>: </p>
+<ul>
+<li>代码中有预留扩展卡尔曼滤波的位置，但未实现</li>
+<li>仅使用安时积分+修正的方法</li>
+</ul>
+<p><strong>建议</strong>:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 建议添加扩展卡尔曼滤波（EKF）或自适应卡尔曼滤波（AEKF）</span></span><br><span class="line"><span class="comment">// 提高SOC估算精度，特别是在动态工况下</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">SocEKFUpdate</span><span class="params">(<span class="type">float</span> voltage, <span class="type">float</span> current, <span class="type">float</span> temperature)</span>;</span><br></pre></td></tr></table></figure></div>
+
+<p><strong>专业评价</strong>: </p>
+<ul>
+<li>工业级BMS通常需要EKF&#x2F;AEKF算法</li>
+<li>安时积分法在静态工况下精度高，但动态工况下误差较大</li>
+<li>EKF可以结合电压、电流、温度多参数进行状态估计</li>
+</ul>
+<h4 id="2-开路电压（OCV）修正缺失"><a href="#2-开路电压（OCV）修正缺失" class="headerlink" title="2. 开路电压（OCV）修正缺失"></a>2. <strong>开路电压（OCV）修正缺失</strong></h4><p><strong>现状</strong>: </p>
+<ul>
+<li>未看到OCV-SOC查表修正</li>
+</ul>
+<p><strong>建议</strong>:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 建议添加OCV-SOC查表修正</span></span><br><span class="line"><span class="comment">// 在静置状态下使用OCV修正SOC</span></span><br><span class="line">u16 <span class="title function_">GetSocByOcv</span><span class="params">(u16 cellVolt, s8 temp)</span>;</span><br></pre></td></tr></table></figure></div>
+
+<p><strong>专业评价</strong>: </p>
+<ul>
+<li>OCV法是SOC估算的重要方法</li>
+<li>在静置或小电流工况下，OCV法精度很高</li>
+<li>应该与安时积分法结合使用</li>
+</ul>
+<h4 id="3-内阻修正缺失"><a href="#3-内阻修正缺失" class="headerlink" title="3. 内阻修正缺失"></a>3. <strong>内阻修正缺失</strong></h4><p><strong>现状</strong>: </p>
+<ul>
+<li>未考虑内阻对SOC的影响</li>
+</ul>
+<p><strong>建议</strong>:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 建议添加内阻修正</span></span><br><span class="line"><span class="comment">// 内阻随SOC、温度、老化变化</span></span><br><span class="line"><span class="type">float</span> <span class="title function_">GetCellResistance</span><span class="params">(u16 soc, s8 temp, u16 soh)</span>;</span><br></pre></td></tr></table></figure></div>
+
+<h4 id="4-充放电效率修正"><a href="#4-充放电效率修正" class="headerlink" title="4. 充放电效率修正"></a>4. <strong>充放电效率修正</strong></h4><p><strong>现状</strong>: </p>
+<ul>
+<li>电流积分未考虑充放电效率差异</li>
+</ul>
+<p><strong>建议</strong>:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 建议添加充放电效率修正</span></span><br><span class="line"><span class="comment">// 充电效率通常&lt;100%，放电效率接近100%</span></span><br><span class="line"><span class="type">float</span> chargeEfficiency = <span class="number">0.98</span>;  <span class="comment">// 充电效率</span></span><br><span class="line"><span class="type">float</span> dischargeEfficiency = <span class="number">1.0</span>;  <span class="comment">// 放电效率</span></span><br></pre></td></tr></table></figure></div>
+
+<h3 id="3-2-SOH算法改进建议-⚠️"><a href="#3-2-SOH算法改进建议-⚠️" class="headerlink" title="3.2 SOH算法改进建议 ⚠️"></a>3.2 SOH算法改进建议 ⚠️</h3><h4 id="1-内阻增长法缺失"><a href="#1-内阻增长法缺失" class="headerlink" title="1. 内阻增长法缺失"></a>1. <strong>内阻增长法缺失</strong></h4><p><strong>现状</strong>: </p>
+<ul>
+<li>仅使用容量法和循环次数法</li>
+</ul>
+<p><strong>建议</strong>:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 建议添加内阻增长法计算SOH</span></span><br><span class="line"><span class="comment">// SOH = (初始内阻 / 当前内阻) × 100%</span></span><br><span class="line">u16 <span class="title function_">CalcSohByResistance</span><span class="params">(<span class="type">void</span>)</span>;</span><br></pre></td></tr></table></figure></div>
+
+<p><strong>专业评价</strong>: </p>
+<ul>
+<li>内阻增长是电池老化的重要指标</li>
+<li>三方法融合（容量+循环+内阻）更准确</li>
+</ul>
+<h4 id="2-容量衰减模型"><a href="#2-容量衰减模型" class="headerlink" title="2. 容量衰减模型"></a>2. <strong>容量衰减模型</strong></h4><p><strong>现状</strong>: </p>
+<ul>
+<li>SOH计算较简单</li>
+</ul>
+<p><strong>建议</strong>:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 建议使用更复杂的容量衰减模型</span></span><br><span class="line"><span class="comment">// 考虑温度、充放电倍率、DOD等因素</span></span><br><span class="line"><span class="type">float</span> <span class="title function_">CalcCapacityFade</span><span class="params">(<span class="type">float</span> temp, <span class="type">float</span> cRate, <span class="type">float</span> dod)</span>;</span><br></pre></td></tr></table></figure></div>
+
+<h4 id="3-SOH学习机制"><a href="#3-SOH学习机制" class="headerlink" title="3. SOH学习机制"></a>3. <strong>SOH学习机制</strong></h4><p><strong>现状</strong>: </p>
+<ul>
+<li>SOH更新较保守（每次最大下降0.5%）</li>
+</ul>
+<p><strong>建议</strong>:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 建议添加SOH学习机制</span></span><br><span class="line"><span class="comment">// 在完整充放电循环后更新SOH</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">UpdateSohAfterFullCycle</span><span class="params">(<span class="type">void</span>)</span>;</span><br></pre></td></tr></table></figure></div>
+
+<h3 id="3-3-保护机制改进建议-⚠️"><a href="#3-3-保护机制改进建议-⚠️" class="headerlink" title="3.3 保护机制改进建议 ⚠️"></a>3.3 保护机制改进建议 ⚠️</h3><h4 id="1-保护阈值可配置性"><a href="#1-保护阈值可配置性" class="headerlink" title="1. 保护阈值可配置性"></a>1. <strong>保护阈值可配置性</strong></h4><p><strong>现状</strong>: </p>
+<ul>
+<li>部分保护阈值硬编码</li>
+</ul>
+<p><strong>建议</strong>:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 建议所有保护阈值可配置</span></span><br><span class="line"><span class="comment">// 通过参数表配置，便于不同电池类型适配</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">    u16 overVoltProtect;      <span class="comment">// 过压保护阈值</span></span><br><span class="line">    u16 underVoltProtect;     <span class="comment">// 欠压保护阈值</span></span><br><span class="line">    u16 overTempProtect;      <span class="comment">// 过温保护阈值</span></span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125; ProtectThreshold_t;</span><br></pre></td></tr></table></figure></div>
+
+<h4 id="2-保护恢复机制"><a href="#2-保护恢复机制" class="headerlink" title="2. 保护恢复机制"></a>2. <strong>保护恢复机制</strong></h4><p><strong>现状</strong>: </p>
+<ul>
+<li>保护恢复机制较简单</li>
+</ul>
+<p><strong>建议</strong>:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 建议添加保护恢复策略</span></span><br><span class="line"><span class="comment">// 1. 自动恢复（可恢复故障）</span></span><br><span class="line"><span class="comment">// 2. 手动恢复（需人工干预）</span></span><br><span class="line"><span class="comment">// 3. 延时恢复（延时后自动恢复）</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">enum</span> &#123;</span></span><br><span class="line">    AUTO_RECOVER,      <span class="comment">// 自动恢复</span></span><br><span class="line">    MANUAL_RECOVER,    <span class="comment">// 手动恢复</span></span><br><span class="line">    DELAY_RECOVER      <span class="comment">// 延时恢复</span></span><br><span class="line">&#125; RecoverMode_t;</span><br></pre></td></tr></table></figure></div>
+
+<h4 id="3-预充保护"><a href="#3-预充保护" class="headerlink" title="3. 预充保护"></a>3. <strong>预充保护</strong></h4><p><strong>现状</strong>: </p>
+<ul>
+<li>预充保护逻辑需加强</li>
+</ul>
+<p><strong>建议</strong>:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 建议加强预充保护</span></span><br><span class="line"><span class="comment">// 1. 预充时间限制</span></span><br><span class="line"><span class="comment">// 2. 预充电流限制</span></span><br><span class="line"><span class="comment">// 3. 预充电压检测</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">PrechargeProtectCheck</span><span class="params">(<span class="type">void</span>)</span>;</span><br></pre></td></tr></table></figure></div>
+
+<h3 id="3-4-均衡控制改进建议-⚠️"><a href="#3-4-均衡控制改进建议-⚠️" class="headerlink" title="3.4 均衡控制改进建议 ⚠️"></a>3.4 均衡控制改进建议 ⚠️</h3><h4 id="1-主动均衡策略"><a href="#1-主动均衡策略" class="headerlink" title="1. 主动均衡策略"></a>1. <strong>主动均衡策略</strong></h4><p><strong>现状</strong>: </p>
+<ul>
+<li>主动均衡代码框架存在，但实现不完整</li>
+</ul>
+<p><strong>建议</strong>:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 建议完善主动均衡策略</span></span><br><span class="line"><span class="comment">// 1. 能量转移均衡（电容/电感）</span></span><br><span class="line"><span class="comment">// 2. 开关电容均衡</span></span><br><span class="line"><span class="comment">// 3. 双向DC-DC均衡</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">ActiveBalanceControl</span><span class="params">(<span class="type">void</span>)</span>;</span><br></pre></td></tr></table></figure></div>
+
+<p><strong>专业评价</strong>: </p>
+<ul>
+<li>被动均衡效率低，发热大</li>
+<li>主动均衡效率高，但成本高</li>
+<li>建议根据应用场景选择</li>
+</ul>
+<h4 id="2-均衡时机优化"><a href="#2-均衡时机优化" class="headerlink" title="2. 均衡时机优化"></a>2. <strong>均衡时机优化</strong></h4><p><strong>现状</strong>: </p>
+<ul>
+<li>均衡主要在充放电过程中</li>
+</ul>
+<p><strong>建议</strong>:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 建议添加静置均衡</span></span><br><span class="line"><span class="comment">// 在电池静置时进行均衡，避免充放电时均衡影响</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">StandbyBalanceControl</span><span class="params">(<span class="type">void</span>)</span>;</span><br></pre></td></tr></table></figure></div>
+
+<h4 id="3-均衡能量管理"><a href="#3-均衡能量管理" class="headerlink" title="3. 均衡能量管理"></a>3. <strong>均衡能量管理</strong></h4><p><strong>现状</strong>: </p>
+<ul>
+<li>未考虑均衡能量消耗</li>
+</ul>
+<p><strong>建议</strong>:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 建议添加均衡能量管理</span></span><br><span class="line"><span class="comment">// 限制均衡功率，避免过度消耗</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">BalanceEnergyManagement</span><span class="params">(<span class="type">void</span>)</span>;</span><br></pre></td></tr></table></figure></div>
+
+<h3 id="3-5-故障诊断改进建议-⚠️"><a href="#3-5-故障诊断改进建议-⚠️" class="headerlink" title="3.5 故障诊断改进建议 ⚠️"></a>3.5 故障诊断改进建议 ⚠️</h3><h4 id="1-故障预测"><a href="#1-故障预测" class="headerlink" title="1. 故障预测"></a>1. <strong>故障预测</strong></h4><p><strong>现状</strong>: </p>
+<ul>
+<li>仅进行故障检测，无预测功能</li>
+</ul>
+<p><strong>建议</strong>:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 建议添加故障预测</span></span><br><span class="line"><span class="comment">// 基于历史数据预测潜在故障</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">enum</span> &#123;</span></span><br><span class="line">    NORMAL,           <span class="comment">// 正常</span></span><br><span class="line">    WARNING,         <span class="comment">// 预警</span></span><br><span class="line">    FAULT            <span class="comment">// 故障</span></span><br><span class="line">&#125; FaultPredict_t;</span><br><span class="line"></span><br><span class="line">FaultPredict_t <span class="title function_">PredictCellFault</span><span class="params">(u16 cellId)</span>;</span><br></pre></td></tr></table></figure></div>
+
+<h4 id="2-故障根因分析"><a href="#2-故障根因分析" class="headerlink" title="2. 故障根因分析"></a>2. <strong>故障根因分析</strong></h4><p><strong>现状</strong>: </p>
+<ul>
+<li>故障诊断较简单</li>
+</ul>
+<p><strong>建议</strong>:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 建议添加故障根因分析</span></span><br><span class="line"><span class="comment">// 分析故障的根本原因，便于维护</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">AnalyzeFaultRootCause</span><span class="params">(u16 faultId)</span>;</span><br></pre></td></tr></table></figure></div>
+
+<h4 id="3-故障历史记录"><a href="#3-故障历史记录" class="headerlink" title="3. 故障历史记录"></a>3. <strong>故障历史记录</strong></h4><p><strong>现状</strong>: </p>
+<ul>
+<li>有故障记录，但分析功能不足</li>
+</ul>
+<p><strong>建议</strong>:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 建议添加故障统计分析</span></span><br><span class="line"><span class="comment">// 统计故障频率、类型分布等</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">AnalyzeFaultStatistics</span><span class="params">(<span class="type">void</span>)</span>;</span><br></pre></td></tr></table></figure></div>
+
+<h3 id="3-6-通信功能改进建议-⚠️"><a href="#3-6-通信功能改进建议-⚠️" class="headerlink" title="3.6 通信功能改进建议 ⚠️"></a>3.6 通信功能改进建议 ⚠️</h3><h4 id="1-通信协议标准化"><a href="#1-通信协议标准化" class="headerlink" title="1. 通信协议标准化"></a>1. <strong>通信协议标准化</strong></h4><p><strong>现状</strong>: </p>
+<ul>
+<li>使用自定义协议</li>
+</ul>
+<p><strong>建议</strong>:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 建议支持标准协议</span></span><br><span class="line"><span class="comment">// 1. ISO 15118 (电动汽车通信)</span></span><br><span class="line"><span class="comment">// 2. GB/T 27930 (中国标准)</span></span><br><span class="line"><span class="comment">// 3. SAE J1939 (汽车标准)</span></span><br></pre></td></tr></table></figure></div>
+
+<h4 id="2-通信加密"><a href="#2-通信加密" class="headerlink" title="2. 通信加密"></a>2. <strong>通信加密</strong></h4><p><strong>现状</strong>: </p>
+<ul>
+<li>未看到通信加密</li>
+</ul>
+<p><strong>建议</strong>:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 建议添加通信加密</span></span><br><span class="line"><span class="comment">// 防止数据被篡改或窃取</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">EncryptCanMessage</span><span class="params">(CanMsg_t *msg)</span>;</span><br><span class="line"><span class="type">void</span> <span class="title function_">DecryptCanMessage</span><span class="params">(CanMsg_t *msg)</span>;</span><br></pre></td></tr></table></figure></div>
+
+<h4 id="3-通信诊断"><a href="#3-通信诊断" class="headerlink" title="3. 通信诊断"></a>3. <strong>通信诊断</strong></h4><p><strong>现状</strong>: </p>
+<ul>
+<li>通信诊断较简单</li>
+</ul>
+<p><strong>建议</strong>:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 建议加强通信诊断</span></span><br><span class="line"><span class="comment">// 1. 通信质量监测</span></span><br><span class="line"><span class="comment">// 2. 丢包率统计</span></span><br><span class="line"><span class="comment">// 3. 通信延迟监测</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">MonitorCommunicationQuality</span><span class="params">(<span class="type">void</span>)</span>;</span><br></pre></td></tr></table></figure></div>
+
+<h3 id="3-7-其他改进建议-⚠️"><a href="#3-7-其他改进建议-⚠️" class="headerlink" title="3.7 其他改进建议 ⚠️"></a>3.7 其他改进建议 ⚠️</h3><h4 id="1-热管理"><a href="#1-热管理" class="headerlink" title="1. 热管理"></a>1. <strong>热管理</strong></h4><p><strong>现状</strong>: </p>
+<ul>
+<li>有热管理控制，但较简单</li>
+</ul>
+<p><strong>建议</strong>:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 建议完善热管理</span></span><br><span class="line"><span class="comment">// 1. 主动冷却/加热控制</span></span><br><span class="line"><span class="comment">// 2. 温度场分析</span></span><br><span class="line"><span class="comment">// 3. 热失控预防</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">ThermalManagementControl</span><span class="params">(<span class="type">void</span>)</span>;</span><br></pre></td></tr></table></figure></div>
+
+<h4 id="2-快充策略"><a href="#2-快充策略" class="headerlink" title="2. 快充策略"></a>2. <strong>快充策略</strong></h4><p><strong>现状</strong>: </p>
+<ul>
+<li>有快充策略，但可优化</li>
+</ul>
+<p><strong>建议</strong>:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 建议优化快充策略</span></span><br><span class="line"><span class="comment">// 1. 多阶段充电曲线</span></span><br><span class="line"><span class="comment">// 2. 温度补偿</span></span><br><span class="line"><span class="comment">// 3. 老化补偿</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">FastChargeStrategy</span><span class="params">(<span class="type">void</span>)</span>;</span><br></pre></td></tr></table></figure></div>
+
+<h4 id="3-数据记录"><a href="#3-数据记录" class="headerlink" title="3. 数据记录"></a>3. <strong>数据记录</strong></h4><p><strong>现状</strong>: </p>
+<ul>
+<li>有数据记录，但分析功能不足</li>
+</ul>
+<p><strong>建议</strong>:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 建议添加数据分析</span></span><br><span class="line"><span class="comment">// 1. 充放电曲线分析</span></span><br><span class="line"><span class="comment">// 2. 容量衰减趋势分析</span></span><br><span class="line"><span class="comment">// 3. 故障模式分析</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">AnalyzeBatteryData</span><span class="params">(<span class="type">void</span>)</span>;</span><br></pre></td></tr></table></figure></div>
+
+<h4 id="4-OTA升级"><a href="#4-OTA升级" class="headerlink" title="4. OTA升级"></a>4. <strong>OTA升级</strong></h4><p><strong>现状</strong>: </p>
+<ul>
+<li>有OTA升级功能，但需完善</li>
+</ul>
+<p><strong>建议</strong>:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 建议完善OTA升级</span></span><br><span class="line"><span class="comment">// 1. 增量升级</span></span><br><span class="line"><span class="comment">// 2. 回滚机制</span></span><br><span class="line"><span class="comment">// 3. 升级验证</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">OTAUpgradeHandler</span><span class="params">(<span class="type">void</span>)</span>;</span><br></pre></td></tr></table></figure></div>
+
+<hr>
+<h2 id="四、功能完整性评价"><a href="#四、功能完整性评价" class="headerlink" title="四、功能完整性评价"></a>四、功能完整性评价</h2><h3 id="4-1-核心功能-✅"><a href="#4-1-核心功能-✅" class="headerlink" title="4.1 核心功能 ✅"></a>4.1 核心功能 ✅</h3><table>
+<thead>
+<tr>
+<th>功能</th>
+<th>状态</th>
+<th>评价</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>SOC估算</td>
+<td>✅ 完整</td>
+<td>多源融合算法，精度较高</td>
+</tr>
+<tr>
+<td>SOH评估</td>
+<td>✅ 完整</td>
+<td>双方法融合，较准确</td>
+</tr>
+<tr>
+<td>SOE计算</td>
+<td>✅ 完整</td>
+<td>能量积分计算</td>
+</tr>
+<tr>
+<td>电压监测</td>
+<td>✅ 完整</td>
+<td>单体电压、总电压监测</td>
+</tr>
+<tr>
+<td>电流监测</td>
+<td>✅ 完整</td>
+<td>充放电电流监测</td>
+</tr>
+<tr>
+<td>温度监测</td>
+<td>✅ 完整</td>
+<td>单体温度、环境温度</td>
+</tr>
+<tr>
+<td>保护功能</td>
+<td>✅ 完整</td>
+<td>过压、欠压、过流、过温保护</td>
+</tr>
+<tr>
+<td>均衡控制</td>
+<td>✅ 完整</td>
+<td>被动均衡，主动均衡框架</td>
+</tr>
+<tr>
+<td>故障诊断</td>
+<td>✅ 完整</td>
+<td>多级故障诊断</td>
+</tr>
+<tr>
+<td>通信功能</td>
+<td>✅ 完整</td>
+<td>CAN、Modbus通信</td>
+</tr>
+</tbody></table>
+<h3 id="4-2-高级功能-⚠️"><a href="#4-2-高级功能-⚠️" class="headerlink" title="4.2 高级功能 ⚠️"></a>4.2 高级功能 ⚠️</h3><table>
+<thead>
+<tr>
+<th>功能</th>
+<th>状态</th>
+<th>评价</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>扩展卡尔曼滤波</td>
+<td>❌ 缺失</td>
+<td>代码预留但未实现</td>
+</tr>
+<tr>
+<td>OCV-SOC查表</td>
+<td>❌ 缺失</td>
+<td>未实现</td>
+</tr>
+<tr>
+<td>内阻监测</td>
+<td>⚠️ 部分</td>
+<td>未用于SOH计算</td>
+</tr>
+<tr>
+<td>故障预测</td>
+<td>❌ 缺失</td>
+<td>仅检测不预测</td>
+</tr>
+<tr>
+<td>热失控预防</td>
+<td>⚠️ 部分</td>
+<td>有温度保护，但无专门预防</td>
+</tr>
+<tr>
+<td>主动热管理</td>
+<td>⚠️ 部分</td>
+<td>有控制但较简单</td>
+</tr>
+<tr>
+<td>通信加密</td>
+<td>❌ 缺失</td>
+<td>未实现</td>
+</tr>
+<tr>
+<td>标准协议支持</td>
+<td>⚠️ 部分</td>
+<td>自定义协议为主</td>
+</tr>
+</tbody></table>
+<h3 id="4-3-功能完整性评分"><a href="#4-3-功能完整性评分" class="headerlink" title="4.3 功能完整性评分"></a>4.3 功能完整性评分</h3><p><strong>核心功能</strong>: 10&#x2F;10 ✅<br><strong>高级功能</strong>: 3&#x2F;8 ⚠️<br><strong>总体完整性</strong>: 13&#x2F;18 (72%) - <strong>良好</strong></p>
+<hr>
+<h2 id="五、与行业标准对比"><a href="#五、与行业标准对比" class="headerlink" title="五、与行业标准对比"></a>五、与行业标准对比</h2><h3 id="5-1-符合的标准-✅"><a href="#5-1-符合的标准-✅" class="headerlink" title="5.1 符合的标准 ✅"></a>5.1 符合的标准 ✅</h3><ol>
+<li><strong>功能完整性</strong>: 符合GB&#x2F;T 31485-2015《电动汽车用动力蓄电池安全要求》</li>
+<li><strong>保护功能</strong>: 符合ISO 26262功能安全要求（部分）</li>
+<li><strong>通信功能</strong>: 支持CAN总线通信</li>
+<li><strong>故障诊断</strong>: 符合OBD诊断要求</li>
+</ol>
+<h3 id="5-2-需要加强的标准-⚠️"><a href="#5-2-需要加强的标准-⚠️" class="headerlink" title="5.2 需要加强的标准 ⚠️"></a>5.2 需要加强的标准 ⚠️</h3><ol>
+<li><strong>ISO 26262</strong>: 功能安全等级需明确（建议ASIL-B以上）</li>
+<li><strong>GB&#x2F;T 27930</strong>: 建议支持中国标准通信协议</li>
+<li><strong>UN 38.3</strong>: 电池运输安全标准（需硬件支持）</li>
+<li><strong>IEC 61508</strong>: 功能安全标准（需完善）</li>
+</ol>
+<hr>
+<h2 id="六、专业建议总结"><a href="#六、专业建议总结" class="headerlink" title="六、专业建议总结"></a>六、专业建议总结</h2><h3 id="6-1-短期改进（1-3个月）"><a href="#6-1-短期改进（1-3个月）" class="headerlink" title="6.1 短期改进（1-3个月）"></a>6.1 短期改进（1-3个月）</h3><ol>
+<li><p><strong>完善SOC算法</strong></p>
+<ul>
+<li>实现扩展卡尔曼滤波</li>
+<li>添加OCV-SOC查表修正</li>
+<li>添加充放电效率修正</li>
+</ul>
+</li>
+<li><p><strong>完善SOH算法</strong></p>
+<ul>
+<li>添加内阻增长法</li>
+<li>优化容量衰减模型</li>
+</ul>
+</li>
+<li><p><strong>优化保护机制</strong></p>
+<ul>
+<li>所有保护阈值可配置</li>
+<li>完善保护恢复机制</li>
+</ul>
+</li>
+</ol>
+<h3 id="6-2-中期改进（3-6个月）"><a href="#6-2-中期改进（3-6个月）" class="headerlink" title="6.2 中期改进（3-6个月）"></a>6.2 中期改进（3-6个月）</h3><ol>
+<li><p><strong>完善均衡控制</strong></p>
+<ul>
+<li>实现主动均衡策略</li>
+<li>优化均衡时机</li>
+</ul>
+</li>
+<li><p><strong>加强故障诊断</strong></p>
+<ul>
+<li>添加故障预测</li>
+<li>完善故障分析</li>
+</ul>
+</li>
+<li><p><strong>通信功能增强</strong></p>
+<ul>
+<li>支持标准协议</li>
+<li>添加通信加密</li>
+</ul>
+</li>
+</ol>
+<h3 id="6-3-长期改进（6-12个月）"><a href="#6-3-长期改进（6-12个月）" class="headerlink" title="6.3 长期改进（6-12个月）"></a>6.3 长期改进（6-12个月）</h3><ol>
+<li><p><strong>热管理优化</strong></p>
+<ul>
+<li>完善主动热管理</li>
+<li>热失控预防</li>
+</ul>
+</li>
+<li><p><strong>数据分析</strong></p>
+<ul>
+<li>添加数据分析功能</li>
+<li>故障模式识别</li>
+</ul>
+</li>
+<li><p><strong>功能安全</strong></p>
+<ul>
+<li>符合ISO 26262标准</li>
+<li>功能安全等级提升</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h2 id="七、结论"><a href="#七、结论" class="headerlink" title="七、结论"></a>七、结论</h2><h3 id="7-1-总体评价"><a href="#7-1-总体评价" class="headerlink" title="7.1 总体评价"></a>7.1 总体评价</h3><p>这是一个<strong>专业级的BMS系统</strong>，具有以下特点：</p>
+<p><strong>优点</strong>:</p>
+<ul>
+<li>✅ 系统架构清晰，模块化设计优秀</li>
+<li>✅ SOC&#x2F;SOH算法较为专业，多源融合</li>
+<li>✅ 保护机制完善，分级保护</li>
+<li>✅ 功能完整，核心功能齐全</li>
+<li>✅ 代码质量较高，注释清晰</li>
+</ul>
+<p><strong>不足</strong>:</p>
+<ul>
+<li>⚠️ 缺少高级算法（EKF、OCV等）</li>
+<li>⚠️ 部分高级功能缺失</li>
+<li>⚠️ 部分功能可进一步优化</li>
+</ul>
+<h3 id="7-2-适用场景"><a href="#7-2-适用场景" class="headerlink" title="7.2 适用场景"></a>7.2 适用场景</h3><p><strong>适合应用</strong>:</p>
+<ul>
+<li>✅ 储能系统</li>
+<li>✅ 低速电动车</li>
+<li>✅ 工业电池组管理</li>
+<li>✅ 通信基站备用电源</li>
+</ul>
+<p><strong>需要改进后应用</strong>:</p>
+<ul>
+<li>⚠️ 高速电动汽车（需功能安全认证）</li>
+<li>⚠️ 高功率应用（需完善热管理）</li>
+<li>⚠️ 高精度应用（需高级算法）</li>
+</ul>
+<h3 id="7-3-专业评级"><a href="#7-3-专业评级" class="headerlink" title="7.3 专业评级"></a>7.3 专业评级</h3><p><strong>综合评级</strong>: ⭐⭐⭐⭐☆ (4.2&#x2F;5)</p>
+<ul>
+<li><strong>工业级</strong>: ✅ 达到</li>
+<li><strong>车规级</strong>: ⚠️ 部分达到，需改进</li>
+<li><strong>专业级</strong>: ✅ 达到</li>
+</ul>
+<hr>
+
+		</div>
+
+		
+		<div class="post-copyright-info w-full my-8 px-2 sm:px-6 md:px-8">
+			<div class="article-copyright-info-container">
+    <ul>
+        <li><strong>标题:</strong> BMS工程专业评价报告</li>
+        <li><strong>作者:</strong> kuangyue111</li>
+        <li><strong>创建于
+                :</strong> 2026-06-27 16:00:00</li>
+        
+            <li>
+                <strong>更新于
+                    :</strong> 2026-06-27 17:54:14
+            </li>
+        
+        <li>
+            <strong>链接:</strong> https://kuangyue111.github.io/2026/06/27/2026-06-27-bms-engineering-evaluation-report/
+        </li>
+        <li>
+            <strong>
+                版权声明:
+            </strong>
+            
+
+            
+                本文章采用 <a class="license" target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0">CC BY-NC-SA 4.0</a> 进行许可。
+            
+        </li>
+    </ul>
+</div>
+
+		</div>
+		
+
+		
+		<ul class="post-tags-box text-lg mt-1.5 flex-wrap justify-center flex md:hidden">
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E5%B5%8C%E5%85%A5%E5%BC%8F/">#嵌入式</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/BMS/">#BMS</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/FreeRTOS/">#FreeRTOS</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/">#系统架构</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E5%B7%A5%E7%A8%8B%E8%AF%84%E4%BB%B7/">#工程评价</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E4%BB%A3%E7%A0%81%E8%B4%A8%E9%87%8F/">#代码质量</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/SOC%E7%AE%97%E6%B3%95/">#SOC算法</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/SOH%E7%AE%97%E6%B3%95/">#SOH算法</a>&nbsp;
+			</li>
+			
+		</ul>
+		
+
+		
+
+		
+		<div class="article-nav my-8 flex justify-between items-center px-2 sm:px-6 md:px-8">
+			
+			<div class="article-prev border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
+				<a class="prev" rel="prev" href="/2026/06/27/2026-06-27-bms-code-analysis-document/">
+					<span class="left arrow-icon flex justify-center items-center">
+						<i class="fa-solid fa-chevron-left"></i>
+					</span>
+					<span class="title flex justify-center items-center">
+						<span class="post-nav-title-item truncate max-w-48">电池管理系统工程代码分析文档</span>
+						<span class="post-nav-item">上一篇</span>
+					</span>
+				</a>
+			</div>
+			
+			
+			<div class="article-next border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
+				<a class="next" rel="next" href="/2026/06/27/2026-06-27-bms-soc-smooth-display/">
+					<span class="title flex justify-center items-center">
+						<span class="post-nav-title-item truncate max-w-48">BMS SOC显示平滑算法：让百分比变化符合用户直觉</span>
+						<span class="post-nav-item">下一篇</span>
+					</span>
+					<span class="right arrow-icon flex justify-center items-center">
+						<i class="fa-solid fa-chevron-right"></i>
+					</span>
+				</a>
+			</div>
+			
+		</div>
+		
+
+
+		
+		<div class="comment-container px-2 sm:px-6 md:px-8 pb-8">
+			<div class="comments-container mt-10 w-full ">
+    <div id="comment-anchor" class="w-full h-2.5"></div>
+    <div class="comment-area-title w-full my-1.5 md:my-2.5 text-xl md:text-3xl font-bold">
+        评论
+    </div>
+    
+
+        
+            
+    <div id="waline"></div>
+    <script type="module" data-swup-reload-script>
+      import { init } from '/js/libs/waline.js';
+
+      (function() {
+        const startPath = location.pathname;
+        const startTime = Date.now();
+        const retryDelay = 200;
+        const retryLimit = 5000;
+
+        const runWaline = () => {
+          if (location.pathname !== startPath) {
+            return;
+          }
+
+          const container = document.getElementById('waline');
+          if (!container) {
+            if (Date.now() - startTime < retryLimit) {
+              setTimeout(runWaline, retryDelay);
+            }
+            return;
+          }
+
+          if (window.redefineWalineInstance?.destroy) {
+            window.redefineWalineInstance.destroy();
+          }
+
+          container.innerHTML = '';
+          window.redefineWalineInstance = init({
+            el: '#waline',
+            serverURL: 'https://example.example.com',
+            path: location.pathname,
+            dark: 'body[class~="dark-mode"]',
+            reaction: false,
+            requiredMeta: ['nick', 'mail'],
+            emoji: [],
+                      lang: 'zh-CN',
+          });
+        };
+
+        runWaline();
+      })();
+    </script>
+
+
+
+        
+    
+</div>
+
+		</div>
+		
+	</div>
+
+	
+	<div class="toc-content-container">
+		<div class="post-toc-wrap">
+	<div class="post-toc">
+		<div class="toc-title">目录</div>
+		<div class="page-title">BMS工程专业评价报告</div>
+		<ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#BMS%E5%B7%A5%E7%A8%8B%E4%B8%93%E4%B8%9A%E8%AF%84%E4%BB%B7%E6%8A%A5%E5%91%8A"><span class="nav-text">BMS工程专业评价报告</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E6%80%BB%E4%BD%93%E8%AF%84%E4%BB%B7"><span class="nav-text">一、总体评价</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-%E4%B8%93%E4%B8%9A%E6%80%A7%E8%AF%84%E5%88%86"><span class="nav-text">1.1 专业性评分</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E4%BC%98%E7%82%B9%E5%88%86%E6%9E%90"><span class="nav-text">二、优点分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84%E4%BC%98%E5%8A%BF-%E2%9C%85"><span class="nav-text">2.1 系统架构优势 ✅</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-SOC%E7%AE%97%E6%B3%95%E4%BC%98%E5%8A%BF-%E2%9C%85"><span class="nav-text">2.2 SOC算法优势 ✅</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-SOH%E7%AE%97%E6%B3%95%E4%BC%98%E5%8A%BF-%E2%9C%85"><span class="nav-text">2.3 SOH算法优势 ✅</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-4-%E4%BF%9D%E6%8A%A4%E6%9C%BA%E5%88%B6%E4%BC%98%E5%8A%BF-%E2%9C%85"><span class="nav-text">2.4 保护机制优势 ✅</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-5-%E5%9D%87%E8%A1%A1%E6%8E%A7%E5%88%B6%E4%BC%98%E5%8A%BF-%E2%9C%85"><span class="nav-text">2.5 均衡控制优势 ✅</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-6-%E6%95%85%E9%9A%9C%E8%AF%8A%E6%96%AD%E4%BC%98%E5%8A%BF-%E2%9C%85"><span class="nav-text">2.6 故障诊断优势 ✅</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-7-%E5%85%B6%E4%BB%96%E4%BC%98%E5%8A%BF-%E2%9C%85"><span class="nav-text">2.7 其他优势 ✅</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E9%9C%80%E8%A6%81%E6%94%B9%E8%BF%9B%E7%9A%84%E5%9C%B0%E6%96%B9"><span class="nav-text">三、需要改进的地方</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-SOC%E7%AE%97%E6%B3%95%E6%94%B9%E8%BF%9B%E5%BB%BA%E8%AE%AE-%E2%9A%A0%EF%B8%8F"><span class="nav-text">3.1 SOC算法改进建议 ⚠️</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-SOH%E7%AE%97%E6%B3%95%E6%94%B9%E8%BF%9B%E5%BB%BA%E8%AE%AE-%E2%9A%A0%EF%B8%8F"><span class="nav-text">3.2 SOH算法改进建议 ⚠️</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-3-%E4%BF%9D%E6%8A%A4%E6%9C%BA%E5%88%B6%E6%94%B9%E8%BF%9B%E5%BB%BA%E8%AE%AE-%E2%9A%A0%EF%B8%8F"><span class="nav-text">3.3 保护机制改进建议 ⚠️</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-4-%E5%9D%87%E8%A1%A1%E6%8E%A7%E5%88%B6%E6%94%B9%E8%BF%9B%E5%BB%BA%E8%AE%AE-%E2%9A%A0%EF%B8%8F"><span class="nav-text">3.4 均衡控制改进建议 ⚠️</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-5-%E6%95%85%E9%9A%9C%E8%AF%8A%E6%96%AD%E6%94%B9%E8%BF%9B%E5%BB%BA%E8%AE%AE-%E2%9A%A0%EF%B8%8F"><span class="nav-text">3.5 故障诊断改进建议 ⚠️</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-6-%E9%80%9A%E4%BF%A1%E5%8A%9F%E8%83%BD%E6%94%B9%E8%BF%9B%E5%BB%BA%E8%AE%AE-%E2%9A%A0%EF%B8%8F"><span class="nav-text">3.6 通信功能改进建议 ⚠️</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-7-%E5%85%B6%E4%BB%96%E6%94%B9%E8%BF%9B%E5%BB%BA%E8%AE%AE-%E2%9A%A0%EF%B8%8F"><span class="nav-text">3.7 其他改进建议 ⚠️</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E5%8A%9F%E8%83%BD%E5%AE%8C%E6%95%B4%E6%80%A7%E8%AF%84%E4%BB%B7"><span class="nav-text">四、功能完整性评价</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#4-1-%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD-%E2%9C%85"><span class="nav-text">4.1 核心功能 ✅</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-2-%E9%AB%98%E7%BA%A7%E5%8A%9F%E8%83%BD-%E2%9A%A0%EF%B8%8F"><span class="nav-text">4.2 高级功能 ⚠️</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-3-%E5%8A%9F%E8%83%BD%E5%AE%8C%E6%95%B4%E6%80%A7%E8%AF%84%E5%88%86"><span class="nav-text">4.3 功能完整性评分</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E4%B8%8E%E8%A1%8C%E4%B8%9A%E6%A0%87%E5%87%86%E5%AF%B9%E6%AF%94"><span class="nav-text">五、与行业标准对比</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#5-1-%E7%AC%A6%E5%90%88%E7%9A%84%E6%A0%87%E5%87%86-%E2%9C%85"><span class="nav-text">5.1 符合的标准 ✅</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-2-%E9%9C%80%E8%A6%81%E5%8A%A0%E5%BC%BA%E7%9A%84%E6%A0%87%E5%87%86-%E2%9A%A0%EF%B8%8F"><span class="nav-text">5.2 需要加强的标准 ⚠️</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AD%E3%80%81%E4%B8%93%E4%B8%9A%E5%BB%BA%E8%AE%AE%E6%80%BB%E7%BB%93"><span class="nav-text">六、专业建议总结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#6-1-%E7%9F%AD%E6%9C%9F%E6%94%B9%E8%BF%9B%EF%BC%881-3%E4%B8%AA%E6%9C%88%EF%BC%89"><span class="nav-text">6.1 短期改进（1-3个月）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-2-%E4%B8%AD%E6%9C%9F%E6%94%B9%E8%BF%9B%EF%BC%883-6%E4%B8%AA%E6%9C%88%EF%BC%89"><span class="nav-text">6.2 中期改进（3-6个月）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-3-%E9%95%BF%E6%9C%9F%E6%94%B9%E8%BF%9B%EF%BC%886-12%E4%B8%AA%E6%9C%88%EF%BC%89"><span class="nav-text">6.3 长期改进（6-12个月）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%83%E3%80%81%E7%BB%93%E8%AE%BA"><span class="nav-text">七、结论</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#7-1-%E6%80%BB%E4%BD%93%E8%AF%84%E4%BB%B7"><span class="nav-text">7.1 总体评价</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-2-%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="nav-text">7.2 适用场景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-3-%E4%B8%93%E4%B8%9A%E8%AF%84%E7%BA%A7"><span class="nav-text">7.3 专业评级</span></a></li></ol></li></ol></li></ol>
+
+	</div>
+</div>
+	</div>
+	
+</div>
+
+			</div>
+
+			
+		</div>
+
+		<div class="main-content-footer">
+			<footer class="footer mt-5 py-5 h-auto text-base text-third-text-color relative border-t-2 border-t-border-color">
+    <div class="info-container py-3 text-center">
+        
+        <div class="text-center">
+            &copy;
+            
+              <span>2022</span>
+              -
+            
+            2026&nbsp;&nbsp;<i class="fa-solid fa-heart fa-beat" style="--fa-animation-duration: 0.5s; color: #f54545"></i>&nbsp;&nbsp;<a href="/">kuangyue111</a>
+            
+                
+                <p class="post-count space-x-0.5">
+                    <span>
+                        共撰写了 45 篇文章
+                    </span>
+                    
+                </p>
+            
+        </div>
+        
+            <script data-swup-reload-script src="https://cn.vercount.one/js"></script>
+            <div class="relative text-center lg:absolute lg:right-[20px] lg:top-1/2 lg:-translate-y-1/2 lg:text-right">
+                
+                    <span id="busuanzi_container_site_uv" class="lg:!block">
+                        <span class="text-sm">访问人数</span>
+                        <span id="busuanzi_value_site_uv"></span>
+                    </span>
+                
+                
+                    <span id="busuanzi_container_site_pv" class="lg:!block">
+                        <span class="text-sm">总访问量</span>
+                        <span id="busuanzi_value_site_pv"></span>
+                    </span>
+                
+            </div>
+        
+        <div class="relative text-center lg:absolute lg:left-[20px] lg:top-1/2 lg:-translate-y-1/2 lg:text-left">
+            <span class="lg:block text-sm">由 <?xml version="1.0" encoding="utf-8"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg class="relative top-[2px] inline-block align-baseline" version="1.1" id="圖層_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="1rem" height="1rem" viewBox="0 0 512 512" enable-background="new 0 0 512 512" xml:space="preserve"><path fill="#0E83CD" d="M256.4,25.8l-200,115.5L56,371.5l199.6,114.7l200-115.5l0.4-230.2L256.4,25.8z M349,354.6l-18.4,10.7l-18.6-11V275H200v79.6l-18.4,10.7l-18.6-11v-197l18.5-10.6l18.5,10.8V237h112v-79.6l18.5-10.6l18.5,10.8V354.6z"/></svg><a target="_blank" class="text-base" href="https://hexo.io">Hexo</a> 驱动</span>
+            <span class="text-sm lg:block">主题&nbsp;<a class="text-base" target="_blank" href="https://github.com/EvanNotFound/hexo-theme-redefine">Redefine v2.9.0</a></span>
+        </div>
+        
+        
+            <div>
+                博客已运行 <span class="odometer" id="runtime_days" ></span> 天 <span class="odometer" id="runtime_hours"></span> 小时 <span class="odometer" id="runtime_minutes"></span> 分钟 <span class="odometer" id="runtime_seconds"></span> 秒
+            </div>
+        
+        
+            <script data-swup-reload-script>
+                try {
+                    function odometer_init() {
+                    const elements = document.querySelectorAll('.odometer');
+                    elements.forEach(el => {
+                        new Odometer({
+                            el,
+                            format: '( ddd).dd',
+                            duration: 200
+                        });
+                    });
+                    }
+                    odometer_init();
+                } catch (error) {}
+            </script>
+        
+        
+        
+    </div>  
+</footer>
+		</div>
+	</div>
+
+	
+	<div class="post-tools">
+		<div class="post-tools-container">
+	<ul class="article-tools-list">
+		<!-- TOC aside toggle -->
+		
+		<li class="right-bottom-tools page-aside-toggle">
+			<i class="fa-regular fa-outdent"></i>
+		</li>
+		
+
+		<!-- go comment -->
+		
+		<li class="go-comment">
+			<i class="fa-regular fa-comments"></i>
+		</li>
+		
+	</ul>
+</div>
+	</div>
+	
+
+	<div class="right-side-tools-container">
+		<div class="side-tools-container">
+	<ul class="hidden-tools-list">
+		<li class="right-bottom-tools tool-font-adjust-plus flex justify-center items-center">
+			<i class="fa-regular fa-magnifying-glass-plus"></i>
+		</li>
+
+		<li class="right-bottom-tools tool-font-adjust-minus flex justify-center items-center">
+			<i class="fa-regular fa-magnifying-glass-minus"></i>
+		</li>
+
+		<li class="right-bottom-tools tool-dark-light-toggle flex justify-center items-center">
+			<i class="fa-regular fa-moon"></i>
+		</li>
+
+		<!-- rss -->
+		
+
+		
+
+		<li class="right-bottom-tools tool-scroll-to-bottom flex justify-center items-center">
+			<i class="fa-regular fa-arrow-down"></i>
+		</li>
+	</ul>
+
+	<ul class="visible-tools-list">
+		<li class="right-bottom-tools toggle-tools-list flex justify-center items-center">
+			<i class="fa-regular fa-cog fa-spin"></i>
+		</li>
+		
+		<li class="right-bottom-tools tool-scroll-to-top flex justify-center items-center">
+			<i class="arrow-up fas fa-arrow-up"></i>
+			<span class="percent"></span>
+		</li>
+		
+		
+	</ul>
+</div>
+	</div>
+
+	<div class="image-viewer-container" role="dialog" aria-modal="true" aria-label="图片查看器">
+	<button class="image-viewer-close" type="button" aria-label="关闭">
+		<i class="fa-solid fa-xmark"></i>
+	</button>
+	<button class="image-viewer-prev" type="button" aria-label="上一页">
+		<i class="fa-solid fa-chevron-left"></i>
+	</button>
+	<div class="image-viewer-frame">
+		<img src="" alt="">
+	</div>
+	<div class="image-viewer-exif-panel hidden absolute left-1/2 bottom-20 -translate-x-1/2 w-[min(92vw,420px)] max-h-[60vh] overflow-hidden rounded-2xl bg-background-color-transparent-80 p-4 text-left shadow-redefine-flat backdrop-blur-md" role="dialog" aria-label="EXIF" aria-hidden="true">
+		<div class="flex items-center justify-between mb-3">
+			<span class="text-sm font-semibold text-first-text-color">EXIF</span>
+			<button class="image-viewer-exif-close flex h-8 w-8 items-center justify-center rounded-full bg-background-color-transparent-80 text-first-text-color transition hover:bg-background-color-transparent-40" type="button" aria-label="关闭">
+				<i class="fa-solid fa-xmark text-[0.65rem]"></i>
+			</button>
+		</div>
+		<div class="image-viewer-exif-cards grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto pr-1 scrollbar-hide"></div>
+		<template class="image-viewer-exif-card-template">
+			<div class="rounded-lg bg-background-color-transparent-40 px-3 py-2">
+				<div class="image-viewer-exif-card-header flex items-center gap-2 mb-1">
+					<i class="image-viewer-exif-card-icon fa-solid fa-circle-info text-xs text-third-text-color"></i>
+					<div class="image-viewer-exif-card-title text-xs font-semibold text-first-text-color"></div>
+				</div>
+				<div class="image-viewer-exif-card-items flex flex-col gap-1"></div>
+			</div>
+		</template>
+	</div>
+	<button class="image-viewer-exif-toggle flex items-center gap-2 hidden absolute left-1/2 bottom-6 -translate-x-1/2 rounded-full border border-border-color bg-background-color-transparent-80 px-4 py-2 text-first-text-color backdrop-blur-md transition hover:bg-background-color-transparent-40" type="button" aria-label="EXIF" aria-expanded="false">
+		<i class="fa-solid fa-circle-info text-xs"></i>
+		<span class="text-xs font-semibold uppercase tracking-wider">EXIF</span>
+	</button>
+	<button class="image-viewer-next" type="button" aria-label="下一页">
+		<i class="fa-solid fa-chevron-right"></i>
+	</button>
+</div>
+
+
+	
+
+</main>
+
+
+
+<script src="/js/build/libs/Swup.min.js"></script>
+
+<script src="/js/build/libs/SwupSlideTheme.min.js"></script>
+
+<script src="/js/build/libs/SwupScriptsPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupProgressPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupScrollPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupPreloadPlugin.min.js"></script>
+
+<script>
+    window.swup = new Swup({
+        plugins: [
+            new SwupScriptsPlugin({
+                optin: true,
+            }),
+            new SwupProgressPlugin(),
+            new SwupScrollPlugin({
+                offset: 80,
+            }),
+            new SwupSlideTheme({
+                mainElement: ".main-content-body",
+            }),
+            new SwupPreloadPlugin(),
+        ],
+        containers: ["#swup"],
+    });
+
+    window.dispatchEvent(
+        new CustomEvent("redefine:swup:ready", {
+            detail: {
+                swup: window.swup,
+            },
+        }),
+    );
+</script>
+
+
+
+
+	
+<script src="/js/build/main.js" type="module"></script>
+
+
+
+    
+<script src="/js/build/libs/odometer.min.js"></script>
+
+    
+<link rel="stylesheet" href="/assets/odometer-theme-minimal.css">
+
+
+
+
+
+
+
+  
+<script src="/js/build/libs/Typed.min.js"></script>
+
+
+
+
+
+
+
+
+
+
+<script src="/js/build/libs/moment-with-locales.min.js" data-swup-reload-script=""></script>
+
+
+
+	
+</body>
+
+</html>

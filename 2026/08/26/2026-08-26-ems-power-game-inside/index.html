@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="keywords" content="Hexo Theme Redefine">
+    
+    
+    <meta name="author" content="kuangyue111">
+    
+    <!-- Completely eliminate flash of wrong theme -->
+    <script>
+        (function() {
+            const THEME_KEY = "REDEFINE-THEME-STATUS";
+            const DARK = "dark", LIGHT = "light";
+            
+            // Get preferred theme
+            function getTheme() {
+                try {
+                    const saved = localStorage.getItem(THEME_KEY);
+                    if (saved) {
+                        const { isDark } = JSON.parse(saved);
+                        return isDark ? DARK : LIGHT;
+                    }
+                } catch (e) {}
+                
+                return matchMedia("(prefers-color-scheme: dark)").matches ? DARK : LIGHT;
+            }
+            
+            // Apply theme to document
+            function applyTheme(theme) {
+                const isDark = theme === DARK;
+                const root = document.documentElement;
+                
+                // Set classes for compatibility
+                root.classList.add(theme);
+                root.classList.remove(isDark ? LIGHT : DARK);
+                root.style.colorScheme = theme;
+            }
+            
+            // Initial application
+            const theme = getTheme();
+            applyTheme(theme);
+            
+            // Listen for system preference changes
+            matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ({ matches }) => {
+                // Only update if using system preference (no localStorage entry)
+                if (!localStorage.getItem(THEME_KEY)) {
+                    applyTheme(matches ? DARK : LIGHT);
+                }
+            });
+            
+            // Set body classes ASAP (before DOMContentLoaded)
+            (function() {
+                const addBodyClass = () => {
+                    const b = document.body;
+                    if (!b) return false;
+                    b.classList.add(theme + "-mode");
+                    return true;
+                };
+
+                // Try immediately
+                if (addBodyClass()) return;
+
+                // Observe until body exists
+                const mo = new MutationObserver(() => {
+                    if (addBodyClass()) mo.disconnect();
+                });
+                mo.observe(document.documentElement, { childList: true, subtree: true });
+            })();
+        })();
+    </script>
+    
+    <!-- preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    
+    <!--- Seo Part-->
+    
+    <link rel="canonical" href="https://kuangyue111.github.io/2026/08/26/2026-08-26-ems-power-game-inside/"/>
+    <meta name="robots" content="index,follow">
+    <meta name="googlebot" content="index,follow">
+    <meta name="revisit-after" content="1 days">
+    
+    
+        
+        <meta name="description" content="Hexo Theme Redefine, Redefine Your Hexo Journey.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="The Power Game Inside a Storage EMS: One Meter, One Semaphore, and a 200 ms Race Against Reverse Power">
+<meta property="og:url" content="https://kuangyue111.github.io/2026/08/26/2026-08-26-ems-power-game-inside/index.html">
+<meta property="og:site_name" content="KuangYue&#39;s Blog">
+<meta property="og:description" content="Hexo Theme Redefine, Redefine Your Hexo Journey.">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://kuangyue111.github.io/images/redefine-og.webp">
+<meta property="article:published_time" content="2026-08-26T02:00:00.000Z">
+<meta property="article:modified_time" content="2026-09-02T21:24:03.860Z">
+<meta property="article:author" content="kuangyue111">
+<meta property="article:tag" content="嵌入式">
+<meta property="article:tag" content="储能">
+<meta property="article:tag" content="EMS">
+<meta property="article:tag" content="PCS">
+<meta property="article:tag" content="实时系统">
+<meta property="article:tag" content="信号量">
+<meta property="article:tag" content="嵌入式Linux">
+<meta property="article:tag" content="工业控制">
+<meta property="article:tag" content="控制策略">
+<meta property="article:tag" content="防逆流">
+<meta property="article:tag" content="BESS">
+<meta property="article:tag" content="储能系统">
+<meta property="article:tag" content="Energy-Storage">
+<meta property="article:tag" content="Embedded-Linux">
+<meta property="article:tag" content="Anti-Reflux">
+<meta property="article:tag" content="Real-time-System">
+<meta property="article:tag" content="Control-Strategy">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://kuangyue111.github.io/images/redefine-og.webp">
+    
+    
+    <!--- Icon Part-->
+    <link rel="icon" type="image/png" href="/images/redefine-favicon.svg" sizes="192x192">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/redefine-favicon.svg">
+    <meta name="theme-color" content="#A31F34">
+    <link rel="shortcut icon" href="/images/redefine-favicon.svg">
+    <!--- Page Info-->
+    
+    <title>
+        
+            The Power Game Inside a Storage EMS: One Meter, One Semaphore, and a 200 ms Race Against Reverse Power | KuangYue&#39;s Blog
+        
+    </title>
+
+    
+<link rel="stylesheet" href="/fonts/Chillax/chillax.css">
+
+
+    <!--- Inject Part-->
+    
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+        
+<link rel="stylesheet" href="/css/build/tailwind.css">
+
+    
+
+    
+<link rel="stylesheet" href="/fonts/GeistMono/geist-mono.css">
+
+    
+<link rel="stylesheet" href="/fonts/Geist/geist.css">
+
+    <!--- Font Part-->
+    
+    
+    
+    
+    
+    
+
+    <script id="hexo-configurations">
+    window.config = {"hostname":"kuangyue111.github.io","root":"/","language":"zh-CN"};
+    window.theme = {"articles":{"style":{"font_size":"16px","line_height":1.5,"image_border_radius":"14px","image_alignment":"center","image_caption":false,"link_icon":true,"delete_mask":false,"title_alignment":"left","headings_top_spacing":{"h1":"3.2rem","h2":"2.4rem","h3":"1.9rem","h4":"1.6rem","h5":"1.4rem","h6":"1.3rem"}},"word_count":{"enable":true,"count":true,"min2read":true},"author_label":{"enable":true,"auto":false,"list":[]},"code_block":{"copy":true,"style":"mac","highlight_theme":{"light":"github","dark":"vs2015"},"font":{"enable":false,"family":null,"url":null}},"toc":{"enable":true,"max_depth":3,"number":false,"expand":true,"init_open":true},"copyright":{"enable":true,"default":"cc_by_nc_sa"},"lazyload":true,"pangu_js":false,"recommendation":{"enable":false,"title":"推荐阅读","limit":3,"mobile_limit":2,"placeholder":"/images/wallhaven-wqery6-light.webp","skip_dirs":[]}},"colors":{"primary":"#A31F34","secondary":null,"default_mode":"light"},"global":{"fonts":{"chinese":{"enable":false,"family":null,"url":null},"english":{"enable":false,"family":null,"url":null},"title":{"enable":false,"family":null,"url":null}},"content_max_width":"1000px","sidebar_width":"210px","hover":{"shadow":true,"scale":false},"scroll_progress":{"bar":false,"percentage":true},"website_counter":{"url":"https://cn.vercount.one/js","enable":true,"site_pv":true,"site_uv":true,"post_pv":true},"single_page":true,"preloader":{"enable":false,"custom_message":null},"side_tools":{"gear_rotation":true,"auto_expand":false},"open_graph":{"enable":true,"image":"/images/redefine-og.webp","description":"Hexo Theme Redefine, Redefine Your Hexo Journey."},"google_analytics":{"enable":false,"id":null}},"home_banner":{"enable":true,"style":"fixed","image":{"light":"/images/wallhaven-wqery6-light.webp","dark":"/images/wallhaven-wqery6-dark.webp"},"title":"KuangYue's Blog","subtitle":{"text":["专注储能系统与嵌入式开发","记录 NCCU 控制单元架构演进","探索工业物联网与云端对接"],"hitokoto":{"enable":false,"show_author":false,"api":"https://v1.hitokoto.cn"},"typing_speed":100,"backing_speed":80,"starting_delay":500,"backing_delay":1500,"loop":true,"smart_backspace":true},"text_color":{"light":"#fff","dark":"#d1d1b6"},"text_style":{"title_size":"2.8rem","subtitle_size":"1.5rem","line_height":1.2},"custom_font":{"enable":false,"family":null,"url":null},"social_links":{"enable":true,"style":"default","links":[{"icon":"fa-brands fa-github","url":"https://github.com/kuangyue111"},{"icon":"fa-brands fa-twitter","url":null},{"icon":"fa-solid fa-at","url":"you@example.com"},{"icon":"fa-brands fa-telegram","url":null},{"icon":"/images/custom-icon.svg","url":null}],"qrs":[{"icon":"fa-brands fa-weixin","qr":null},{"icon":"/images/custom-icon.svg","qr":null}]}},"plugins":{"feed":{"enable":false},"aplayer":{"enable":false,"type":"fixed","audios":[{"name":null,"artist":null,"url":null,"cover":null,"lrc":null}]},"mermaid":{"theme":{"light":"default","dark":"dark"}},"katex":false,"chart":false},"version":"2.9.0","code_block":{"theme":"light","macStyle":false,"shrink":false,"copy_button":true,"language":true},"navbar":{"auto_hide":false,"color":{"left":"#f78736","right":"#367df7","transparency":35},"width":{"home":"1200px","pages":"1000px"},"links":{"Home":{"path":"/","icon":"fa-regular fa-house"},"Archives":{"path":"/archives/","icon":"fa-regular fa-archive"},"Tags":{"path":"/tags/","icon":"fa-regular fa-tags"},"Categories":{"path":"/categories/","icon":"fa-regular fa-folder"},"About":{"icon":"fa-regular fa-user","submenus":{"Me":"/about/","GitHub":"https://github.com/kuangyue111"}}},"search":{"enable":false,"preload":true}},"page_templates":{"friends_column":2,"tags_style":"blur","masonry":{"batch_size":12,"initial_batch_size":24}},"home":{"sidebar":{"enable":true,"position":"left","first_item":"menu","announcement":"专注于嵌入式与储能系统技术分享","show_on_mobile":true,"links":{"Archives":{"path":"/archives/","icon":"fa-regular fa-archive"},"Tags":{"path":"/tags/","icon":"fa-regular fa-tags"},"Categories":{"path":"/categories/","icon":"fa-regular fa-folder"}}},"article_date_format":"auto","excerpt_length":200,"categories":{"enable":true,"limit":3},"tags":{"enable":true,"limit":3}},"footer":{"runtime":true,"icon":"<i class=\"fa-solid fa-heart fa-beat\" style=\"--fa-animation-duration: 0.5s; color: #f54545\"></i>","start":"2022/8/17 11:45:14","statistics":true,"customize":null,"icp":{"enable":false,"number":null,"url":null},"since":2025,"custom":null,"copyright":true,"theme":{"enable":true},"counter":true},"footerStart":"2022/8/17 11:45:14","mermaid":{"style":{"light":"default","dark":"dark"}}};
+    window.lang_ago = {"second":"%s 秒前","minute":"%s 分钟前","hour":"%s 小时前","day":"%s 天前","week":"%s 周前","month":"%s 个月前","year":"%s 年前"};
+    window.i18n = {"search":"站内搜索您需要的内容...","toc":"目录","prev":"上一页","next":"下一页","prev_posts":"上一篇","next_posts":"下一篇","page":"第 %d 页","recent_posts":"最新文章","share":"分享","powered_by":"由 %s 驱动","theme":"主题","rss_feed":"RSS Feed","category":"分类","categories":"分类","tag":"标签","tags":"标签","post":"文章","posts":"文章","tagcloud":"标签云","comment":"评论","comments":"评论","top":"置顶","sticky":"置顶","go-back-home":"回到首页","masonry_loading":"照片加载中...","image_viewer":"图片查看器","close":"关闭","exif":{"title":"EXIF","cards":{"camera":"相机","lens":"镜头","exposure":"曝光","other":"其他"},"fields":{"make":"品牌","model":"机型","date_taken":"拍摄时间","lens_model":"镜头","focal_length":"焦距","focus_mode":"对焦模式","shutter":"快门","aperture":"光圈","iso":"感光度","exposure_program":"曝光程序","exposure_compensation":"曝光补偿","metering_mode":"测光模式","flash":"闪光灯","white_balance":"白平衡","latitude":"纬度","longitude":"经度","altitude":"海拔"},"status":{"loading":"加载中...","no_exif":"无 EXIF 信息","library_missing":"EXIF 库未加载","image_source_missing":"图片地址不可用","unavailable":"EXIF 不可用（可能被 CORS 阻止或缺少元数据）","flag_unavailable":"EXIF 不可用"}},"home":"首页","archive":"归档","archives":"归档","about":"关于","links":"链接","link":"链接","friends":"友情链接","friend":"友情链接","timeline":"时间轴","shuoshuo":"说说","bookmarks":"书签","site_uv":"访问人数","site_pv":"总访问量","read_more":"阅读全文","wordcount":"字","min2read":"分钟","changelog":"更新日志","status":"状态","runtime":"博客已运行","days":"天","hours":"小时","minutes":"分钟","seconds":"秒","optimized_by":"并由 Evan 进行优化","rights":"版权所有","site_posts":"共撰写了 %s 篇文章","site_wordcount":"共 %s 字","copyright":{"title":"标题","author":"作者","link":"链接","create_time":"创建于","update_time":"更新于","license_title":"版权声明","license_content":"本文章采用 %s 进行许可。","all_rights_reserved":"版权所有 &#169 %s，禁止转载。","public_domain":"本文为公有领域作品，可自由转载、引用。"},"ago":{"second":"%s 秒前","minute":"%s 分钟前","hour":"%s 小时前","day":"%s 天前","week":"%s 周前","month":"%s 个月前","year":"%s 年前"},"create_time":"创建","update_time":"更新","expired":"这篇文章最后更新于 %s 天前，内容可能已经过时。"};
+    window.data = {"masonry":false};
+  </script>
+    
+    <!--- Fontawesome Part-->
+    
+<link rel="stylesheet" href="/fontawesome/fontawesome.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/brands.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/solid.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/regular.min.css">
+
+    
+    
+    
+    
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+	<div class="progress-bar-container">
+	
+
+	
+	<span class="pjax-progress-bar"></span>
+	<!--        <span class="swup-progress-icon">-->
+	<!--            <i class="fa-solid fa-circle-notch fa-spin"></i>-->
+	<!--        </span>-->
+	
+</div>
+
+<main class="page-container" id="swup">
+
+	
+
+	<div class="main-content-container flex flex-col justify-between min-h-dvh">
+		<div class="main-content-header">
+			<header class="navbar-container px-6 md:px-12">
+    <div class="navbar-content transition-navbar ">
+        <div class="left">
+            
+            <a class="logo-title" href="/">
+                
+                KuangYue&#39;s Blog
+                
+            </a>
+        </div>
+
+        <div class="right">
+            <!-- PC -->
+            <div class="desktop">
+                <ul class="navbar-list">
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/"
+                                        >
+                                    <i class="fa-regular fa-house fa-fw"></i>
+                                    首页
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/archives/"
+                                        >
+                                    <i class="fa-regular fa-archive fa-fw"></i>
+                                    归档
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/tags/"
+                                        >
+                                    <i class="fa-regular fa-tags fa-fw"></i>
+                                    标签
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/categories/"
+                                        >
+                                    <i class="fa-regular fa-folder fa-fw"></i>
+                                    分类
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class="has-dropdown"
+                                   href="#"
+                                        onClick=&#34;return false;&#34;>
+                                    <i class="fa-regular fa-user fa-fw"></i>
+                                    关于
+                                    <i class="fa-solid fa-chevron-down fa-fw"></i>
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                                    <ul class="sub-menu">
+                                        
+                                            <li>
+                                                <a href="/about/">
+                                                    ME
+                                                </a>
+                                            </li>
+                                        
+                                            <li>
+                                                <a target="_blank" rel="noopener" href="https://github.com/kuangyue111">
+                                                    GITHUB
+                                                </a>
+                                            </li>
+                                        
+                                    </ul>
+                                
+                            </li>
+                    
+                    
+                </ul>
+            </div>
+            <!-- Mobile -->
+            <div class="mobile">
+                
+                <div class="icon-item navbar-bar">
+                    <div class="navbar-bar-middle"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile sheet -->
+    <div class="navbar-drawer h-dvh w-full absolute top-0 left-0 bg-background-color flex flex-col justify-between">
+        <ul class="drawer-navbar-list flex flex-col px-4 justify-center items-start">
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/"
+                        >
+                            <span>
+                                首页
+                            </span>
+                            
+                                <i class="fa-regular fa-house fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/archives/"
+                        >
+                            <span>
+                                归档
+                            </span>
+                            
+                                <i class="fa-regular fa-archive fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/tags/"
+                        >
+                            <span>
+                                标签
+                            </span>
+                            
+                                <i class="fa-regular fa-tags fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/categories/"
+                        >
+                            <span>
+                                分类
+                            </span>
+                            
+                                <i class="fa-regular fa-folder fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item-sub text-base my-1.5 flex flex-col w-full">
+                        
+                        <div class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary cursor-pointer text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                             navbar-data-toggle="submenu-About"
+                        >
+                            <span>
+                                关于
+                            </span>
+                            
+                                <i class="fa-solid fa-chevron-right fa-sm fa-fw transition-all"></i>
+                            
+                        </div>
+                        
+
+                        
+                            <div class="flex-col items-start px-2 py-2 hidden" data-target="submenu-About">
+                                
+                                    <div class="drawer-navbar-item text-base flex flex-col justify-center items-start hover:underline active:underline hover:underline-offset-1 rounded-3xl">
+                                        <a class=" text-third-text-color text-xl"
+                                           href="/about/">ME</a>
+                                    </div>
+                                
+                                    <div class="drawer-navbar-item text-base flex flex-col justify-center items-start hover:underline active:underline hover:underline-offset-1 rounded-3xl">
+                                        <a class=" text-third-text-color text-xl"
+                                           target="_blank" rel="noopener" href="https://github.com/kuangyue111">GITHUB</a>
+                                    </div>
+                                
+                            </div>
+                        
+                    </li>
+            
+
+            
+            
+                
+                    
+                    
+                    
+            
+        </ul>
+
+        <div class="statistics flex justify-around my-2.5">
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/tags">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">194</div>
+        <div class="label text-third-text-color text-sm">标签</div>
+    </a>
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/categories">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">16</div>
+        <div class="label text-third-text-color text-sm">分类</div>
+    </a>
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/archives">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">45</div>
+        <div class="label text-third-text-color text-sm">文章</div>
+    </a>
+</div>
+    </div>
+
+    <div class="window-mask"></div>
+
+</header>
+
+
+		</div>
+
+		<div class="main-content-body transition-fade-up">
+			
+
+			<div class="main-content">
+				<div class="post-page-container flex relative justify-between box-border w-full h-full">
+	<div class="article-content-container">
+
+		<div class="article-title relative w-full">
+			
+			<div class="w-full flex items-center pt-6 justify-start">
+				<h1 class="article-title-regular text-second-text-color tracking-tight text-4xl md:text-6xl font-semibold px-2 sm:px-6 md:px-8 py-3">The Power Game Inside a Storage EMS: One Meter, One Semaphore, and a 200 ms Race Against Reverse Power</h1>
+			</div>
+			
+		</div>
+
+		
+		<div class="article-header flex flex-row gap-2 items-center px-2 sm:px-6 md:px-8">
+			<div class="avatar w-[46px] h-[46px] shrink-0 rounded-medium border border-border-color p-px">
+				<img src="/images/redefine-avatar.svg">
+			</div>
+			<div class="info flex flex-col justify-between">
+				<div class="author flex items-center">
+					<span class="name text-default-text-color text-lg font-semibold">kuangyue111</span>
+					
+					<span class="author-label ml-1.5 text-xs px-2 py-0.5 rounded-small text-third-text-color border border-shadow-color-1">Lv4</span>
+					
+				</div>
+				<div class="meta-info">
+					<div class="article-meta-info">
+    <span class="article-date article-meta-item">
+        <i class="fa-regular fa-pen-fancy"></i>&nbsp;
+        <span class="desktop">2026-08-26 10:00</span>
+        <span class="mobile">2026-08-26 10:00</span>
+        <span class="hover-info">创建</span>
+    </span>
+    
+        <span class="article-date article-meta-item">
+            <i class="fa-regular fa-wrench"></i>&nbsp;
+            <span class="desktop">2026-09-03 05:24:03</span>
+            <span class="mobile">2026-09-03 05:24:03</span>
+            <span class="hover-info">更新</span>
+        </span>
+    
+
+    
+        <span class="article-categories article-meta-item">
+            <i class="fa-regular fa-folders"></i>&nbsp;
+            <ul>
+                
+                
+                    
+                        
+                        <li>
+                            <a href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/">技术分享</a>&nbsp;
+                        </li>
+                    
+                    
+                
+                    
+                        
+                            <li>></li>
+                        
+                        <li>
+                            <a href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/%E5%B5%8C%E5%85%A5%E5%BC%8F%E5%BC%80%E5%8F%91/">嵌入式开发</a>&nbsp;
+                        </li>
+                    
+                    
+                
+            </ul>
+        </span>
+    
+    
+        <span class="article-tags article-meta-item">
+            <i class="fa-regular fa-tags"></i>&nbsp;
+            <ul>
+                
+                    <li>
+                        <a href="/tags/%E5%B5%8C%E5%85%A5%E5%BC%8F/">嵌入式</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E5%82%A8%E8%83%BD/">储能</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/EMS/">EMS</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/PCS/">PCS</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E5%AE%9E%E6%97%B6%E7%B3%BB%E7%BB%9F/">实时系统</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E4%BF%A1%E5%8F%B7%E9%87%8F/">信号量</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E5%B5%8C%E5%85%A5%E5%BC%8FLinux/">嵌入式Linux</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E5%B7%A5%E4%B8%9A%E6%8E%A7%E5%88%B6/">工业控制</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E6%8E%A7%E5%88%B6%E7%AD%96%E7%95%A5/">控制策略</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E9%98%B2%E9%80%86%E6%B5%81/">防逆流</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/BESS/">BESS</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/%E5%82%A8%E8%83%BD%E7%B3%BB%E7%BB%9F/">储能系统</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/Energy-Storage/">Energy-Storage</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/Embedded-Linux/">Embedded-Linux</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/Anti-Reflux/">Anti-Reflux</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/Real-time-System/">Real-time-System</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/Control-Strategy/">Control-Strategy</a>&nbsp;
+                    </li>
+                
+            </ul>
+        </span>
+    
+
+    
+    
+    
+    
+        <span class="article-pv article-meta-item">
+            <i class="fa-regular fa-eye"></i>&nbsp;<span id="busuanzi_value_page_pv"></span>
+        </span>
+    
+</div>
+
+				</div>
+			</div>
+		</div>
+		
+
+		
+
+
+		<div class="article-content markdown-body px-2 sm:px-6 md:px-8 pb-8">
+			<h1 id="The-Power-Game-Inside-a-Storage-EMS-One-Meter-One-Semaphore-and-a-200-ms-Race-Against-Reverse-Power"><a href="#The-Power-Game-Inside-a-Storage-EMS-One-Meter-One-Semaphore-and-a-200-ms-Race-Against-Reverse-Power" class="headerlink" title="The Power Game Inside a Storage EMS: One Meter, One Semaphore, and a 200 ms Race Against Reverse Power"></a>The Power Game Inside a Storage EMS: One Meter, One Semaphore, and a 200 ms Race Against Reverse Power</h1><h2 id="Before-We-Start"><a href="#Before-We-Start" class="headerlink" title="Before We Start"></a>Before We Start</h2><p>I’ve spent nearly two years doing embedded work on an energy storage EMS. The part of the system I most want to write about is not the fancy protocol stacks — it’s a collection of things that look almost crude: a couple of meters, one semaphore, two pre-protection values, all wired together into anti-reverse-power and anti-overload.</p>
+<p>The logic isn’t much code. The core sits across two modules, <code>ccu_sampler</code> and <code>kwhmeter_sampler</code>, maybe under two thousand lines all told. But it is the floor of the whole system’s grid-connection safety: when charging, don’t blow up the transformer; when discharging, don’t feed power back into the grid.</p>
+<p>This post walks through that logic from the beginning. I’ll show code and talk about the pitfalls I actually stepped in. First person, wherever my mind wanders.</p>
+<h2 id="Outline"><a href="#Outline" class="headerlink" title="Outline"></a>Outline</h2><ol>
+<li>Why a meter is worth staring at</li>
+<li>The “doorbell” between two modules: System V semaphores</li>
+<li>The fast path: from polling to event-driven</li>
+<li>Anti-reverse-power: don’t feed power back to the grid</li>
+<li>Anti-overload: don’t blow up the transformer</li>
+<li>Two formulas, one idea</li>
+<li>The pits that actually hurt in the field</li>
+<li>To close</li>
+</ol>
+<hr>
+<h2 id="1-Why-a-meter-is-worth-staring-at"><a href="#1-Why-a-meter-is-worth-staring-at" class="headerlink" title="1. Why a meter is worth staring at"></a>1. Why a meter is worth staring at</h2><p>Some context first. A typical commercial-and-industrial storage topology looks like this: the transformer comes out to a grid-side revenue meter (Grid Meter), then splits into two branches — one to the normal loads, one to the storage cabinet. The cabinet itself carries another meter (Cab Meter).</p>
+<p>Why two meters? Because the EMS needs to know, in real time, how much power the load is actually drawing — and that value can’t be measured directly. It has to be derived by subtracting one meter from the other:</p>
+<div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">load power = grid meter power − cab meter power</span><br></pre></td></tr></table></figure></div>
+
+<p>The grid meter reads the total power coming in through the transformer. The cab meter reads the storage branch. Subtract one from the other, and what’s left is the pure load consumption.</p>
+<p>That subtraction is the foundation of the entire power control scheme. The “load following” for both charge and discharge is computed on top of it.</p>
+<p>When I first read this code, I didn’t think much of it. Two meters, so what. Then, during one site commissioning, the customer had only installed the cab meter and not the grid meter, and the anti-reverse-power logic simply stopped working. That’s when I realized this logic has a hardware precondition. More on that in section seven.</p>
+<h2 id="2-The-“doorbell”-between-two-modules-System-V-semaphores"><a href="#2-The-“doorbell”-between-two-modules-System-V-semaphores" class="headerlink" title="2. The “doorbell” between two modules: System V semaphores"></a>2. The “doorbell” between two modules: System V semaphores</h2><p>Who samples the meter data? <code>kwhmeter_sampler</code>, a sampler running over RS485. Who computes the anti-reverse-power and anti-overload strategy? <code>ccu_sampler</code>, another sampler.</p>
+<p>So here’s the problem: these are two independent modules, each with its own thread. When the meter sampler notices “reverse power is happening”, how does it tell the CCU sampler right away?</p>
+<p>The answer is a System V semaphore. One line in the code:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pCCU-&gt;nEssSemCCUWith485Meter = Creat_SemID(SEM_CCU_485_PATH, SEM_CCU_485_PROJ_ID, <span class="number">1</span>, IPC_CREAT | <span class="number">0666</span>);</span><br></pre></td></tr></table></figure></div>
+
+<p>Expanded, <code>Creat_SemID</code> does two things:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">Creat_SemID</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *pathname, <span class="type">int</span> proj_id, <span class="type">int</span> nsems, <span class="type">int</span> semflg)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">key_t</span> key   = ftok(pathname, proj_id);   <span class="comment">// generate an IPC key from a path + a character</span></span><br><span class="line">    <span class="type">int</span>   semid = semget(key, nsems, semflg); <span class="comment">// obtain the semaphore by key</span></span><br><span class="line">    <span class="keyword">return</span> semid;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>Here <code>SEM_CCU_485_PATH</code> is <code>/var</code>, and <code>SEM_CCU_485_PROJ_ID</code> is the character <code>&#39;S&#39;</code>. The key is <code>ftok</code>: as long as two processes use the same path plus the same character, they’ll compute the same key, and therefore grab the same kernel semaphore.</p>
+<p>The first question that popped into my head when I saw this: how is it different from a regular lock?</p>
+<p>The difference is scope. A pthread mutex only works inside one process. A System V semaphore is a kernel object — cross-process. The CCU sampler and the meter sampler are two separate <code>.so</code> files, each on its own; an ordinary lock can’t reach between them. Only a kernel-level object can act as the bridge.</p>
+<p>Then there are two operations, one to wait and one to signal:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">sem_wait_op</span><span class="params">(<span class="type">int</span> semid)</span>   <span class="comment">// P operation: decrement, block if it goes below zero</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sembuf</span> <span class="title">sop</span> =</span> &#123;<span class="number">0</span>, <span class="number">-1</span>, <span class="number">0</span>&#125;;</span><br><span class="line">    semop(semid, &amp;sop, <span class="number">1</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">sem_post_op</span><span class="params">(<span class="type">int</span> semid)</span>   <span class="comment">// V operation: increment, wake the waiter</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sembuf</span> <span class="title">sop</span> =</span> &#123;<span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>&#125;;</span><br><span class="line">    semop(semid, &amp;sop, <span class="number">1</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>I think of it as a doorbell. The meter sampler rings it with <code>sem_post_op</code>; the CCU sampler is asleep on <code>sem_wait_op</code> the whole time, and the kernel wakes it the instant the bell rings.</p>
+<p>One thing people easily misunderstand: a semaphore doesn’t carry data. It only carries the single signal “something happened”. The actual power values, voltage and current, are shared through the DPR data model. The semaphore just does the knocking.</p>
+<p><code>ftok</code> is worth a couple of sentences too. It turns a file path plus a character into an integer key. There’s a subtle trap here: the path has to point at a file that actually exists. If it doesn’t, it returns −1, <code>semget</code> gets an invalid value, and the semaphore silently dies. The project uses <code>/var</code>, a stable system directory, not some temp file that might get cleaned up. Also, that path-plus-character combination — if two modules each typo one character, they each grab a <em>different</em> semaphore, and nobody ever wakes anybody up. That kind of bug doesn’t crash; it just “never triggers”, which is harder to find than a crash.</p>
+<p>One more thing I didn’t understand at first: why not use a POSIX named semaphore? Why stick with this System V <code>ftok + semget + semop</code> fossil? Reading the code later, I saw the project already uses System V semaphores between the syshand daemon and the main process — it’s an existing IPC convention. Reusing the same scheme for a new module is less hassle than introducing a second semaphore style. A lot of “why is it written this way” in engineering comes down to “because it was already written this way here”.</p>
+<h2 id="3-The-fast-path-from-polling-to-event-driven"><a href="#3-The-fast-path-from-polling-to-event-driven" class="headerlink" title="3. The fast path: from polling to event-driven"></a>3. The fast path: from polling to event-driven</h2><p>Why go through the trouble of a semaphore at all? Can’t the CCU sampler just periodically read the meter data?</p>
+<p>It can, but it’s slow, and it wastes CPU.</p>
+<p>The problem with timed polling is that response latency depends on the polling period. Make the period short and the CPU busy-waits. Make it long and reverse power can run for hundreds of milliseconds before the CCU reacts. And reverse power can’t wait. The grid’s tolerance for reverse power is set at the “primary frequency regulation” level — end to end has to come in under 200 milliseconds.</p>
+<p>A semaphore blocks. The CCU sampler’s thread sleeps on <code>sem_wait_op</code> most of the time, using no CPU. The moment the meter calls <code>sem_post_op</code>, the kernel wakes it — microsecond latency. That’s where the “fast path” comes from, corresponding to a <code>bQuickChannle</code> flag in the code.</p>
+<p>I’ve broken down the whole end-to-end timing. On the meter side, one RS485 poll of the grid meter takes tens of milliseconds; seeing both powers negative, a <code>sem_post</code> takes microseconds; the CCU sampler wakes, runs the energy-management strategy to compute the discharge power ceiling, then pushes the command to the PCS over CAN or Modbus — another tens of milliseconds. All told, from “reverse power begins” to “PCS starts cutting power”, it’s inside 200 milliseconds. Those 200 milliseconds are the hard number the grid imposes on storage, and the origin of the “fast response” phrase.</p>
+<p>The key is that the semaphore segment costs almost nothing. Switch it to polling, and even a 100 ms period would eat half the budget just waiting for the next round. The gap between event-driven and polling gets magnified in a hard-real-time scenario like this.</p>
+<p>The trigger condition lives in <code>Judge_ActvPower_Reflux</code> in <code>kwhmeter_sampler</code>:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> ((fCabPwr_Sum &lt; <span class="number">0</span>) &amp;&amp; (fGridPwr_Sum &lt; <span class="number">0</span>))</span><br><span class="line">&#123;</span><br><span class="line">    sem_post_op(pWhim_Rough-&gt;nSemCCUWith485Meter);   <span class="comment">// signal CCU to wake up</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></div>
+
+<p>Cab power and grid power both negative means power is flowing back to the grid — time to ring the bell.</p>
+<p>Once the CCU sampler wakes, it checks one precondition first:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (pCCU-&gt;emPMCtrlMode != AUTO_CTRL_PM_MODE)   <span class="comment">// skip if not in auto mode</span></span><br><span class="line">    <span class="keyword">continue</span>;</span><br></pre></td></tr></table></figure></div>
+
+<p>It only responds in automatic power-management mode. In manual mode, even if reverse power is happening, the system shouldn’t take it upon itself to move the PCS. That’s a safety decision — when an operator is manually debugging, the last thing they want is the equipment moving on its own.</p>
+<h2 id="4-Anti-reverse-power-don’t-feed-power-back-to-the-grid"><a href="#4-Anti-reverse-power-don’t-feed-power-back-to-the-grid" class="headerlink" title="4. Anti-reverse-power: don’t feed power back to the grid"></a>4. Anti-reverse-power: don’t feed power back to the grid</h2><p>When discharging, the storage powers the load. The ideal is “the load draws exactly what the storage discharges”. But the load fluctuates in real time. If the load suddenly drops and the storage keeps discharging at the old rate, the surplus power feeds back into the grid. That’s reverse power.</p>
+<p>The judgment lives in <code>JudgeIfEnterAnti_RefluxOrOverload</code>:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">BOOL bAntiReflux = (fAnti_RefluxMeter - pCCU-&gt;blobBackendCfg.fPreProt4RefluxAndOverLoad</span><br><span class="line">                    &lt; (pEMS-&gt;fAllowedReverseValue * <span class="number">-1.0f</span>));</span><br></pre></td></tr></table></figure></div>
+
+<p>Three quantities, broken out:</p>
+<ul>
+<li><code>fAnti_RefluxMeter</code>: the real-time active power at the anti-reverse-power meter — that is, the grid meter power</li>
+<li><code>fPreProt4RefluxAndOverLoad</code>: the discharge pre-protection value, an advance amount</li>
+<li><code>fAllowedReverseValue</code>: the allowed reverse power — how much backfeed is tolerated</li>
+</ul>
+<p>In plain language: when the grid power goes negative to the point where it’s “below the allowed reverse value plus the pre-protection value”, the system declares it’s entering anti-reverse-power.</p>
+<p>Why the pre-protection value at all? The comment is blunt: <code>Pre-Sett Value, Due To EMS Adjust Power is Too Slow</code> — the EMS adjusts power too slowly, so it has to act early. Wait until it’s actually over the line, and the transmission and computation latency already let reverse power run for tens of extra milliseconds.</p>
+<p><code>fAllowedReverseValue</code> is for scenarios like Austrian certification. Some grids allow a little reverse power, and this value can be configured to 3 kW or 5 kW or whatever.</p>
+<p>The actual discharge-power ceiling is computed in <code>Calc_ESS_DischgLmtPower</code>:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">pEMS-&gt;fTotal_PessDischgLmt =</span><br><span class="line">    (pEMS-&gt;fPacload4Dischg - fProt) * pCCU-&gt;blobBackendCfg.fOutput2AC_PwrRate;</span><br><span class="line"></span><br><span class="line">pEMS-&gt;fTotal_PessDischgLmt += pEMS-&gt;fAllowedReverseValue;</span><br></pre></td></tr></table></figure></div>
+
+<p>Here <code>fPacload4Dischg</code> is the load power mentioned earlier (grid minus cab), <code>fProt</code> is the discharge pre-protection value, and <code>fOutput2AC_PwrRate</code> is the discharge follow rate. At the end it adds the allowed reverse value back in.</p>
+<p>An example. Load 60 kW, discharge pre-protection 5 kW, follow rate 0.9, allowed reverse 3 kW:</p>
+<div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">discharge ceiling = (60 − 5) × 0.9 + 3 = 52.5 kW</span><br></pre></td></tr></table></figure></div>
+
+<p>The storage discharges at most 52.5 kW against a 60 kW load, leaving a 7.5 kW margin, so nothing feeds back.</p>
+<p>That’s the three-phase total. There’s also a single-phase case, which came out of an Austrian certification project. European standards are stricter about single-phase reverse power than domestic ones — looking at the three-phase total isn’t enough; you have to look at each phase. In the code, <code>fAtRflxMtr_kWPhMin</code> is the minimum of the three phase powers, and the single-phase anti-reverse-power trigger is:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (pEMS-&gt;fAtRflxMtr_kWPhMin &lt; pCCU-&gt;blobBackendCfg.fPreProt4Reflux_Phase)</span><br><span class="line">    pEMS-&gt;bEnterAnti_Reflux_Phase = TRUE;</span><br></pre></td></tr></table></figure></div>
+
+<p>If any one phase goes negative past the single-phase pre-protection value, it triggers. The trap here is that three-phase loads are often unbalanced — one phase can already be feeding back while the three-phase total is still positive. If you only do total anti-reverse-power, you miss single-phase reverse power entirely. Austrian certification requires both “three-phase total + single-phase minimum” channels detecting at the same time; miss either and you fail.</p>
+<h2 id="5-Anti-overload-don’t-blow-up-the-transformer"><a href="#5-Anti-overload-don’t-blow-up-the-transformer" class="headerlink" title="5. Anti-overload: don’t blow up the transformer"></a>5. Anti-overload: don’t blow up the transformer</h2><p>When charging, the problem flips. Storage charging acts like a big load; charge power plus the existing load power can’t exceed the transformer capacity. If it does, the transformer trips on overload and the whole line goes down.</p>
+<p>The judgment is in the same function:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">BOOL bAntiOverLoad = ((pCCU-&gt;blobBackendCfg.fSysACInput_PwrLmt - fAnti_OverLoadMeter)</span><br><span class="line">                      &lt; pCCU-&gt;blobBackendCfg.fPreProt_Chrg);</span><br></pre></td></tr></table></figure></div>
+
+<p><code>fSysACInput_PwrLmt</code> is the transformer available power — the comment literally says “transformer available power (anti-overload)”. <code>fAnti_OverLoadMeter</code> is the grid meter power, and <code>fPreProt_Chrg</code> is the charge pre-protection value.</p>
+<p>Translation: transformer power minus grid meter power; if the remaining available power is already below the charge pre-protection value, the system declares it’s entering anti-overload.</p>
+<p>The full charge-power-ceiling computation is in <code>Calc_ESS_ChgLmtPower</code>:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// remaining charge power = transformer power − load power</span></span><br><span class="line">pEMS-&gt;fRemainPwr4Chrg = pEMS-&gt;fGridACInputPwr_Lmt - pEMS-&gt;fPacload4Chg;</span><br><span class="line"></span><br><span class="line"><span class="comment">// then subtract the pre-protection margin and multiply by the charge follow rate</span></span><br><span class="line">pEMS-&gt;fGridRemainACPwr2Chrg =</span><br><span class="line">    MAX(<span class="number">0.0f</span>, (pEMS-&gt;fGridRemainACPwr2Chrg - fProt) * pCCU-&gt;blobBackendCfg.PowerRate_Chrg);</span><br></pre></td></tr></table></figure></div>
+
+<p>An example: transformer 100 kW, load 40 kW, charge pre-protection 5 kW, follow rate 0.9:</p>
+<div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">remaining = 100 − 40 = 60</span><br><span class="line">charge ceiling = MAX(0, (60 − 5) × 0.9) = 49.5 kW</span><br><span class="line">charge 49.5 + load 40 = 89.5, still 10.5 below 100</span><br></pre></td></tr></table></figure></div>
+
+<p>This is the core of “load following”. The charge power isn’t hardcoded — it’s recomputed every cycle against the current load: less load, charge more; more load, charge less, always riding just under the transformer capacity with a safety cushion on top.</p>
+<h2 id="6-Two-formulas-one-idea"><a href="#6-Two-formulas-one-idea" class="headerlink" title="6. Two formulas, one idea"></a>6. Two formulas, one idea</h2><p>Put charge and discharge side by side and they look like mirror images.</p>
+<p>Charge (anti-overload):</p>
+<div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">charge power = (transformer power − load power − charge pre-protection) × charge follow rate</span><br></pre></td></tr></table></figure></div>
+
+<p>Discharge (anti-reverse-power):</p>
+<div class="code-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">discharge power = (load power − discharge pre-protection) × discharge follow rate + allowed reverse value</span><br></pre></td></tr></table></figure></div>
+
+<p>One subtracts “transformer remaining capacity”, the other subtracts “load demand”. Opposite directions, same idea — take the theoretically usable power, shave off a pre-protection value as buffer, then multiply by a follow rate, so the actual power always runs a notch below the theoretical limit.</p>
+<p>I understand the pre-protection value as “reaction time for the system”. The EMS has latency from sampling to computing to pushing the PCS command. If you run right at the limit, any small load movement in that latency window blows through it. The pre-protection value converts that latency window into power and reserves it in advance.</p>
+<p>The two pre-protection values used to be one shared parameter, then got split (you can see the <code>LJH250703</code> change note in the code), because charge and discharge need different margins — sharing one value made both sides awkward.</p>
+<h2 id="7-The-pits-that-actually-hurt-in-the-field"><a href="#7-The-pits-that-actually-hurt-in-the-field" class="headerlink" title="7. The pits that actually hurt in the field"></a>7. The pits that actually hurt in the field</h2><p>Reading the logic and running it in the field are two different things. The pits I’ve stepped in are worth recording more than the code itself.</p>
+<p><strong>First pit: meters not fully installed.</strong></p>
+<p>As said earlier, load power &#x3D; grid meter − cab meter. That’s a hard precondition. At the top of <code>Judge_ActvPower_Reflux</code>:</p>
+<div class="code-container" data-rel="C"><figure class="iseeu highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> ((meterData[CAB_FIRST].emMeterType == METER_TYPE_NotInstalled)</span><br><span class="line"> || (meterData[GRID_FIRST].emMeterType == METER_TYPE_NotInstalled))</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;   <span class="comment">// do nothing</span></span><br></pre></td></tr></table></figure></div>
+
+<p>The comment is explicit: station-level EMS fast anti-reverse-power requires both the cab meter and the grid meter. But the field always throws up variants — some stations only installed the cab meter and not the grid meter, some wired the meters to the wrong positions. In those cases anti-reverse-power fails silently. No error, just “never triggers”. The quiet failures are the worst kind.</p>
+<p><strong>Second pit: meter installation position decides how load is computed.</strong></p>
+<p>Load power isn’t always “grid minus cab”. <code>Calc_ACLoadPwrByDiffMeterPosition</code> splits it into five or six cases by meter position — industrial, civil, multi-branch loads, each with a different subtraction. Set the <code>emAuxMeterPos</code> config (parameter 1,7) wrong, and the computed load is wrong, and everything downstream is wrong.</p>
+<p><strong>Third pit: hysteresis against oscillation.</strong></p>
+<p>Entering and leaving reverse power &#x2F; overload is never instantaneous; there’s a <code>MAX_RETDIFF_PERIOD</code> time window in between. Why? Because when power jitters around the threshold, without hysteresis the PCS would thrash on and off and the power would oscillate. I remember that comment clearly — anti-reverse-power exit has to “exceed the time window”, exactly to prevent the flapping.</p>
+<p><strong>Fourth pit: how to tune the pre-protection value.</strong></p>
+<p>Set it too big and the system is too conservative, power never reaches where it should, capacity wasted. Set it too small and the margin isn’t enough — one load jitter blows through the limit. There’s no silver bullet; you just try it bit by bit in the field. My own habit is to start around 5% of transformer capacity, then watch the power curve: oscillation, raise it; headroom to spare, lower it.</p>
+<p><strong>Fifth pit: the boundary between manual and auto mode.</strong></p>
+<p>After waking from the semaphore, the first thing is checking whether <code>emPMCtrlMode</code> is auto mode. That check can’t be skipped. During field debugging, an operator will switch to manual to control one PCS directly; if the auto strategy is still running at that moment, the two command streams conflict — worse than reverse power.</p>
+<p>Beyond those five, one real commissioning incident worth writing down. Once a customer’s anti-reverse-power refused to trigger. The logs clearly showed the grid meter power already negative, but the PCS wouldn’t move. A whole day of digging later, the meter installation position parameter turned out to be wrong. The site was wired “multi-branch”, where load power should be computed as <code>grid − cab + auxiliary</code>, but the config was still on the default “no auxiliary meter”, so the computed load came out a chunk smaller than reality and the whole reverse-power threshold shifted. Meters wired right, position parameter wrong — same as not wired at all.</p>
+<p>After that I built a habit: before powering up a site, go through “which meter is which” in the config once, and verify the subtraction formula against a known load. Meter sign, installation position, parameter ID — any one of them off, and every strategy above is built on air. With power control, when the foundation is wrong, the higher the building, the harder it falls.</p>
+<p>A note on where these parameters actually live, while I’m at it. Transformer available power, charge pre-protection value, discharge pre-protection value, charge follow rate, discharge follow rate — all sit in the same backend-config blob <code>A_BLOB_ES_BACKEND_CFG</code>, at parameter ID <code>nDevId=1, nParamId=26</code>. Meaning: in the web config, you change one “backend config” blob and all these fields take effect together.</p>
+<p>The transformer power value has three sources in the code: a directly entered value, a “fixed-limit mode” that reads a fixed grid input limit, or a “dynamic mode” that reads each time period’s grid input limit from the management plan. If the site uses time-of-use pricing with different transformer quotas per period, use dynamic mode. If the transformer capacity is constant, just disable dynamic limiting and enter one value — simplest.</p>
+<p>My habit: enter the actual capacity for transformer power, start the pre-protection at 5% of capacity, set the follow rate to 0.9, then watch the curve after power-up and fine-tune. None of these three has a “correct” answer — only an answer that fits that particular site.</p>
+<h2 id="8-To-close"><a href="#8-To-close" class="headerlink" title="8. To close"></a>8. To close</h2><p>This anti-reverse-power and anti-overload logic has nothing flashy at the code level. Two meters subtract out the load, one semaphore acts as a doorbell, two pre-protection values reserve margin, one hysteresis window damps oscillation. Put together, it’s the bottom line of grid-connection safety for a storage system.</p>
+<p>But it made me re-understand what “real-time” means. Real-time isn’t a fast CPU — it’s that when an event happens, the system responds within a specified time. The “blocking wait + kernel wake-up” of the semaphore is designed for exactly that: sleeping at zero cost most of the time, waking at microsecond speed at the critical moment.</p>
+<p>It also made me understand what “following” means. Following the load isn’t about getting the formula right and calling it done. It’s about accepting that the load never stops changing, then using a pre-protection value to hedge the uncertainty and a hysteresis window to fight the jitter. The difference between engineering and theory, I think, lives in those “leave a little in reserve” details.</p>
+<p>One last slightly sentimental line. In the storage business, safety has never been a slogan. Behind anti-reverse-power and anti-overload is the grid’s hard constraint on every point of connection. Every subtraction we write, every semaphore, every pre-protection value, is ultimately there so that at 3 a.m., unattended, the instant the load lurches, the system stays exactly where it’s supposed to be.</p>
+
+		</div>
+
+		
+		<div class="post-copyright-info w-full my-8 px-2 sm:px-6 md:px-8">
+			<div class="article-copyright-info-container">
+    <ul>
+        <li><strong>标题:</strong> The Power Game Inside a Storage EMS: One Meter, One Semaphore, and a 200 ms Race Against Reverse Power</li>
+        <li><strong>作者:</strong> kuangyue111</li>
+        <li><strong>创建于
+                :</strong> 2026-08-26 10:00:00</li>
+        
+            <li>
+                <strong>更新于
+                    :</strong> 2026-09-03 05:24:03
+            </li>
+        
+        <li>
+            <strong>链接:</strong> https://kuangyue111.github.io/2026/08/26/2026-08-26-ems-power-game-inside/
+        </li>
+        <li>
+            <strong>
+                版权声明:
+            </strong>
+            
+
+            
+                本文章采用 <a class="license" target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0">CC BY-NC-SA 4.0</a> 进行许可。
+            
+        </li>
+    </ul>
+</div>
+
+		</div>
+		
+
+		
+		<ul class="post-tags-box text-lg mt-1.5 flex-wrap justify-center flex md:hidden">
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E5%B5%8C%E5%85%A5%E5%BC%8F/">#嵌入式</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E5%82%A8%E8%83%BD/">#储能</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/EMS/">#EMS</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/PCS/">#PCS</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E5%AE%9E%E6%97%B6%E7%B3%BB%E7%BB%9F/">#实时系统</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E4%BF%A1%E5%8F%B7%E9%87%8F/">#信号量</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E5%B5%8C%E5%85%A5%E5%BC%8FLinux/">#嵌入式Linux</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E5%B7%A5%E4%B8%9A%E6%8E%A7%E5%88%B6/">#工业控制</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E6%8E%A7%E5%88%B6%E7%AD%96%E7%95%A5/">#控制策略</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E9%98%B2%E9%80%86%E6%B5%81/">#防逆流</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/BESS/">#BESS</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/%E5%82%A8%E8%83%BD%E7%B3%BB%E7%BB%9F/">#储能系统</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/Energy-Storage/">#Energy-Storage</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/Embedded-Linux/">#Embedded-Linux</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/Anti-Reflux/">#Anti-Reflux</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/Real-time-System/">#Real-time-System</a>&nbsp;
+			</li>
+			
+			<li class="tag-item mx-0.5">
+				<a href="/tags/Control-Strategy/">#Control-Strategy</a>&nbsp;
+			</li>
+			
+		</ul>
+		
+
+		
+
+		
+		<div class="article-nav my-8 flex justify-between items-center px-2 sm:px-6 md:px-8">
+			
+			<div class="article-prev border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
+				<a class="prev" rel="prev" href="/2026/08/26/2026-08-26-ems-anti-reflux-overload/">
+					<span class="left arrow-icon flex justify-center items-center">
+						<i class="fa-solid fa-chevron-left"></i>
+					</span>
+					<span class="title flex justify-center items-center">
+						<span class="post-nav-title-item truncate max-w-48">储能 EMS 的功率博弈：从一块电表到一次逆流的 200 毫秒</span>
+						<span class="post-nav-item">上一篇</span>
+					</span>
+				</a>
+			</div>
+			
+			
+			<div class="article-next border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
+				<a class="next" rel="next" href="/2026/08/24/2026-08-24-agent-skills-writing-guide/">
+					<span class="title flex justify-center items-center">
+						<span class="post-nav-title-item truncate max-w-48">我是被现实教育之后，才明白 Skill 到底该怎么写</span>
+						<span class="post-nav-item">下一篇</span>
+					</span>
+					<span class="right arrow-icon flex justify-center items-center">
+						<i class="fa-solid fa-chevron-right"></i>
+					</span>
+				</a>
+			</div>
+			
+		</div>
+		
+
+
+		
+		<div class="comment-container px-2 sm:px-6 md:px-8 pb-8">
+			<div class="comments-container mt-10 w-full ">
+    <div id="comment-anchor" class="w-full h-2.5"></div>
+    <div class="comment-area-title w-full my-1.5 md:my-2.5 text-xl md:text-3xl font-bold">
+        评论
+    </div>
+    
+
+        
+            
+    <div id="waline"></div>
+    <script type="module" data-swup-reload-script>
+      import { init } from '/js/libs/waline.js';
+
+      (function() {
+        const startPath = location.pathname;
+        const startTime = Date.now();
+        const retryDelay = 200;
+        const retryLimit = 5000;
+
+        const runWaline = () => {
+          if (location.pathname !== startPath) {
+            return;
+          }
+
+          const container = document.getElementById('waline');
+          if (!container) {
+            if (Date.now() - startTime < retryLimit) {
+              setTimeout(runWaline, retryDelay);
+            }
+            return;
+          }
+
+          if (window.redefineWalineInstance?.destroy) {
+            window.redefineWalineInstance.destroy();
+          }
+
+          container.innerHTML = '';
+          window.redefineWalineInstance = init({
+            el: '#waline',
+            serverURL: 'https://example.example.com',
+            path: location.pathname,
+            dark: 'body[class~="dark-mode"]',
+            reaction: false,
+            requiredMeta: ['nick', 'mail'],
+            emoji: [],
+                      lang: 'zh-CN',
+          });
+        };
+
+        runWaline();
+      })();
+    </script>
+
+
+
+        
+    
+</div>
+
+		</div>
+		
+	</div>
+
+	
+	<div class="toc-content-container">
+		<div class="post-toc-wrap">
+	<div class="post-toc">
+		<div class="toc-title">目录</div>
+		<div class="page-title">The Power Game Inside a Storage EMS: One Meter, One Semaphore, and a 200 ms Race Against Reverse Power</div>
+		<ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#The-Power-Game-Inside-a-Storage-EMS-One-Meter-One-Semaphore-and-a-200-ms-Race-Against-Reverse-Power"><span class="nav-text">The Power Game Inside a Storage EMS: One Meter, One Semaphore, and a 200 ms Race Against Reverse Power</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Before-We-Start"><span class="nav-text">Before We Start</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Outline"><span class="nav-text">Outline</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1-Why-a-meter-is-worth-staring-at"><span class="nav-text">1. Why a meter is worth staring at</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-The-%E2%80%9Cdoorbell%E2%80%9D-between-two-modules-System-V-semaphores"><span class="nav-text">2. The “doorbell” between two modules: System V semaphores</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-The-fast-path-from-polling-to-event-driven"><span class="nav-text">3. The fast path: from polling to event-driven</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-Anti-reverse-power-don%E2%80%99t-feed-power-back-to-the-grid"><span class="nav-text">4. Anti-reverse-power: don’t feed power back to the grid</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-Anti-overload-don%E2%80%99t-blow-up-the-transformer"><span class="nav-text">5. Anti-overload: don’t blow up the transformer</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-Two-formulas-one-idea"><span class="nav-text">6. Two formulas, one idea</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#7-The-pits-that-actually-hurt-in-the-field"><span class="nav-text">7. The pits that actually hurt in the field</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#8-To-close"><span class="nav-text">8. To close</span></a></li></ol></li></ol>
+
+	</div>
+</div>
+	</div>
+	
+</div>
+
+			</div>
+
+			
+		</div>
+
+		<div class="main-content-footer">
+			<footer class="footer mt-5 py-5 h-auto text-base text-third-text-color relative border-t-2 border-t-border-color">
+    <div class="info-container py-3 text-center">
+        
+        <div class="text-center">
+            &copy;
+            
+              <span>2022</span>
+              -
+            
+            2026&nbsp;&nbsp;<i class="fa-solid fa-heart fa-beat" style="--fa-animation-duration: 0.5s; color: #f54545"></i>&nbsp;&nbsp;<a href="/">kuangyue111</a>
+            
+                
+                <p class="post-count space-x-0.5">
+                    <span>
+                        共撰写了 45 篇文章
+                    </span>
+                    
+                </p>
+            
+        </div>
+        
+            <script data-swup-reload-script src="https://cn.vercount.one/js"></script>
+            <div class="relative text-center lg:absolute lg:right-[20px] lg:top-1/2 lg:-translate-y-1/2 lg:text-right">
+                
+                    <span id="busuanzi_container_site_uv" class="lg:!block">
+                        <span class="text-sm">访问人数</span>
+                        <span id="busuanzi_value_site_uv"></span>
+                    </span>
+                
+                
+                    <span id="busuanzi_container_site_pv" class="lg:!block">
+                        <span class="text-sm">总访问量</span>
+                        <span id="busuanzi_value_site_pv"></span>
+                    </span>
+                
+            </div>
+        
+        <div class="relative text-center lg:absolute lg:left-[20px] lg:top-1/2 lg:-translate-y-1/2 lg:text-left">
+            <span class="lg:block text-sm">由 <?xml version="1.0" encoding="utf-8"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg class="relative top-[2px] inline-block align-baseline" version="1.1" id="圖層_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="1rem" height="1rem" viewBox="0 0 512 512" enable-background="new 0 0 512 512" xml:space="preserve"><path fill="#0E83CD" d="M256.4,25.8l-200,115.5L56,371.5l199.6,114.7l200-115.5l0.4-230.2L256.4,25.8z M349,354.6l-18.4,10.7l-18.6-11V275H200v79.6l-18.4,10.7l-18.6-11v-197l18.5-10.6l18.5,10.8V237h112v-79.6l18.5-10.6l18.5,10.8V354.6z"/></svg><a target="_blank" class="text-base" href="https://hexo.io">Hexo</a> 驱动</span>
+            <span class="text-sm lg:block">主题&nbsp;<a class="text-base" target="_blank" href="https://github.com/EvanNotFound/hexo-theme-redefine">Redefine v2.9.0</a></span>
+        </div>
+        
+        
+            <div>
+                博客已运行 <span class="odometer" id="runtime_days" ></span> 天 <span class="odometer" id="runtime_hours"></span> 小时 <span class="odometer" id="runtime_minutes"></span> 分钟 <span class="odometer" id="runtime_seconds"></span> 秒
+            </div>
+        
+        
+            <script data-swup-reload-script>
+                try {
+                    function odometer_init() {
+                    const elements = document.querySelectorAll('.odometer');
+                    elements.forEach(el => {
+                        new Odometer({
+                            el,
+                            format: '( ddd).dd',
+                            duration: 200
+                        });
+                    });
+                    }
+                    odometer_init();
+                } catch (error) {}
+            </script>
+        
+        
+        
+    </div>  
+</footer>
+		</div>
+	</div>
+
+	
+	<div class="post-tools">
+		<div class="post-tools-container">
+	<ul class="article-tools-list">
+		<!-- TOC aside toggle -->
+		
+		<li class="right-bottom-tools page-aside-toggle">
+			<i class="fa-regular fa-outdent"></i>
+		</li>
+		
+
+		<!-- go comment -->
+		
+		<li class="go-comment">
+			<i class="fa-regular fa-comments"></i>
+		</li>
+		
+	</ul>
+</div>
+	</div>
+	
+
+	<div class="right-side-tools-container">
+		<div class="side-tools-container">
+	<ul class="hidden-tools-list">
+		<li class="right-bottom-tools tool-font-adjust-plus flex justify-center items-center">
+			<i class="fa-regular fa-magnifying-glass-plus"></i>
+		</li>
+
+		<li class="right-bottom-tools tool-font-adjust-minus flex justify-center items-center">
+			<i class="fa-regular fa-magnifying-glass-minus"></i>
+		</li>
+
+		<li class="right-bottom-tools tool-dark-light-toggle flex justify-center items-center">
+			<i class="fa-regular fa-moon"></i>
+		</li>
+
+		<!-- rss -->
+		
+
+		
+
+		<li class="right-bottom-tools tool-scroll-to-bottom flex justify-center items-center">
+			<i class="fa-regular fa-arrow-down"></i>
+		</li>
+	</ul>
+
+	<ul class="visible-tools-list">
+		<li class="right-bottom-tools toggle-tools-list flex justify-center items-center">
+			<i class="fa-regular fa-cog fa-spin"></i>
+		</li>
+		
+		<li class="right-bottom-tools tool-scroll-to-top flex justify-center items-center">
+			<i class="arrow-up fas fa-arrow-up"></i>
+			<span class="percent"></span>
+		</li>
+		
+		
+	</ul>
+</div>
+	</div>
+
+	<div class="image-viewer-container" role="dialog" aria-modal="true" aria-label="图片查看器">
+	<button class="image-viewer-close" type="button" aria-label="关闭">
+		<i class="fa-solid fa-xmark"></i>
+	</button>
+	<button class="image-viewer-prev" type="button" aria-label="上一页">
+		<i class="fa-solid fa-chevron-left"></i>
+	</button>
+	<div class="image-viewer-frame">
+		<img src="" alt="">
+	</div>
+	<div class="image-viewer-exif-panel hidden absolute left-1/2 bottom-20 -translate-x-1/2 w-[min(92vw,420px)] max-h-[60vh] overflow-hidden rounded-2xl bg-background-color-transparent-80 p-4 text-left shadow-redefine-flat backdrop-blur-md" role="dialog" aria-label="EXIF" aria-hidden="true">
+		<div class="flex items-center justify-between mb-3">
+			<span class="text-sm font-semibold text-first-text-color">EXIF</span>
+			<button class="image-viewer-exif-close flex h-8 w-8 items-center justify-center rounded-full bg-background-color-transparent-80 text-first-text-color transition hover:bg-background-color-transparent-40" type="button" aria-label="关闭">
+				<i class="fa-solid fa-xmark text-[0.65rem]"></i>
+			</button>
+		</div>
+		<div class="image-viewer-exif-cards grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto pr-1 scrollbar-hide"></div>
+		<template class="image-viewer-exif-card-template">
+			<div class="rounded-lg bg-background-color-transparent-40 px-3 py-2">
+				<div class="image-viewer-exif-card-header flex items-center gap-2 mb-1">
+					<i class="image-viewer-exif-card-icon fa-solid fa-circle-info text-xs text-third-text-color"></i>
+					<div class="image-viewer-exif-card-title text-xs font-semibold text-first-text-color"></div>
+				</div>
+				<div class="image-viewer-exif-card-items flex flex-col gap-1"></div>
+			</div>
+		</template>
+	</div>
+	<button class="image-viewer-exif-toggle flex items-center gap-2 hidden absolute left-1/2 bottom-6 -translate-x-1/2 rounded-full border border-border-color bg-background-color-transparent-80 px-4 py-2 text-first-text-color backdrop-blur-md transition hover:bg-background-color-transparent-40" type="button" aria-label="EXIF" aria-expanded="false">
+		<i class="fa-solid fa-circle-info text-xs"></i>
+		<span class="text-xs font-semibold uppercase tracking-wider">EXIF</span>
+	</button>
+	<button class="image-viewer-next" type="button" aria-label="下一页">
+		<i class="fa-solid fa-chevron-right"></i>
+	</button>
+</div>
+
+
+	
+
+</main>
+
+
+
+<script src="/js/build/libs/Swup.min.js"></script>
+
+<script src="/js/build/libs/SwupSlideTheme.min.js"></script>
+
+<script src="/js/build/libs/SwupScriptsPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupProgressPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupScrollPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupPreloadPlugin.min.js"></script>
+
+<script>
+    window.swup = new Swup({
+        plugins: [
+            new SwupScriptsPlugin({
+                optin: true,
+            }),
+            new SwupProgressPlugin(),
+            new SwupScrollPlugin({
+                offset: 80,
+            }),
+            new SwupSlideTheme({
+                mainElement: ".main-content-body",
+            }),
+            new SwupPreloadPlugin(),
+        ],
+        containers: ["#swup"],
+    });
+
+    window.dispatchEvent(
+        new CustomEvent("redefine:swup:ready", {
+            detail: {
+                swup: window.swup,
+            },
+        }),
+    );
+</script>
+
+
+
+
+	
+<script src="/js/build/main.js" type="module"></script>
+
+
+
+    
+<script src="/js/build/libs/odometer.min.js"></script>
+
+    
+<link rel="stylesheet" href="/assets/odometer-theme-minimal.css">
+
+
+
+
+
+
+
+  
+<script src="/js/build/libs/Typed.min.js"></script>
+
+
+
+
+
+
+
+
+
+
+<script src="/js/build/libs/moment-with-locales.min.js" data-swup-reload-script=""></script>
+
+
+
+	
+</body>
+
+</html>
